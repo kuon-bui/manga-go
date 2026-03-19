@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"base-go/internal/pkg/logger"
+	"manga-go/internal/pkg/logger"
 
 	"github.com/redis/go-redis/v9"
 )

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"base-go/internal/pkg/logger"
+	"manga-go/internal/pkg/logger"
 
 	"github.com/spf13/viper"
 )

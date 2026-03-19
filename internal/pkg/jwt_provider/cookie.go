@@ -1,7 +1,7 @@
 package jwtprovider
 
 import (
-	"base-go/internal/pkg/config"
+	"manga-go/internal/pkg/config"
 	"net/http"
 	"time"
 

@@ -1,8 +1,8 @@
 package base
 
 import (
-	"base-go/internal/pkg/common"
 	"context"
+	"manga-go/internal/pkg/common"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"

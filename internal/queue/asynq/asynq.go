@@ -1,11 +1,11 @@
 package asynq
 
 import (
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
-	queueconstant "base-go/internal/queue/queue_constant"
 	"context"
 	"fmt"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
+	queueconstant "manga-go/internal/queue/queue_constant"
 	"strings"
 
 	"github.com/hibiken/asynq"

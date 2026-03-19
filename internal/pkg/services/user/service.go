@@ -1,10 +1,10 @@
 package userserivce
 
 import (
-	"base-go/internal/pkg/config"
-	jwtprovider "base-go/internal/pkg/jwt_provider"
-	"base-go/internal/pkg/logger"
-	userrepo "base-go/internal/pkg/repo/user"
+	"manga-go/internal/pkg/config"
+	jwtprovider "manga-go/internal/pkg/jwt_provider"
+	"manga-go/internal/pkg/logger"
+	userrepo "manga-go/internal/pkg/repo/user"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/fx"

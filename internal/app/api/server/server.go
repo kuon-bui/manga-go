@@ -1,10 +1,10 @@
 package server
 
 import (
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
 	"errors"
 	"fmt"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"

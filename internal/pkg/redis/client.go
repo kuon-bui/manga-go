@@ -1,10 +1,10 @@
 package redis
 
 import (
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
 	"context"
 	"fmt"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
@@ -13,6 +13,7 @@ import (
 func ConnectRedis(config *config.Config, logger *logger.Logger) *redis.Client {
 	cfg := config.Redis
 	address := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
+	fmt.Printf("redis Address: %s\n", address)
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     address,

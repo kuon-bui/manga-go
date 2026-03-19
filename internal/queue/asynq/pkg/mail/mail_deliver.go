@@ -1,9 +1,9 @@
 package mail
 
 import (
-	"base-go/internal/pkg/mail/mailable"
 	"context"
 	"encoding/json"
+	"manga-go/internal/pkg/mail/mailable"
 
 	"github.com/hibiken/asynq"
 	"github.com/wneessen/go-mail"

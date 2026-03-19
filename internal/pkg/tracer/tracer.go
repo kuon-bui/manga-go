@@ -1,9 +1,9 @@
 package tracer
 
 import (
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
 	"context"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
 	"os"
 
 	"go.opentelemetry.io/otel"

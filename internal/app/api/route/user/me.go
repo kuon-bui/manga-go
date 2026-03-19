@@ -1,7 +1,7 @@
 package userroute
 
 import (
-	"base-go/internal/pkg/utils"
+	"manga-go/internal/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )

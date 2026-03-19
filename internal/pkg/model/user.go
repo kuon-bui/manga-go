@@ -1,7 +1,7 @@
 package model
 
 import (
-	"base-go/internal/pkg/common"
+	"manga-go/internal/pkg/common"
 	"time"
 
 	"github.com/google/uuid"

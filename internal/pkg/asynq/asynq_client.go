@@ -1,8 +1,8 @@
 package asynqclient
 
 import (
-	"base-go/internal/pkg/config"
 	"fmt"
+	"manga-go/internal/pkg/config"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/fx"

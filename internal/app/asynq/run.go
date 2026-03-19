@@ -1,11 +1,11 @@
 package asynq
 
 import (
-	"base-go/internal/pkg/common"
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
-	"base-go/internal/pkg/tracer"
 	"context"
+	"manga-go/internal/pkg/common"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/tracer"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/fx"

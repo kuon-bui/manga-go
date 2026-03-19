@@ -1,10 +1,10 @@
 package main
 
 import (
-	"base-go/internal/app"
-	"base-go/internal/app/api"
-	"base-go/internal/app/api/server"
-	"base-go/internal/pkg/tracer"
+	"manga-go/internal/app"
+	"manga-go/internal/app/api"
+	"manga-go/internal/app/api/server"
+	"manga-go/internal/pkg/tracer"
 
 	"go.uber.org/fx"
 )

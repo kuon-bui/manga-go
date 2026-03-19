@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"base-go/internal/pkg/logger"
 	"fmt"
 	"html/template"
+	"manga-go/internal/pkg/logger"
 	"path/filepath"
 	"strings"
 	"sync"

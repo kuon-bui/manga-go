@@ -1,7 +1,7 @@
 package server
 
 import (
-	"base-go/internal/pkg/config"
+	"manga-go/internal/pkg/config"
 	"strings"
 
 	"github.com/gin-contrib/cors"

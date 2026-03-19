@@ -1,11 +1,11 @@
 package server
 
 import (
-	"base-go/internal/app/api/common"
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
-	"base-go/internal/pkg/tracer"
 	"context"
+	"manga-go/internal/app/api/common"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/tracer"
 	"net/http"
 
 	"go.uber.org/fx"

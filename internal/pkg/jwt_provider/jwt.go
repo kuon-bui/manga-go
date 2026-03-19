@@ -1,12 +1,12 @@
 package jwtprovider
 
 import (
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
-	"base-go/internal/pkg/redis"
 	"context"
 	"errors"
 	"fmt"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/redis"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

@@ -1,11 +1,11 @@
 package authmiddleware
 
 import (
-	"base-go/internal/app/api/common/response"
-	"base-go/internal/pkg/config"
-	jwtprovider "base-go/internal/pkg/jwt_provider"
-	userrepo "base-go/internal/pkg/repo/user"
-	"base-go/internal/pkg/utils"
+	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/config"
+	jwtprovider "manga-go/internal/pkg/jwt_provider"
+	userrepo "manga-go/internal/pkg/repo/user"
+	"manga-go/internal/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"

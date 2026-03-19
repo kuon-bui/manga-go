@@ -1,7 +1,7 @@
 package repo
 
 import (
-	userrepo "base-go/internal/pkg/repo/user"
+	userrepo "manga-go/internal/pkg/repo/user"
 
 	"go.uber.org/fx"
 )

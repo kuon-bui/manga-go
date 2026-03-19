@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"base-go/internal/pkg/common"
-	"base-go/internal/pkg/model"
 	"fmt"
+	"manga-go/internal/pkg/common"
+	"manga-go/internal/pkg/model"
 
 	"github.com/gin-gonic/gin"
 )

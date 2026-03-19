@@ -1,11 +1,11 @@
 package userserivce
 
 import (
-	"base-go/internal/app/api/common/response"
-	"base-go/internal/pkg/hash"
-	userrequest "base-go/internal/pkg/request/user"
 	"context"
 	"errors"
+	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/hash"
+	userrequest "manga-go/internal/pkg/request/user"
 	"time"
 
 	"gorm.io/gorm"

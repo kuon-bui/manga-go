@@ -1,8 +1,8 @@
 package userroute
 
 import (
-	"base-go/internal/app/api/common/response"
-	userrequest "base-go/internal/pkg/request/user"
+	"manga-go/internal/app/api/common/response"
+	userrequest "manga-go/internal/pkg/request/user"
 
 	"github.com/gin-gonic/gin"
 )

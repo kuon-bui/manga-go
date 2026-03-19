@@ -1,7 +1,7 @@
 package tracer
 
 import (
-	"base-go/internal/pkg/config"
+	"manga-go/internal/pkg/config"
 
 	"go.uber.org/fx"
 )

@@ -1,8 +1,8 @@
 package api
 
 import (
-	"base-go/internal/app/api/route"
-	"base-go/internal/app/api/server"
+	"manga-go/internal/app/api/route"
+	"manga-go/internal/app/api/server"
 
 	"go.uber.org/fx"
 )

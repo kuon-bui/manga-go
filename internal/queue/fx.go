@@ -1,11 +1,11 @@
 package queue
 
 import (
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
-	"base-go/internal/pkg/mail"
-	"base-go/internal/pkg/tracer"
-	"base-go/internal/queue/asynq"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/mail"
+	"manga-go/internal/pkg/tracer"
+	"manga-go/internal/queue/asynq"
 
 	"go.uber.org/fx"
 )

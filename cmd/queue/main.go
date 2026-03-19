@@ -1,9 +1,9 @@
 package main
 
 import (
-	asynqserver "base-go/internal/app/asynq"
-	"base-go/internal/pkg/tracer"
-	"base-go/internal/queue"
+	asynqserver "manga-go/internal/app/asynq"
+	"manga-go/internal/pkg/tracer"
+	"manga-go/internal/queue"
 
 	"go.uber.org/fx"
 )

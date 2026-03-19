@@ -1,22 +1,22 @@
 production: false
 service:
-  name: base-go
+  name: manga-go
   domain: localhost
   port: 8080
   allow_origins: "*"
 db:
-  postgresql_host: postgresql
-  postgresql_port: 5432
-  postgresql_user: admin
-  postgresql_password: postgres
-  postgresql_database: mydb
+  host: postgresql
+  port: 5432
+  user: admin
+  password: postgres
+  database: mydb
 otlp:
   endpoint: jaeger:4317
 redis:
-  redis_host: redis
-  redis_port: 6379
-  redis_password: ""
-  redis_db: 0
+  host: redis
+  port: 6379
+  password: ""
+  db: 0
 smtp:
   host: mailpit
   port: 1025

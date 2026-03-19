@@ -1,9 +1,9 @@
 package hash
 
 import (
-	"base-go/internal/pkg/constant"
-	"base-go/internal/pkg/logger"
 	"fmt"
+	"manga-go/internal/pkg/constant"
+	"manga-go/internal/pkg/logger"
 
 	"golang.org/x/crypto/bcrypt"
 )

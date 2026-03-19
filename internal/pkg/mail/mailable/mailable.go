@@ -1,12 +1,12 @@
 package mailable
 
 import (
-	"base-go/internal/pkg/utils"
-	queueconstant "base-go/internal/queue/queue_constant"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
+	"manga-go/internal/pkg/utils"
+	queueconstant "manga-go/internal/queue/queue_constant"
 
 	"github.com/hibiken/asynq"
 	"github.com/samber/lo"

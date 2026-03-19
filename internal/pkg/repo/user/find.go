@@ -1,10 +1,10 @@
 package userrepo
 
 import (
-	"base-go/internal/pkg/common"
-	"base-go/internal/pkg/model"
 	"context"
 	"encoding/json"
+	"manga-go/internal/pkg/common"
+	"manga-go/internal/pkg/model"
 
 	"gorm.io/gorm/clause"
 )

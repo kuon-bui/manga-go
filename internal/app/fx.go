@@ -1,17 +1,17 @@
 package app
 
 import (
-	authmiddleware "base-go/internal/app/middleware/auth"
-	asynqclient "base-go/internal/pkg/asynq"
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/gorm"
-	jwtprovider "base-go/internal/pkg/jwt_provider"
-	"base-go/internal/pkg/logger"
-	"base-go/internal/pkg/mail"
-	"base-go/internal/pkg/redis"
-	"base-go/internal/pkg/repo"
-	"base-go/internal/pkg/services"
-	"base-go/internal/pkg/tracer"
+	authmiddleware "manga-go/internal/app/middleware/auth"
+	asynqclient "manga-go/internal/pkg/asynq"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/gorm"
+	jwtprovider "manga-go/internal/pkg/jwt_provider"
+	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/mail"
+	"manga-go/internal/pkg/redis"
+	"manga-go/internal/pkg/repo"
+	"manga-go/internal/pkg/services"
+	"manga-go/internal/pkg/tracer"
 
 	"go.uber.org/fx"
 )

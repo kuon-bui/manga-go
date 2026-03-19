@@ -1,13 +1,13 @@
 package mail
 
 import (
-	"base-go/internal/pkg/config"
-	"base-go/internal/pkg/logger"
-	"base-go/internal/pkg/mail/mailable"
-	"base-go/internal/pkg/utils"
-	queueconstant "base-go/internal/queue/queue_constant"
 	"context"
 	"encoding/json"
+	"manga-go/internal/pkg/config"
+	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/mail/mailable"
+	"manga-go/internal/pkg/utils"
+	queueconstant "manga-go/internal/queue/queue_constant"
 
 	"github.com/hibiken/asynq"
 	"github.com/samber/lo"

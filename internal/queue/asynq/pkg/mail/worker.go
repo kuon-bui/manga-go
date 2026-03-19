@@ -1,9 +1,9 @@
 package mail
 
 import (
-	"base-go/internal/pkg/logger"
-	"base-go/internal/pkg/mail"
-	queueconstant "base-go/internal/queue/queue_constant"
+	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/mail"
+	queueconstant "manga-go/internal/queue/queue_constant"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/fx"

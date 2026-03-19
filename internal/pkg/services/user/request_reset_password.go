@@ -1,12 +1,12 @@
 package userserivce
 
 import (
-	"base-go/internal/app/api/common/response"
-	"base-go/internal/pkg/mail/mailable"
-	"base-go/internal/pkg/utils"
 	"context"
 	"errors"
 	"fmt"
+	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/mail/mailable"
+	"manga-go/internal/pkg/utils"
 	"time"
 
 	"gorm.io/gorm/clause"

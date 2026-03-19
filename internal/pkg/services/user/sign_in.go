@@ -1,11 +1,11 @@
 package userserivce
 
 import (
-	"base-go/internal/app/api/common/response"
-	"base-go/internal/pkg/hash"
-	jwtprovider "base-go/internal/pkg/jwt_provider"
-	userrequest "base-go/internal/pkg/request/user"
 	"context"
+	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/hash"
+	jwtprovider "manga-go/internal/pkg/jwt_provider"
+	userrequest "manga-go/internal/pkg/request/user"
 
 	"gorm.io/gorm/clause"
 )

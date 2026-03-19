@@ -1,7 +1,7 @@
 package services
 
 import (
-	userserivce "base-go/internal/pkg/services/user"
+	userserivce "manga-go/internal/pkg/services/user"
 
 	"go.uber.org/fx"
 )

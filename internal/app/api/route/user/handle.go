@@ -1,8 +1,8 @@
 package userroute
 
 import (
-	"base-go/internal/pkg/config"
-	userserivce "base-go/internal/pkg/services/user"
+	"manga-go/internal/pkg/config"
+	userserivce "manga-go/internal/pkg/services/user"
 
 	"go.uber.org/fx"
 )

@@ -1,8 +1,8 @@
 package userroute
 
 import (
-	authmiddleware "base-go/internal/app/middleware/auth"
-	"base-go/internal/pkg/logger"
+	authmiddleware "manga-go/internal/app/middleware/auth"
+	"manga-go/internal/pkg/logger"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"

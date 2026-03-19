@@ -1,9 +1,9 @@
 package userrepo
 
 import (
-	"base-go/internal/pkg/model"
-	"base-go/internal/pkg/redis"
-	"base-go/internal/pkg/repo/base"
+	"manga-go/internal/pkg/model"
+	"manga-go/internal/pkg/redis"
+	"manga-go/internal/pkg/repo/base"
 
 	"gorm.io/gorm"
 )
