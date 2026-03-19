@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: api
+    ports:
+      - "${SERVICE_PORT:-8080}:8080"
+    volumes:
+      - .:/app
+    depends_on:
+      - postgresql
+      - redis
+      - jaeger
+    networks:
+      - app-network
+  
+  queue:
+    build:
+      context: .
+      target: queue
+    volumes:
+      - ./:/app
+    depends_on:
+      - postgresql
+      - redis
+      - jaeger
+    networks:
+      - app-network
+
+  asynqmon:
+    image: hibiken/asynqmon:0.7
+    platform: linux/amd64
+    environment:
+      REDIS_ADDR: redis:6379
+    ports:
+      - 8090:8080
+    networks:
+      - app-network
+
+  postgresql:
+    image: postgres:17.4-alpine
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-mydb}
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+    networks:
+      - app-network
+      
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - "redis-data:/data"
+    networks:
+      - app-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.37
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - 16686:16686
+      - 4317:4317
+    networks:
+      - app-network
+  
+  mailpit:
+    image: axllent/mailpit
+    # command:
+    #   - "--smtp-auth-allow-insecure"
+    volumes:
+      - mailpit-data:/data
+    environment:
+      - MP_DATABASE=/data/mailpit.db
+      - TZ=Europe/London
+    ports:
+      # - 1026:1025
+      - 8025:8025
+    networks:
+      - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest # Use the official pgAdmin image
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: mypassword
+    ports:
+      - "8081:80" # Map the container's port 80 to the host's port 8081
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin # Persist pgAdmin configuration
+    depends_on:
+      - postgresql # Ensure postgres starts first
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  redis-data:
+  mailpit-data:
+  pgadmin_data:
+
+networks:
+  app-network:
+    driver: bridge

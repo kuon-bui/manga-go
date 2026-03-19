@@ -1,0 +1,33 @@
+{
+  "cSpell.words": [
+    "asynq",
+    "asynqclient",
+    "asynqserver",
+    "authmiddleware",
+    "dbname",
+    "gonic",
+    "gorm",
+    "hibiken",
+    "Infof",
+    "jwtprovider",
+    "mapstructure",
+    "multierr",
+    "mydb",
+    "ossp",
+    "otelgin",
+    "otlptrace",
+    "otlptracegrpc",
+    "qname",
+    "queueconstant",
+    "resty",
+    "rubenv",
+    "samber",
+    "sslmode",
+    "UPTRACE",
+    "userrepo",
+    "userrequest",
+    "userroute",
+    "userserivce",
+    "wneessen"
+  ]
+}

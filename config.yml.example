@@ -1,0 +1,38 @@
+production: false
+service:
+  name: base-go
+  domain: localhost
+  port: 8080
+  allow_origins: "*"
+db:
+  postgresql_host: postgresql
+  postgresql_port: 5432
+  postgresql_user: admin
+  postgresql_password: postgres
+  postgresql_database: mydb
+otlp:
+  endpoint: jaeger:4317
+redis:
+  redis_host: redis
+  redis_port: 6379
+  redis_password: ""
+  redis_db: 0
+smtp:
+  host: mailpit
+  port: 1025
+  username:
+  password: ""
+  from_name: "Base Go"
+  from_mail: no-reply@dev.com
+jwt:
+  secret: mysecretkey
+  expires_seconds: 60
+  refresh_secret: myrefresh
+  refresh_expire_seconds: 1209600
+cookie_name:
+  access_token: access_token
+  refresh_token: refresh_token
+reset_password:
+  token_expiry_minutes: 15
+  reset_password_url: "http://localhost:8080/users/reset-password?token=%s"
+
