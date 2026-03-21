@@ -151,6 +151,36 @@ func (r *BaseRepository[T]) FindAllWithUnscoped(ctx context.Context, conditions 
 	return models, nil
 }
 
+func (r *BaseRepository[T]) FindPaginated(ctx context.Context, conditions []any, paging *common.Paging, moreKeys map[string]common.MoreKeyOption) ([]*T, int64, error) {
+	var models []*T
+	var total int64
+
+	db := r.DB.WithContext(ctx).Model(new(T))
+
+	// where
+	for _, condition := range conditions {
+		db = db.Where(condition)
+	}
+
+	// PRELOAD relationships with options
+	db = r.ApplyPreloadMoreKeys(db, moreKeys)
+
+	// Đếm tổng số bản ghi
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Áp dụng phân trang
+	db = db.Scopes(r.WithPaginate(paging))
+
+	// Lấy tất cả bản ghi
+	if err := db.Find(&models).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return models, total, nil
+}
+
 func (r *BaseRepository[T]) Create(ctx context.Context, t *T) error {
 	return r.DB.WithContext(ctx).Create(t).Error
 }
