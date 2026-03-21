@@ -44,11 +44,7 @@ func (r *BaseRepository[T]) ApplyPreloadMoreKeys(db *gorm.DB, moreKeys map[strin
 	return db
 }
 
-func (r *BaseRepository[T]) FindOne(ctx context.Context, conditions []any, moreKeys map[string]common.MoreKeyOption) (*T, error) {
-	var model T
-	db := r.DB.WithContext(ctx)
-
-	// Xử lý JOIN và WHERE
+func (r *BaseRepository[T]) ApplyWhereConditions(db *gorm.DB, conditions []any) *gorm.DB {
 	for _, condition := range conditions {
 		switch c := condition.(type) {
 		case common.JoinExpr:
@@ -57,6 +53,15 @@ func (r *BaseRepository[T]) FindOne(ctx context.Context, conditions []any, moreK
 			db = db.Where(condition)
 		}
 	}
+	return db
+}
+
+func (r *BaseRepository[T]) FindOne(ctx context.Context, conditions []any, moreKeys map[string]common.MoreKeyOption) (*T, error) {
+	var model T
+	db := r.DB.WithContext(ctx)
+
+	// Xử lý JOIN và WHERE
+	db = r.ApplyWhereConditions(db, conditions)
 
 	// PRELOAD relationships with options
 	db = r.ApplyPreloadMoreKeys(db, moreKeys)
@@ -73,9 +78,7 @@ func (r *BaseRepository[T]) FindOneWithUnscoped(ctx context.Context, conditions 
 	db := r.DB.WithContext(ctx)
 
 	// WHERE conditions
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	// PRELOAD relationships with options
 	db = r.ApplyPreloadMoreKeys(db, moreKeys)
@@ -92,14 +95,7 @@ func (r *BaseRepository[T]) FindOneWithTransaction(tx *gorm.DB, conditions []any
 	db := tx
 
 	// Xử lý JOIN và WHERE
-	for _, condition := range conditions {
-		switch c := condition.(type) {
-		case common.JoinExpr:
-			db = db.Joins(c.SQL, c.Vars...)
-		default:
-			db = db.Where(condition)
-		}
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	// PRELOAD relationships with options
 	db = r.ApplyPreloadMoreKeys(db, moreKeys)
@@ -108,6 +104,7 @@ func (r *BaseRepository[T]) FindOneWithTransaction(tx *gorm.DB, conditions []any
 	if err := db.First(&model).Error; err != nil {
 		return nil, err
 	}
+
 	return &model, nil
 }
 
@@ -116,9 +113,7 @@ func (r *BaseRepository[T]) FindAll(ctx context.Context, conditions []any, moreK
 	db := r.DB.WithContext(ctx)
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	// PRELOAD relationships with options
 	db = r.ApplyPreloadMoreKeys(db, moreKeys)
@@ -136,9 +131,7 @@ func (r *BaseRepository[T]) FindAllWithUnscoped(ctx context.Context, conditions 
 	db := r.DB.WithContext(ctx)
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	// PRELOAD relationships with options
 	db = r.ApplyPreloadMoreKeys(db, moreKeys)
@@ -149,6 +142,34 @@ func (r *BaseRepository[T]) FindAllWithUnscoped(ctx context.Context, conditions 
 	}
 
 	return models, nil
+}
+
+func (r *BaseRepository[T]) FindPaginated(ctx context.Context, conditions []any, paging *common.Paging, moreKeys map[string]common.MoreKeyOption) ([]*T, int64, error) {
+	var models []*T
+	var total int64
+
+	db := r.DB.WithContext(ctx).Model(new(T))
+
+	// where
+	db = r.ApplyWhereConditions(db, conditions)
+
+	// PRELOAD relationships with options
+	db = r.ApplyPreloadMoreKeys(db, moreKeys)
+
+	// Đếm tổng số bản ghi
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	// Áp dụng phân trang
+	db = db.Scopes(r.WithPaginate(paging))
+
+	// Lấy tất cả bản ghi
+	if err := db.Find(&models).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return models, total, nil
 }
 
 func (r *BaseRepository[T]) Create(ctx context.Context, t *T) error {
@@ -180,9 +201,7 @@ func (r *BaseRepository[T]) Update(ctx context.Context, conditions []any, data m
 	db := r.DB.WithContext(ctx).Model(new(T))
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	return db.Updates(data).Error
 }
@@ -192,9 +211,7 @@ func (r *BaseRepository[T]) UpdateWithTransaction(tx *gorm.DB, conditions []any,
 	db := tx.Model(new(T))
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	return db.Updates(data).Error
 }
@@ -204,9 +221,7 @@ func (r *BaseRepository[T]) UpdateUnscopedWithTransaction(tx *gorm.DB, condition
 	db := tx.Model(new(T))
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	return db.Unscoped().Updates(data).Error
 }
@@ -216,9 +231,7 @@ func (r *BaseRepository[T]) DeletePermanently(ctx context.Context, conditions []
 	db := r.DB.WithContext(ctx).Model(t)
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	return db.Unscoped().Delete(t).Error
 }
@@ -228,9 +241,8 @@ func (r *BaseRepository[T]) CountAll(ctx context.Context, conditions []any) (int
 	t := new(T)
 	db := r.DB.WithContext(ctx).Model(t)
 
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	// where
+	db = r.ApplyWhereConditions(db, conditions)
 
 	if err := db.Count(&count).Error; err != nil {
 		return 0, err
@@ -243,9 +255,7 @@ func (r *BaseRepository[T]) DeletePermanentlyWithTransaction(tx *gorm.DB, condit
 	db := tx.Model(t)
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	return db.Unscoped().Delete(t).Error
 }
@@ -255,9 +265,7 @@ func (r *BaseRepository[T]) DeleteSoft(ctx context.Context, conditions []any) er
 	db := r.DB.WithContext(ctx).Model(t)
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	return db.Delete(t).Error
 }
@@ -267,9 +275,7 @@ func (r *BaseRepository[T]) DeleteSoftWithTransaction(tx *gorm.DB, conditions []
 	db := tx.Model(t)
 
 	// where
-	for _, condition := range conditions {
-		db = db.Where(condition)
-	}
+	db = r.ApplyWhereConditions(db, conditions)
 
 	return db.Delete(t).Error
 }
@@ -305,7 +311,7 @@ func (r *BaseRepository[T]) UpsertManyWithTransaction(tx *gorm.DB, entities []*T
 func toClauseColumns(cols []string) []clause.Column {
 	result := make([]clause.Column, len(cols))
 	for i, c := range cols {
-		result[i] = clause.Column{Name: c}
+		result[i] = clause.Column{Name: c, Table: clause.CurrentTable}
 	}
 	return result
 }
