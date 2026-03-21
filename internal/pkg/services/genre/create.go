@@ -9,7 +9,10 @@ import (
 
 func (s *GenreService) CreateGenre(ctx context.Context, req *genrerequest.CreateGenreRequest) response.Result {
 	genre := model.Genre{
-		Name: req.Name,
+		Name:        req.Name,
+		Slug:        req.Slug,
+		Description: req.Description,
+		Thumbnail:   req.Thumbnail,
 	}
 
 	if err := s.genreRepo.Create(ctx, &genre); err != nil {
