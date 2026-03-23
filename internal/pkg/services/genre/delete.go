@@ -5,14 +5,13 @@ import (
 	"errors"
 	"manga-go/internal/app/api/common/response"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (s *GenreService) DeleteGenre(ctx context.Context, id uuid.UUID) response.Result {
-	_, err := s.genreRepo.FindOne(ctx, []any{
-		clause.Eq{Column: "id", Value: id},
+func (s *GenreService) DeleteGenre(ctx context.Context, slug string) response.Result {
+	genre, err := s.genreRepo.FindOne(ctx, []any{
+		clause.Eq{Column: "slug", Value: slug},
 	}, nil)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -23,7 +22,7 @@ func (s *GenreService) DeleteGenre(ctx context.Context, id uuid.UUID) response.R
 	}
 
 	if err := s.genreRepo.DeleteSoft(ctx, []any{
-		clause.Eq{Column: "id", Value: id},
+		clause.Eq{Column: "id", Value: genre.ID},
 	}); err != nil {
 		s.logger.Error("Failed to delete genre", "error", err)
 		return response.ResultErrDb(err)

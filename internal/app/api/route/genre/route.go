@@ -38,8 +38,8 @@ func (gr *GenreRoute) Setup() {
 
 	rg.GET("/", gr.genreHandler.getGenres)
 	rg.GET("/all", gr.genreHandler.getAllGenres)
-	rg.GET("/:id", gr.genreHandler.getGenre)
+	rg.GET("/:slug", gr.genreHandler.getGenre)
 	rg.POST("/", gr.genreHandler.createGenre)
-	rg.PUT("/:id", gr.genreHandler.updateGenre)
-	rg.DELETE("/:id", gr.genreHandler.deleteGenre)
+	rg.PUT("/:slug", gr.genreHandler.updateGenre)
+	rg.DELETE("/:slug", gr.genreHandler.deleteGenre)
 }

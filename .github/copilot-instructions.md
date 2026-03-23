@@ -182,7 +182,6 @@ func NewFooHandler(p FooHandlerParams) *FooHandler {
 func (r *FooRoute) Setup() {
     rg := r.r.Group("/foos", r.authMiddleware.RequireJwt)
     rg.GET("/", r.fooHandler.getFoos)
-    rg.GET("/all", r.fooHandler.getAllFoos)
     rg.GET("/:id", r.fooHandler.getFoo)
     rg.POST("/", r.fooHandler.createFoo)
     rg.PUT("/:id", r.fooHandler.updateFoo)
