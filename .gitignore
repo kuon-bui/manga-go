@@ -100,5 +100,6 @@ config.yml
 dist
 
 __debug_bin*
-docker-data/
-sql/
+
+sql/*
+docker-data/*
