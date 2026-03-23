@@ -26,12 +26,18 @@ func (s *GenreService) UpdateGenre(ctx context.Context, id uuid.UUID, req *genre
 	if err := s.genreRepo.Update(ctx, []any{
 		clause.Eq{Column: "id", Value: genre.ID},
 	}, map[string]any{
-		"name": req.Name,
+		"name":        req.Name,
+		"slug":        req.Slug,
+		"description": req.Description,
+		"thumbnail":   req.Thumbnail,
 	}); err != nil {
 		s.logger.Error("Failed to update genre", "error", err)
 		return response.ResultErrDb(err)
 	}
 
 	genre.Name = req.Name
+	genre.Slug = req.Slug
+	genre.Description = req.Description
+	genre.Thumbnail = req.Thumbnail
 	return response.ResultSuccess("Genre updated successfully", genre)
 }
