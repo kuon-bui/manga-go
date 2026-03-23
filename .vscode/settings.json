@@ -33,5 +33,18 @@
     "userroute",
     "userserivce",
     "wneessen"
+  ],
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5435,
+      "driver": "PostgreSQL",
+      "name": "manga",
+      "database": "mydb",
+      "username": "admin",
+      "password": "postgres"
+    }
   ]
 }
