@@ -18,9 +18,8 @@ type UpdateComicRequest struct {
 	IsActive          *bool                `json:"isActive"`
 	IsHot             *bool                `json:"isHot"`
 	IsFeatured        *bool                `json:"isFeatured"`
-	Artist            *string              `json:"artist"`
 	PublishedYear     *int                 `json:"publishedYear"`
 	AuthorIDs         []uuid.UUID          `json:"authorIds"`
-	GenreIDs          []uuid.UUID          `json:"genreIds"`
-	TagIDs            []uuid.UUID          `json:"tagIds"`
+	GenreSlugs        []string             `json:"genreSlugs"`
+	TagSlugs          []string             `json:"tagSlugs"`
 }

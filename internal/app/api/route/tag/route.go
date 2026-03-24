@@ -36,8 +36,8 @@ func NewTagRoute(params TagRouteParams) *TagRoute {
 func (tr *TagRoute) Setup() {
 	rg := tr.r.Group("/tags", tr.authMiddleware.RequireJwt)
 
-	rg.GET("/", tr.tagHandler.getTags)
+	rg.GET("", tr.tagHandler.getTags)
 	rg.GET("/all", tr.tagHandler.getAllTags)
-	rg.POST("/", tr.tagHandler.createTag)
+	rg.POST("", tr.tagHandler.createTag)
 	rg.DELETE("/:slug", tr.tagHandler.deleteTag)
 }

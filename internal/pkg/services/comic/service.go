@@ -3,28 +3,32 @@ package comicservice
 import (
 	"manga-go/internal/pkg/logger"
 	comicrepo "manga-go/internal/pkg/repo/comic"
+	genrerepo "manga-go/internal/pkg/repo/genre"
+	tagrepo "manga-go/internal/pkg/repo/tag"
 
 	"go.uber.org/fx"
-	"gorm.io/gorm"
 )
 
 type ComicService struct {
 	logger    *logger.Logger
 	comicRepo *comicrepo.ComicRepo
-	db        *gorm.DB
+	genreRepo *genrerepo.GenreRepo
+	tagRepo   *tagrepo.TagRepo
 }
 
 type ComicServiceParams struct {
 	fx.In
 	Logger    *logger.Logger
 	ComicRepo *comicrepo.ComicRepo
-	DB        *gorm.DB
+	GenreRepo *genrerepo.GenreRepo
+	TagRepo   *tagrepo.TagRepo
 }
 
 func NewComicService(params ComicServiceParams) *ComicService {
 	return &ComicService{
 		logger:    params.Logger,
 		comicRepo: params.ComicRepo,
-		db:        params.DB,
+		genreRepo: params.GenreRepo,
+		tagRepo:   params.TagRepo,
 	}
 }

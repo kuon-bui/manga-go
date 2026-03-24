@@ -28,62 +28,95 @@ func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicr
 		"title":              req.Title,
 		"slug":               req.Slug,
 		"alternative_titles": common.StringSlice(req.AlternativeTitles),
-		"description":        req.Description,
-		"thumbnail":          req.Thumbnail,
-		"banner":             req.Banner,
 		"type":               req.Type,
 		"status":             req.Status,
-		"artist":             req.Artist,
-		"published_year":     req.PublishedYear,
+	}
+
+	if req.Description != nil {
+		updateData["description"] = req.Description
+	}
+
+	if req.Thumbnail != nil {
+		updateData["thumbnail"] = req.Thumbnail
+	}
+
+	if req.Banner != nil {
+		updateData["banner"] = req.Banner
+	}
+
+	if req.PublishedYear != nil {
+		updateData["published_year"] = req.PublishedYear
 	}
 
 	if req.IsActive != nil {
 		updateData["is_active"] = *req.IsActive
 	}
+
 	if req.IsHot != nil {
 		updateData["is_hot"] = *req.IsHot
 	}
+
 	if req.IsFeatured != nil {
 		updateData["is_featured"] = *req.IsFeatured
 	}
 
-	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&model.Comic{}).Where("id = ?", comic.ID).Updates(updateData).Error; err != nil {
-			return err
+	associations := make(map[string]any)
+
+	var genres []*model.Genre
+	if len(req.GenreSlugs) > 0 {
+		foundGenres, err := s.genreRepo.FindBySlugs(ctx, req.GenreSlugs, nil)
+		if err != nil {
+			s.logger.Error("Failed to find genres by slug", "error", err)
+			return response.ResultErrDb(err)
 		}
 
-		if req.AuthorIDs != nil {
-			var authors []model.Author
-			for _, aid := range req.AuthorIDs {
-				authors = append(authors, model.Author{SqlModel: common.SqlModel{ID: aid}})
-			}
-			if err := tx.Model(comic).Association("Authors").Replace(authors); err != nil {
-				return err
-			}
+		genresBySlug := make(map[string]*model.Genre, len(foundGenres))
+		for _, genre := range foundGenres {
+			genresBySlug[genre.Slug] = genre
 		}
 
-		if req.GenreIDs != nil {
-			var genres []model.Genre
-			for _, gid := range req.GenreIDs {
-				genres = append(genres, model.Genre{SqlModel: common.SqlModel{ID: gid}})
+		for _, genreSlug := range req.GenreSlugs {
+			genre, ok := genresBySlug[genreSlug]
+			if !ok {
+				return response.ResultError("Genre slug not found: " + genreSlug)
 			}
-			if err := tx.Model(comic).Association("Genres").Replace(genres); err != nil {
-				return err
-			}
+			genres = append(genres, genre)
+		}
+		associations["Genres"] = genres
+	}
+
+	var tags []*model.Tag
+	if len(req.TagSlugs) > 0 {
+		foundTags, err := s.tagRepo.FindBySlugs(ctx, req.TagSlugs, nil)
+		if err != nil {
+			s.logger.Error("Failed to find tags by slug", "error", err)
+			return response.ResultErrDb(err)
 		}
 
-		if req.TagIDs != nil {
-			var tags []model.Tag
-			for _, tid := range req.TagIDs {
-				tags = append(tags, model.Tag{SqlModel: common.SqlModel{ID: tid}})
-			}
-			if err := tx.Model(comic).Association("Tags").Replace(tags); err != nil {
-				return err
-			}
+		tagsBySlug := make(map[string]*model.Tag, len(foundTags))
+		for _, tag := range foundTags {
+			tagsBySlug[tag.Slug] = tag
 		}
 
-		return nil
-	})
+		for _, tagSlug := range req.TagSlugs {
+			tag, ok := tagsBySlug[tagSlug]
+			if !ok {
+				return response.ResultError("Tag slug not found: " + tagSlug)
+			}
+			tags = append(tags, tag)
+		}
+		associations["Tags"] = tags
+	}
+
+	if req.AuthorIDs != nil {
+		var authors []*model.Author
+		for _, aid := range req.AuthorIDs {
+			authors = append(authors, &model.Author{SqlModel: common.SqlModel{ID: aid}})
+		}
+		associations["Authors"] = authors
+	}
+
+	err = s.comicRepo.UpdateComicWithTransaction(ctx, comic.ID, updateData, associations)
 	if err != nil {
 		s.logger.Error("Failed to update comic", "error", err)
 		return response.ResultErrDb(err)

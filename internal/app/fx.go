@@ -2,6 +2,7 @@ package app
 
 import (
 	authmiddleware "manga-go/internal/app/middleware/auth"
+	comicmiddleware "manga-go/internal/app/middleware/comic"
 	asynqclient "manga-go/internal/pkg/asynq"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/gorm"
@@ -28,6 +29,7 @@ var Module = fx.Module(
 		logger.NewLogger,
 		jwtprovider.NewJwtProvider,
 		authmiddleware.NewAuthMiddleware,
+		comicmiddleware.NewComicMiddleware,
 		mail.NewMailDialer,
 		asynqclient.NewAsynqClient,
 		objectstorage.NewObjectStorage,

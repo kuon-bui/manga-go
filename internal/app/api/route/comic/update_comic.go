@@ -8,7 +8,7 @@ import (
 )
 
 func (h *ComicHandler) updateComic(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("comicSlug")
 
 	var req comicrequest.UpdateComicRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

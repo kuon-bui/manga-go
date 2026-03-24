@@ -5,7 +5,7 @@ import (
 )
 
 func (h *ComicHandler) getComic(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("comicSlug")
 
 	result := h.comicService.GetComic(c.Request.Context(), slug)
 	result.ResponseResult(c)

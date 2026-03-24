@@ -2,7 +2,7 @@
 CREATE TABLE chapters (
     id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
     comic_id uuid NOT NULL REFERENCES comics(id) ON DELETE CASCADE,
-    number INT NOT NULL,
+    number VARCHAR(10) NOT NULL,
     title VARCHAR(255) NOT NULL DEFAULT '',
     slug VARCHAR(255) NOT NULL DEFAULT '',
     is_published BOOLEAN NOT NULL DEFAULT false,

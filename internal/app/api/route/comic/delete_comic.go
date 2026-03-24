@@ -5,7 +5,7 @@ import (
 )
 
 func (h *ComicHandler) deleteComic(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("comicSlug")
 
 	result := h.comicService.DeleteComic(c.Request.Context(), slug)
 	result.ResponseResult(c)

@@ -36,9 +36,9 @@ func NewComicRoute(params ComicRouteParams) *ComicRoute {
 func (cr *ComicRoute) Setup() {
 	rg := cr.r.Group("/comics", cr.authMiddleware.RequireJwt)
 
-	rg.GET("/", cr.comicHandler.getComics)
-	rg.GET("/:slug", cr.comicHandler.getComic)
-	rg.POST("/", cr.comicHandler.createComic)
-	rg.PUT("/:slug", cr.comicHandler.updateComic)
-	rg.DELETE("/:slug", cr.comicHandler.deleteComic)
+	rg.GET("", cr.comicHandler.getComics)
+	rg.GET("/:comicSlug", cr.comicHandler.getComic)
+	rg.POST("", cr.comicHandler.createComic)
+	rg.PUT("/:comicSlug", cr.comicHandler.updateComic)
+	rg.DELETE("/:comicSlug", cr.comicHandler.deleteComic)
 }

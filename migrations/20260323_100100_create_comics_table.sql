@@ -13,7 +13,7 @@ CREATE TABLE comics (
     is_hot BOOLEAN NOT NULL DEFAULT false,
     is_featured BOOLEAN NOT NULL DEFAULT false,
     author VARCHAR(255) NULL,
-    artist VARCHAR(255) NULL,
+    artist_id UUID NULL REFERENCES authors(id) ON DELETE CASCADE,
     published_year SMALLINT NULL,
     last_chapter_at TIMESTAMPTZ NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -9,7 +9,7 @@ import (
 type Chapter struct {
 	common.SqlModel
 	ComicID     uuid.UUID `json:"comicId" gorm:"column:comic_id"`
-	Number      int       `json:"number" gorm:"column:number"`
+	Number      string    `json:"number" gorm:"column:number"`
 	Title       string    `json:"title" gorm:"column:title"`
 	Slug        string    `json:"slug" gorm:"column:slug"`
 	IsPublished bool      `json:"isPublished" gorm:"column:is_published"`
