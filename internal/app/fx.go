@@ -8,6 +8,7 @@ import (
 	jwtprovider "manga-go/internal/pkg/jwt_provider"
 	"manga-go/internal/pkg/logger"
 	"manga-go/internal/pkg/mail"
+	objectstorage "manga-go/internal/pkg/object_storage"
 	"manga-go/internal/pkg/redis"
 	"manga-go/internal/pkg/repo"
 	"manga-go/internal/pkg/services"
@@ -29,6 +30,7 @@ var Module = fx.Module(
 		authmiddleware.NewAuthMiddleware,
 		mail.NewMailDialer,
 		asynqclient.NewAsynqClient,
+		objectstorage.NewObjectStorage,
 	),
 	repo.Module,
 	services.Module,

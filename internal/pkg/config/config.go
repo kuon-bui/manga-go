@@ -64,6 +64,14 @@ type ResetPasswordConfig struct {
 	ResetPasswordURL   string `mapstructure:"reset_password_url"`
 }
 
+type ObjectStorageConfig struct {
+	Endpoint        string `mapstructure:"endpoint"`
+	AccessKeyID     string `mapstructure:"access_key"`
+	SecretAccessKey string `mapstructure:"secret_key"`
+	BucketName      string `mapstructure:"bucket_name"`
+	Region          string `mapstructure:"region"`
+}
+
 type Config struct {
 	Production    bool                `mapstructure:"production"`
 	PostgreSQL    postgresqlConfig    `mapstructure:"db"`
@@ -75,6 +83,7 @@ type Config struct {
 	Asynq         asynqConfig         `mapstructure:"asynq"`
 	CookieName    CookieNameConfig    `mapstructure:"cookie_name"`
 	ResetPassword ResetPasswordConfig `mapstructure:"reset_password"`
+	ObjectStorage ObjectStorageConfig `mapstructure:"object_storage"`
 }
 
 func LoadConfig() *Config {
