@@ -6,14 +6,13 @@ import (
 	"manga-go/internal/app/api/common/response"
 	genrerequest "manga-go/internal/pkg/request/genre"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (s *GenreService) UpdateGenre(ctx context.Context, id uuid.UUID, req *genrerequest.UpdateGenreRequest) response.Result {
+func (s *GenreService) UpdateGenre(ctx context.Context, slug string, req *genrerequest.UpdateGenreRequest) response.Result {
 	genre, err := s.genreRepo.FindOne(ctx, []any{
-		clause.Eq{Column: "id", Value: id},
+		clause.Eq{Column: "slug", Value: slug},
 	}, nil)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

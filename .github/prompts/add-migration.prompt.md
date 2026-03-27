@@ -31,7 +31,7 @@ Tạo một file migration SQL mới cho dự án manga-go.
    ```
 
 4. Nếu tạo bảng mới, luôn bổ sung:
-   - Cột `id uuid NOT NULL DEFAULT uuid_generate_v4()`
+   - Cột `id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY`
    - Cột `created_at`, `updated_at` kiểu `TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP`
    - Cột `deleted_at TIMESTAMPTZ NULL` (soft delete)
    - Trigger `update_<table>_updated_at` gọi `update_updated_at_column()`

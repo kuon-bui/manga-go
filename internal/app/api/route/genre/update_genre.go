@@ -5,15 +5,10 @@ import (
 	genrerequest "manga-go/internal/pkg/request/genre"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 func (h *GenreHandler) updateGenre(c *gin.Context) {
-	id, err := uuid.Parse(c.Param("id"))
-	if err != nil {
-		response.ResultError("invalid id").ResponseResult(c)
-		return
-	}
+	slug := c.Param("slug")
 
 	var req genrerequest.UpdateGenreRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -21,6 +16,6 @@ func (h *GenreHandler) updateGenre(c *gin.Context) {
 		return
 	}
 
-	result := h.genreService.UpdateGenre(c.Request.Context(), id, &req)
+	result := h.genreService.UpdateGenre(c.Request.Context(), slug, &req)
 	result.ResponseResult(c)
 }

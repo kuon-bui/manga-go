@@ -36,10 +36,10 @@ func NewGenreRoute(params GenreRouteParams) *GenreRoute {
 func (gr *GenreRoute) Setup() {
 	rg := gr.r.Group("/genres", gr.authMiddleware.RequireJwt)
 
-	rg.GET("/", gr.genreHandler.getGenres)
+	rg.GET("", gr.genreHandler.getGenres)
 	rg.GET("/all", gr.genreHandler.getAllGenres)
-	rg.GET("/:id", gr.genreHandler.getGenre)
-	rg.POST("/", gr.genreHandler.createGenre)
-	rg.PUT("/:id", gr.genreHandler.updateGenre)
-	rg.DELETE("/:id", gr.genreHandler.deleteGenre)
+	rg.GET("/:slug", gr.genreHandler.getGenre)
+	rg.POST("", gr.genreHandler.createGenre)
+	rg.PUT("/:slug", gr.genreHandler.updateGenre)
+	rg.DELETE("/:slug", gr.genreHandler.deleteGenre)
 }
