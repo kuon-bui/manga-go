@@ -7,6 +7,7 @@ import (
 	fileroute "manga-go/internal/app/api/route/file"
 	genreroute "manga-go/internal/app/api/route/genre"
 	tagroute "manga-go/internal/app/api/route/tag"
+	translationgrouproute "manga-go/internal/app/api/route/translation_group"
 	userroute "manga-go/internal/app/api/route/user"
 
 	"go.uber.org/fx"
@@ -21,4 +22,5 @@ var Module = fx.Module(
 	tagroute.Module,
 	comicroute.Module,
 	chapterroute.Module,
+	translationgrouproute.Module,
 )

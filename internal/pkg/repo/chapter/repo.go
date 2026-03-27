@@ -2,6 +2,7 @@ package chapterrepo
 
 import (
 	"manga-go/internal/pkg/model"
+	"manga-go/internal/pkg/redis"
 	"manga-go/internal/pkg/repo/base"
 
 	"gorm.io/gorm"
@@ -9,12 +10,14 @@ import (
 
 type ChapterRepo struct {
 	*base.BaseRepository[model.Chapter]
+	rds *redis.Redis
 }
 
-func NewChapterRepo(db *gorm.DB) *ChapterRepo {
+func NewChapterRepo(db *gorm.DB, rds *redis.Redis) *ChapterRepo {
 	return &ChapterRepo{
 		BaseRepository: &base.BaseRepository[model.Chapter]{
 			DB: db,
 		},
+		rds: rds,
 	}
 }

@@ -14,6 +14,7 @@ type User struct {
 	Password              string     `json:"-" gorm:"column:password"`
 	ResetPasswordToken    string     `json:"-" gorm:"column:reset_password_token"`
 	ResetPasswordExpiryAt *time.Time `json:"-" gorm:"column:reset_password_expiry_at"`
+	TranslationGroupID    *uuid.UUID `json:"translationGroupId,omitempty" gorm:"column:translation_group_id"`
 }
 
 func (User) TableName() string {

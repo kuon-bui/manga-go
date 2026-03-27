@@ -1,4 +1,4 @@
-package userserivce
+package userservice
 
 import (
 	"context"
@@ -17,7 +17,7 @@ func (s *UserService) CreateAccount(ctx context.Context, req *userrequest.Create
 	userExists, err := s.userRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "email", Value: req.Email},
 	}, nil)
-	if err != nil && !errors.As(err, &gorm.ErrRecordNotFound) {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		s.logger.Error("Failed to check if user exists", "error", err)
 		return response.ResultErrDb(err)
 	}
