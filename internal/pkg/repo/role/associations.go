@@ -18,11 +18,3 @@ func (r *RoleRepo) RemovePermission(ctx context.Context, roleID uuid.UUID, perm 
 	role.ID = roleID
 	return r.DB.WithContext(ctx).Model(role).Association("Permissions").Delete(perm)
 }
-
-func (r *RoleRepo) GetPermissions(ctx context.Context, roleID uuid.UUID) ([]*model.Permission, error) {
-	role := &model.Role{}
-	role.ID = roleID
-	var permissions []*model.Permission
-	err := r.DB.WithContext(ctx).Model(role).Association("Permissions").Find(&permissions)
-	return permissions, err
-}

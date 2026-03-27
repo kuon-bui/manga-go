@@ -38,7 +38,6 @@ func (pr *PermissionRoute) Setup() {
 
 	rg.GET("/", pr.permissionHandler.getPermissions)
 	rg.GET("/all", pr.permissionHandler.getAllPermissions)
-	rg.GET("/:id", pr.permissionHandler.getPermission)
 	rg.POST("/", pr.permissionHandler.createPermission)
 	rg.PUT("/:id", pr.permissionHandler.updatePermission)
 	rg.DELETE("/:id", pr.permissionHandler.deletePermission)
