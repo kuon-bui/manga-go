@@ -1,4 +1,4 @@
-package comicrepo
+package tagrepo
 
 import (
 	"context"
@@ -8,9 +8,9 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-const slugToIdCacheKey = "slug:comic"
+const slugToIdCacheKey = "slug:tag"
 
-func (r *ComicRepo) GetIdBySlug(ctx context.Context, slug string) (id uuid.UUID, err error) {
+func (r *TagRepo) GetIdBySlug(ctx context.Context, slug string) (id uuid.UUID, err error) {
 	// get from cache
 	idStr := ""
 	r.rds.Client().HGet(ctx, slugToIdCacheKey, slug).Scan(&idStr)
@@ -21,10 +21,8 @@ func (r *ComicRepo) GetIdBySlug(ctx context.Context, slug string) (id uuid.UUID,
 		}
 	}
 
-	// get from db
-	var comic model.Comic
-	err = r.DB.WithContext(ctx).Select("id").Where("slug = ?", slug).First(&comic).Error
-	if err != nil {
+	var tag model.Tag
+	if err := r.DB.WithContext(ctx).Select("id").Where("slug = ?", slug).First(&tag).Error; err != nil {
 		return uuid.Nil, err
 	}
 
@@ -37,8 +35,8 @@ func (r *ComicRepo) GetIdBySlug(ctx context.Context, slug string) (id uuid.UUID,
 			ExpirationVal:  10 * 60, // 10 minutes
 		},
 		slug,
-		comic.ID.String(),
+		tag.ID.String(),
 	)
 
-	return comic.ID, nil
+	return tag.ID, nil
 }

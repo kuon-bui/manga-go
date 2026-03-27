@@ -1,4 +1,4 @@
-package userserivce
+package userservice
 
 import (
 	"manga-go/internal/pkg/config"
