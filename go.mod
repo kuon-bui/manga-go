@@ -3,6 +3,9 @@ module manga-go
 go 1.25.4
 
 require (
+	github.com/casbin/casbin/v3 v3.10.0
+	github.com/casbin/gorm-adapter/v3 v3.41.0
+	github.com/casbin/redis-watcher/v2 v2.8.0
 	github.com/gin-contrib/cors v1.7.6
 	github.com/go-resty/resty/v2 v2.17.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -48,10 +51,7 @@ require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
 	github.com/bytedance/sonic/loader v0.4.0 // indirect
-	github.com/casbin/casbin/v3 v3.10.0 // indirect
-	github.com/casbin/gorm-adapter/v3 v3.41.0 // indirect
 	github.com/casbin/govaluate v1.10.0 // indirect
-	github.com/casbin/redis-watcher/v2 v2.8.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cloudwego/base64x v0.1.6 // indirect

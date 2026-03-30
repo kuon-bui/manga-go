@@ -5,12 +5,13 @@ import (
 	"errors"
 	"manga-go/internal/app/api/common/response"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (s *TranslationGroupService) DeleteTranslationGroup(ctx context.Context, slug string) response.Result {
-	_, err := s.translationGroupRepo.FindOne(ctx, []any{
+func (s *TranslationGroupService) DeleteTranslationGroup(ctx context.Context, requesterID uuid.UUID, slug string) response.Result {
+	group, err := s.translationGroupRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "slug", Value: slug},
 	}, nil)
 	if err != nil {
@@ -19,6 +20,10 @@ func (s *TranslationGroupService) DeleteTranslationGroup(ctx context.Context, sl
 		}
 		s.logger.Error("Failed to find translation group for deletion", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if group.OwnerID != requesterID {
+		return response.ResultForbidden()
 	}
 
 	if err := s.translationGroupRepo.DeleteSoft(ctx, []any{

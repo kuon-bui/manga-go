@@ -24,13 +24,15 @@ type Comic struct {
 	PublishedYear     *int                 `json:"publishedYear" gorm:"column:published_year"`
 	LastChapterAt     *time.Time           `json:"lastChapterAt" gorm:"column:last_chapter_at"`
 	ArtistId          *uuid.UUID           `json:"artistId" gorm:"column:artist_id"`
+	TranslationGroupID *uuid.UUID          `json:"translationGroupId,omitempty" gorm:"column:translation_group_id"`
 
 	// Relationships
-	Artist   *Author    `json:"artist" gorm:"foreignKey:ArtistId"`
-	Authors  []*Author  `json:"authors" gorm:"many2many:comic_authors;"`
-	Genres   []*Genre   `json:"genres" gorm:"many2many:comic_genres;"`
-	Tags     []*Tag     `json:"tags" gorm:"many2many:comic_tags;"`
-	Chapters []*Chapter `json:"chapters,omitempty" gorm:"foreignKey:ComicID"`
+	Artist           *Author           `json:"artist" gorm:"foreignKey:ArtistId"`
+	Authors          []*Author         `json:"authors" gorm:"many2many:comic_authors;"`
+	Genres           []*Genre          `json:"genres" gorm:"many2many:comic_genres;"`
+	Tags             []*Tag            `json:"tags" gorm:"many2many:comic_tags;"`
+	Chapters         []*Chapter        `json:"chapters,omitempty" gorm:"foreignKey:ComicID"`
+	TranslationGroup *TranslationGroup `json:"translationGroup,omitempty" gorm:"foreignKey:TranslationGroupID"`
 }
 
 func (Comic) TableName() string {

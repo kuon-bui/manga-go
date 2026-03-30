@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	casbinpkg "manga-go/internal/pkg/casbin"
 	"manga-go/internal/pkg/hash"
 	"manga-go/internal/pkg/model"
 	userrequest "manga-go/internal/pkg/request/user"
@@ -35,6 +36,12 @@ func (s *UserService) CreateAccount(ctx context.Context, req *userrequest.Create
 	if err != nil {
 		s.logger.Error("Failed to create user account", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	// Assign the global "user" role in Casbin so the user can create/join groups
+	if _, err := s.enforcer.AddRoleForUserInDomain(user.ID.String(), "user", casbinpkg.GlobalDomain); err != nil {
+		s.logger.Errorf("Failed to assign user role for %s: %v", user.ID, err)
+		return response.ResultErrInternal(err)
 	}
 
 	return response.ResultSuccess("User account created successfully", user)

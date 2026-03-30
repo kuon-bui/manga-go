@@ -50,7 +50,7 @@ func (m *SlugMiddleware) ResolveComicID(g *gin.Context) {
 		return
 	}
 
-	id, err := m.comicService.GetComicIDBySlug(g.Request.Context(), comicSlug)
+	id, groupID, err := m.comicService.GetComicIDAndGroupIDBySlug(g.Request.Context(), comicSlug)
 	if err != nil {
 		m.logger.Errorf("Failed to get comic ID for slug %s: %v", comicSlug, err)
 		g.AbortWithStatusJSON(404, gin.H{"error": "Comic not found"})
@@ -58,6 +58,9 @@ func (m *SlugMiddleware) ResolveComicID(g *gin.Context) {
 	}
 
 	ctx := common.SetComicIdToContext(g.Request.Context(), id)
+	if groupID != nil {
+		ctx = common.SetTranslationGroupIdToContext(ctx, *groupID)
+	}
 	g.Request = g.Request.WithContext(ctx)
 }
 

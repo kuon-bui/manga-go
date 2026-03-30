@@ -42,3 +42,13 @@ func (r *ComicRepo) GetIdBySlug(ctx context.Context, slug string) (id uuid.UUID,
 
 	return comic.ID, nil
 }
+
+// GetIdAndGroupIdBySlug returns the comic ID and its associated translation group ID for a given slug.
+func (r *ComicRepo) GetIdAndGroupIdBySlug(ctx context.Context, slug string) (uuid.UUID, *uuid.UUID, error) {
+	var comic model.Comic
+	err := r.DB.WithContext(ctx).Select("id", "translation_group_id").Where("slug = ?", slug).First(&comic).Error
+	if err != nil {
+		return uuid.Nil, nil, err
+	}
+	return comic.ID, comic.TranslationGroupID, nil
+}

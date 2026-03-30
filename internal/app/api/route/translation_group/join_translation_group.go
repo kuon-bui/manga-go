@@ -8,8 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *TranslationGroupHandler) updateTranslationGroup(c *gin.Context) {
-	slug := c.Param("slug")
+func (h *TranslationGroupHandler) joinTranslationGroup(c *gin.Context) {
+	var req translationgrouprequest.JoinTranslationGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ResultInvalidRequestErr(err).ResponseResult(c)
+		return
+	}
 
 	currentUser, err := utils.GetCurrentUserFromGinContext(c)
 	if err != nil {
@@ -17,12 +21,6 @@ func (h *TranslationGroupHandler) updateTranslationGroup(c *gin.Context) {
 		return
 	}
 
-	var req translationgrouprequest.UpdateTranslationGroupRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ResultInvalidRequestErr(err).ResponseResult(c)
-		return
-	}
-
-	result := h.translationGroupService.UpdateTranslationGroup(c.Request.Context(), currentUser.ID, slug, &req)
+	result := h.translationGroupService.JoinTranslationGroup(c.Request.Context(), currentUser.ID, &req)
 	result.ResponseResult(c)
 }

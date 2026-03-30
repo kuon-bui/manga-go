@@ -6,11 +6,12 @@ import (
 	"manga-go/internal/app/api/common/response"
 	translationgrouprequest "manga-go/internal/pkg/request/translation_group"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (s *TranslationGroupService) TransferOwnership(ctx context.Context, slug string, req *translationgrouprequest.TransferOwnershipRequest) response.Result {
+func (s *TranslationGroupService) TransferOwnership(ctx context.Context, requesterID uuid.UUID, slug string, req *translationgrouprequest.TransferOwnershipRequest) response.Result {
 	group, err := s.translationGroupRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "slug", Value: slug},
 	}, nil)
@@ -20,6 +21,10 @@ func (s *TranslationGroupService) TransferOwnership(ctx context.Context, slug st
 		}
 		s.logger.Error("Failed to find translation group", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if group.OwnerID != requesterID {
+		return response.ResultForbidden()
 	}
 
 	// Verify the new owner is a member of this group
@@ -42,6 +47,16 @@ func (s *TranslationGroupService) TransferOwnership(ctx context.Context, slug st
 	}); err != nil {
 		s.logger.Error("Failed to transfer ownership", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	groupIDStr := group.ID.String()
+
+	// Update Casbin roles: assign group_owner to new owner, demote old owner to chapter_creator
+	if _, err := s.enforcer.AddRoleForUserInDomain(req.NewOwnerID.String(), "group_owner", groupIDStr); err != nil {
+		s.logger.Errorf("Failed to assign group_owner to new owner %s in group %s: %v", req.NewOwnerID, groupIDStr, err)
+	}
+	if _, err := s.enforcer.DeleteRoleForUserInDomain(requesterID.String(), "group_owner", groupIDStr); err != nil {
+		s.logger.Errorf("Failed to remove group_owner from old owner %s in group %s: %v", requesterID, groupIDStr, err)
 	}
 
 	group.OwnerID = req.NewOwnerID

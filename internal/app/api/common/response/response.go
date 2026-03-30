@@ -112,6 +112,20 @@ func ResultUnauthorized() Result {
 	)
 }
 
+func ResponseForbidden(c *gin.Context) {
+	ResultForbidden().ResponseResult(c)
+}
+
+func ResultForbidden() Result {
+	return NewResult(
+		false,
+		http.StatusForbidden,
+		"forbidden",
+		nil,
+		nil,
+	)
+}
+
 func ResultError(message string) Result {
 	return NewResult(
 		false,

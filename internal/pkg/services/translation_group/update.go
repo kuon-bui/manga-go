@@ -6,11 +6,12 @@ import (
 	"manga-go/internal/app/api/common/response"
 	translationgrouprequest "manga-go/internal/pkg/request/translation_group"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (s *TranslationGroupService) UpdateTranslationGroup(ctx context.Context, slug string, req *translationgrouprequest.UpdateTranslationGroupRequest) response.Result {
+func (s *TranslationGroupService) UpdateTranslationGroup(ctx context.Context, requesterID uuid.UUID, slug string, req *translationgrouprequest.UpdateTranslationGroupRequest) response.Result {
 	group, err := s.translationGroupRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "slug", Value: slug},
 	}, nil)
@@ -20,6 +21,10 @@ func (s *TranslationGroupService) UpdateTranslationGroup(ctx context.Context, sl
 		}
 		s.logger.Error("Failed to find translation group", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if group.OwnerID != requesterID {
+		return response.ResultForbidden()
 	}
 
 	if err := s.translationGroupRepo.Update(ctx, []any{

@@ -3,6 +3,7 @@ package translationgroupservice
 import (
 	"context"
 	"manga-go/internal/app/api/common/response"
+	casbinpkg "manga-go/internal/pkg/casbin"
 	"manga-go/internal/pkg/model"
 	translationgrouprequest "manga-go/internal/pkg/request/translation_group"
 
@@ -30,6 +31,17 @@ func (s *TranslationGroupService) CreateTranslationGroup(ctx context.Context, ow
 	}); err != nil {
 		s.logger.Error("Failed to set user translation group", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	groupIDStr := group.ID.String()
+
+	// Seed per-group Casbin policies
+	casbinpkg.SeedGroupPolicies(s.enforcer, groupIDStr, s.logger)
+
+	// Assign group_owner role to the creator within this group's domain
+	if _, err := s.enforcer.AddRoleForUserInDomain(ownerID.String(), "group_owner", groupIDStr); err != nil {
+		s.logger.Errorf("Failed to assign group_owner role to user %s for group %s: %v", ownerID, groupIDStr, err)
+		return response.ResultErrInternal(err)
 	}
 
 	return response.ResultSuccess("Translation group created successfully", group)

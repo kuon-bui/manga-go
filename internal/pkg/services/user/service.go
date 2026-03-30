@@ -1,6 +1,7 @@
 package userservice
 
 import (
+	casbinpkg "manga-go/internal/pkg/casbin"
 	"manga-go/internal/pkg/config"
 	jwtprovider "manga-go/internal/pkg/jwt_provider"
 	"manga-go/internal/pkg/logger"
@@ -18,6 +19,7 @@ type UserService struct {
 	config      *config.Config
 	asynqClient *asynq.Client
 	roleRepo    *rolerepo.RoleRepo
+	enforcer    *casbinpkg.Enforcer
 }
 
 type UserServiceParams struct {
@@ -29,6 +31,7 @@ type UserServiceParams struct {
 	UserRepo    *userrepo.UserRepository
 	AsynqClient *asynq.Client
 	RoleRepo    *rolerepo.RoleRepo
+	Enforcer    *casbinpkg.Enforcer
 }
 
 func NewUserService(p UserServiceParams) *UserService {
@@ -39,5 +42,6 @@ func NewUserService(p UserServiceParams) *UserService {
 		config:      p.Config,
 		asynqClient: p.AsynqClient,
 		roleRepo:    p.RoleRepo,
+		enforcer:    p.Enforcer,
 	}
 }
