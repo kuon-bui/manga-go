@@ -40,5 +40,6 @@ func (cr *ComicRoute) Setup() {
 	rg.GET("/:comicSlug", cr.comicHandler.getComic)
 	rg.POST("", cr.comicHandler.createComic)
 	rg.PUT("/:comicSlug", cr.comicHandler.updateComic)
+	rg.PATCH("/:comicSlug/publish", cr.comicHandler.publishComic)
 	rg.DELETE("/:comicSlug", cr.comicHandler.deleteComic)
 }

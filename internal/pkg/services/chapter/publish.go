@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (s *ChapterService) UpdateChapter(ctx context.Context, chapterSlug string, req *chapterrequest.UpdateChapterRequest) response.Result {
+func (s *ChapterService) PublishChapter(ctx context.Context, chapterSlug string, req *chapterrequest.PublishChapterRequest) response.Result {
 	comicID, ok := common.GetComicIdFromContext(ctx)
 	if !ok {
 		return response.ResultError("Comic not found in context")
@@ -20,7 +20,9 @@ func (s *ChapterService) UpdateChapter(ctx context.Context, chapterSlug string, 
 	chapter, err := s.chapterRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "comic_id", Value: comicID},
 		clause.Eq{Column: "slug", Value: chapterSlug},
-	}, nil)
+	}, map[string]common.MoreKeyOption{
+		"Pages": {},
+	})
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return response.ResultNotFound("Chapter")
@@ -29,22 +31,25 @@ func (s *ChapterService) UpdateChapter(ctx context.Context, chapterSlug string, 
 		return response.ResultErrDb(err)
 	}
 
-	updateData := map[string]any{
-		"number": req.Number,
-		"title":  req.Title,
-		"slug":   req.Slug,
+	if req.IsPublished && len(chapter.Pages) == 0 {
+		return response.ResultError("Chapter must have at least one page before publishing")
 	}
 
 	if err := s.chapterRepo.Update(ctx, []any{
 		clause.Eq{Column: "id", Value: chapter.ID},
-	}, updateData); err != nil {
-		s.logger.Error("Failed to update chapter", "error", err)
+	}, map[string]any{
+		"is_published": req.IsPublished,
+	}); err != nil {
+		s.logger.Error("Failed to publish chapter", "error", err)
 		return response.ResultErrDb(err)
 	}
 
-	chapter.Number = req.Number
-	chapter.Title = req.Title
-	chapter.Slug = req.Slug
+	chapter.IsPublished = req.IsPublished
 
-	return response.ResultSuccess("Chapter updated successfully", chapter)
+	msg := "Chapter unpublished successfully"
+	if req.IsPublished {
+		msg = "Chapter published successfully"
+	}
+
+	return response.ResultSuccess(msg, chapter)
 }

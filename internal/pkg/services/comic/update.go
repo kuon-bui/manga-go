@@ -48,10 +48,6 @@ func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicr
 		updateData["published_year"] = req.PublishedYear
 	}
 
-	if req.IsActive != nil {
-		updateData["is_active"] = *req.IsActive
-	}
-
 	if req.IsHot != nil {
 		updateData["is_hot"] = *req.IsHot
 	}

@@ -18,9 +18,9 @@ func (r *BaseRepository[T]) LoadAllAssociations(db *gorm.DB) *gorm.DB {
 	return db.Preload(clause.Associations)
 }
 
-func (r *BaseRepository[T]) IsActive(isActive bool) func(db *gorm.DB) *gorm.DB {
+func (r *BaseRepository[T]) IsPublished(isPublished bool) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("active = ?", isActive)
+		return db.Where("is_published = ?", isPublished)
 	}
 }
 

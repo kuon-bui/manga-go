@@ -15,7 +15,6 @@ type UpdateComicRequest struct {
 	Banner            *string              `json:"banner"`
 	Type              constant.ComicType   `json:"type"`
 	Status            constant.ComicStatus `json:"status"`
-	IsActive          *bool                `json:"isActive"`
 	IsHot             *bool                `json:"isHot"`
 	IsFeatured        *bool                `json:"isFeatured"`
 	PublishedYear     *int                 `json:"publishedYear"`

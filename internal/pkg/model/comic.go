@@ -18,7 +18,7 @@ type Comic struct {
 	Banner            *string              `json:"banner" gorm:"column:banner"`
 	Type              constant.ComicType   `json:"type" gorm:"column:type"`
 	Status            constant.ComicStatus `json:"status" gorm:"column:status"`
-	IsActive          bool                 `json:"isActive" gorm:"column:is_active"`
+	IsPublished       bool                 `json:"isPublished" gorm:"column:is_published"`
 	IsHot             bool                 `json:"isHot" gorm:"column:is_hot"`
 	IsFeatured        bool                 `json:"isFeatured" gorm:"column:is_featured"`
 	PublishedYear     *int                 `json:"publishedYear" gorm:"column:published_year"`
