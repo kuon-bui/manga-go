@@ -20,7 +20,6 @@ func (r *ChapterRepo) GetIdBySlug(ctx context.Context, slug string) (id uuid.UUI
 			return id, nil
 		}
 	}
-
 	// get from db
 	var chapter model.Chapter
 	err = r.DB.WithContext(ctx).Select("id").Where("slug = ?", slug).First(&chapter).Error
@@ -28,7 +27,6 @@ func (r *ChapterRepo) GetIdBySlug(ctx context.Context, slug string) (id uuid.UUI
 		return uuid.Nil, err
 	}
 
-	// set to cache
 	r.rds.Client().HSetEXWithArgs(
 		ctx,
 		slugToIdCacheKey,

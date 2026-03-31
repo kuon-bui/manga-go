@@ -1,6 +1,16 @@
-Tạo đầy đủ một CRUD resource mới theo đúng kiến trúc của dự án manga-go.
+---
+agent: agent
+description: Tạo đầy đủ một CRUD resource mới theo đúng kiến trúc của dự án manga-go.
+tools:
+  - search/codebase
+  - execute/runInTerminal
+  - edit/createFile
+  - edit/editFiles
+---
 
-**Resource cần tạo:** $ARGUMENTS
+Tạo đầy đủ CRUD resource mới cho dự án manga-go.
+
+**Resource cần tạo:** ${input:resourceName:Tên resource (singular, PascalCase). Ví dụ: Tag, Category, Publisher}
 
 ---
 
@@ -11,13 +21,13 @@ Tạo đầy đủ một CRUD resource mới theo đúng kiến trúc của dự
 ### Bước 1 — Migration
 
 Tên file: `migrations/<YYYYMMDD>_<HHMMSS>_create_<resource>_table.sql`
-Lấy timestamp thực tế từ `date +%Y%m%d_%H%M%S`.
+Lấy timestamp thực tế từ lệnh terminal: `date +%Y%m%d_%H%M%S`
 
 Template:
 ```sql
 -- +migrate Up
 CREATE TABLE <resource>s (
-    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    id uuid NOT NULL DEFAULT uuid_generate_v4() PRIMARY KEY,
     -- thêm các cột domain tại đây
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

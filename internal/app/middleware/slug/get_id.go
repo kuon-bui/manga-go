@@ -98,15 +98,15 @@ func (m *SlugMiddleware) ResolveTranslationGroupID(g *gin.Context) {
 }
 
 func (m *SlugMiddleware) ResolveGenreID(g *gin.Context) {
-	slug := g.Param("slug")
-	if slug == "" {
-		g.AbortWithStatusJSON(400, gin.H{"error": "slug parameter is required"})
+	genreSlug := g.Param("genreSlug")
+	if genreSlug == "" {
+		g.AbortWithStatusJSON(400, gin.H{"error": "genreSlug parameter is required"})
 		return
 	}
 
-	id, err := m.genreService.GetGenreIDBySlug(g.Request.Context(), slug)
+	id, err := m.genreService.GetGenreIDBySlug(g.Request.Context(), genreSlug)
 	if err != nil {
-		m.logger.Errorf("Failed to get genre ID for slug %s: %v", slug, err)
+		m.logger.Errorf("Failed to get genre ID for slug %s: %v", genreSlug, err)
 		g.AbortWithStatusJSON(404, gin.H{"error": "Genre not found"})
 		return
 	}
@@ -116,15 +116,15 @@ func (m *SlugMiddleware) ResolveGenreID(g *gin.Context) {
 }
 
 func (m *SlugMiddleware) ResolveTagID(g *gin.Context) {
-	slug := g.Param("slug")
-	if slug == "" {
-		g.AbortWithStatusJSON(400, gin.H{"error": "slug parameter is required"})
+	tagSlug := g.Param("tagSlug")
+	if tagSlug == "" {
+		g.AbortWithStatusJSON(400, gin.H{"error": "tagSlug parameter is required"})
 		return
 	}
 
-	id, err := m.tagService.GetTagIDBySlug(g.Request.Context(), slug)
+	id, err := m.tagService.GetTagIDBySlug(g.Request.Context(), tagSlug)
 	if err != nil {
-		m.logger.Errorf("Failed to get tag ID for slug %s: %v", slug, err)
+		m.logger.Errorf("Failed to get tag ID for slug %s: %v", tagSlug, err)
 		g.AbortWithStatusJSON(404, gin.H{"error": "Tag not found"})
 		return
 	}
