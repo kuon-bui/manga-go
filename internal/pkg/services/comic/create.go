@@ -19,7 +19,7 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 		Banner:            req.Banner,
 		Type:              constant.ComicTypeManga,
 		Status:            constant.ComicStatusOngoing, // Default status to ongoing
-		IsActive:          true,                        // Default to active
+		IsPublished:       false,                       // Default to unpublished
 		PublishedYear:     req.PublishedYear,
 	}
 
