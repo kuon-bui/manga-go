@@ -11,6 +11,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary      Get file content
+// @Description  Download file content by path
+// @Tags         File
+// @Accept       json
+// @Produce      */*
+// @Param        filename  path      string  true  "File path"
+// @Success      200       {file}    string  "File content"
+// @Failure      400       {object}  response.Response
+// @Failure      401       {object}  response.Response
+// @Failure      500       {object}  response.Response
+// @Router       /files/content/{filename} [get]
+// @Security     AccessToken
 func (h *FileHandler) getFileContent(c *gin.Context) {
 	filename := strings.TrimPrefix(c.Param("filename"), "/")
 	if filename == "" {

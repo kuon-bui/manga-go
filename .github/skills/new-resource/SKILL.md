@@ -143,6 +143,43 @@ go build ./...
 
 Sửa các lỗi compile liên quan đến phần vừa tạo cho đến khi build thành công.
 
+### Bước 8 - Swagger Documentation
+
+Thêm Swagger/OpenAPI annotations vào tất cả handler method files:
+
+- Mỗi handler method phải có comments Swagger phía trên `func`:
+
+```go
+// @Summary      Create <resource>
+// @Description  Create a new <resource> in the system
+// @Tags         <Resource>
+// @Accept       json
+// @Produce      json
+// @Param        body  body      <resource>request.Create<Resource>Request  true  "<Resource> creation request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      500   {object}  response.Response
+// @Security     AccessToken
+// @Router       /<resource>s [post]
+func (h *<Resource>Handler) create<Resource>(c *gin.Context) { ... }
+```
+
+- `@Tags`: Dùng tên resource dạng PascalCase (ví dụ: `Tag`, `Category`)
+- `@Param`: Loại `path` cho URL param, `query` cho query param, `body` cho JSON body
+- `@Success`: Trả về `response.Response` cho detail, `response.PaginationResponse` cho list
+- `@Security`: Thêm `AccessToken` cho endpoints có auth. KHÔNG dùng cho public endpoints
+- `@Router`: Đường dẫn chính xác từ `route.go`, method lowercase ([get], [post], [put], [delete])
+
+Sau khi thêm annotations, chạy:
+```bash
+make swagger
+# hoặc
+swag init -g cmd/dev/main.go -o docs/ --parseDependency --parseInternal
+```
+
+Swagger documentation sẽ được generate tự động vào `docs/docs.go`, `docs/swagger.json`, `docs/swagger.yaml`.
+
 ## Checklist
 
 - Tạo migration đúng naming convention.
@@ -150,3 +187,5 @@ Sửa các lỗi compile liên quan đến phần vừa tạo cho đến khi bui
 - Đăng ký module mới vào các file `fx.go` tổng.
 - Giữ đúng naming convention của package, struct, table và route.
 - Chỉ sửa các lỗi compile liên quan trực tiếp tới resource mới.
+- Thêm Swagger annotations cho tất cả handler methods.
+- Chạy `make swagger` để generate API documentation.

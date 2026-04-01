@@ -7,6 +7,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// @Summary      Remove role from user
+// @Description  Remove a role from a user
+// @Tags         User
+// @Accept       json
+// @Produce      json
+// @Param        id      path      string  true  "User ID"
+// @Param        roleId  path      string  true  "Role ID"
+// @Success      200     {object}  response.Response
+// @Failure      400     {object}  response.Response
+// @Failure      401     {object}  response.Response
+// @Router       /users/{id}/roles/{roleId} [delete]
+// @Security     AccessToken
 func (h *userHandler) removeUserRole(c *gin.Context) {
 	userID, err := uuid.Parse(c.Param("id"))
 	if err != nil {

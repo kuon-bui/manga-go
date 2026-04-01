@@ -265,6 +265,48 @@ DROP TABLE foos;
 | `response.ResultUnauthorized()` | Chưa xác thực (401) |
 | `response.ResponsePaginationData(elements, total)` | Wrap dữ liệu phân trang |
 
+### 9. Swagger/OpenAPI Documentation
+
+Mỗi handler method phải có comments Swagger phía trên function signature:
+
+```go
+// @Summary      Create author
+// @Description  Create a new author in the system
+// @Tags         Author
+// @Accept       json
+// @Produce      json
+// @Param        body  body      authorrequest.CreateAuthorRequest  true  "Author creation request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      500   {object}  response.Response
+// @Security     AccessToken
+// @Router       /authors [post]
+func (h *AuthorHandler) createAuthor(c *gin.Context) { ... }
+```
+
+**Quy ước annotation:**
+- `@Tags`: Sử dụng tên resource dạng PascalCase (User, Author, Genre, Comic, Chapter, TranslationGroup, Role, Permission, File)
+- `@Param`: Loại `path` cho URL param, `query` cho query string, `body` cho JSON body, `formData` cho multipart
+- `@Success`: Trả về `response.Response` cho single entity hoặc API responses
+- `@Security`: Thêm `AccessToken` cho endpoints cần xác thực. KHÔNG dùng cho endpoint signup, signin, reset-password
+- `@Router`: Đường dẫn chính xác từ route.go, method lowercase ([get], [post], [put], [delete], [patch])
+
+**Loại endpoint:**
+- GET list (paginated): `@Success 200 {object} response.PaginationResponse`
+- GET detail: `@Success 200 {object} response.Response`
+- POST/PUT/DELETE: `@Success 200 {object} response.Response`
+- File upload: `@Accept multipart/form-data` + `@Param file formData file true "File to upload"`
+
+Sau khi thêm annotations, chạy:
+```bash
+make swagger
+# hoặc
+swag init -g cmd/dev/main.go -o docs/ --parseDependency --parseInternal
+```
+
+Các file docs/docs.go, swagger.json, swagger.yaml được generate automatically.
+
 ---
 
 ## Checklist khi thêm resource mới
@@ -296,6 +338,8 @@ DROP TABLE foos;
 [ ] internal/app/api/route/<resource>/update_<resource>.go
 [ ] internal/app/api/route/<resource>/delete_<resource>.go
 [ ] internal/app/api/route/fx.go               ← thêm module
+[ ] Thêm Swagger annotations cho tất cả handler methods (xem quy ước section 9)
+[ ] Chạy `make swagger` để generate docs
 ```
 
 ---
@@ -308,6 +352,9 @@ air -c api.air.toml
 
 # Build nhanh
 go build ./...
+
+# Generate Swagger documentation
+make swagger
 
 # Chạy migration lên
 sql-migrate up -config=configs/dbconfig.yml

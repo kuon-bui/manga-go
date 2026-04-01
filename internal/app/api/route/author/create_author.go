@@ -7,6 +7,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary      Create author
+// @Description  Create a new author
+// @Tags         Author
+// @Accept       json
+// @Produce      json
+// @Param        body  body      authorrequest.CreateAuthorRequest  true  "Author creation request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Router       /authors [post]
+// @Security     AccessToken
 func (h *AuthorHandler) createAuthor(c *gin.Context) {
 	var req authorrequest.CreateAuthorRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

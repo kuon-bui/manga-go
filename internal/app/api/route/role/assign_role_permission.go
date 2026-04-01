@@ -8,6 +8,18 @@ import (
 	"github.com/google/uuid"
 )
 
+// @Summary      Assign permissions to role
+// @Description  Assign one or more permissions to a role
+// @Tags         Role
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                          true  "Role ID"
+// @Param        body  body      rolerequest.AssignPermissionRequest  true  "Permissions to assign"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Router       /roles/{id}/permissions [post]
+// @Security     AccessToken
 func (h *RoleHandler) assignRolePermission(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

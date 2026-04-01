@@ -7,6 +7,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary      Update chapter pages
+// @Description  Update pages content of a chapter
+// @Tags         Chapter
+// @Accept       json
+// @Produce      json
+// @Param        comicSlug    path      string                           true  "Comic slug"
+// @Param        chapterSlug  path      string                           true  "Chapter slug"
+// @Param        body         body      chapterrequest.UpdateChapterPagesRequest  true  "Pages update request"
+// @Success      200          {object}  response.Response
+// @Failure      400          {object}  response.Response
+// @Failure      401          {object}  response.Response
+// @Failure      404          {object}  response.Response
+// @Router       /comics/{comicSlug}/chapters/{chapterSlug}/pages [put]
+// @Security     AccessToken
 func (h *ChapterHandler) updateChapterPages(c *gin.Context) {
 	chapterSlug := c.Param("chapterSlug")
 

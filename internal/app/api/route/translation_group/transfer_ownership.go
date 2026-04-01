@@ -7,6 +7,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary      Transfer translation group ownership
+// @Description  Transfer ownership of a translation group to another user
+// @Tags         TranslationGroup
+// @Accept       json
+// @Produce      json
+// @Param        slug  path      string                                    true  "Translation group slug"
+// @Param        body  body      translationgrouprequest.TransferOwnershipRequest  true  "Transfer ownership request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      404   {object}  response.Response
+// @Router       /translation-groups/{slug}/transfer-ownership [put]
+// @Security     AccessToken
 func (h *TranslationGroupHandler) transferOwnership(c *gin.Context) {
 	slug := c.Param("slug")
 

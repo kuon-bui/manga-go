@@ -8,6 +8,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// @Summary      Update role
+// @Description  Update role information
+// @Tags         Role
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                    true  "Role ID"
+// @Param        body  body      rolerequest.UpdateRoleRequest  true  "Role update request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      404   {object}  response.Response
+// @Router       /roles/{id} [put]
+// @Security     AccessToken
 func (h *RoleHandler) updateRole(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

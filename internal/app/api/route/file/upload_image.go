@@ -12,6 +12,18 @@ import (
 
 const maxUploadImageSize int64 = 10 * 1024 * 1024
 
+// @Summary      Upload file
+// @Description  Upload a file to object storage
+// @Tags         File
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        file  formData  file  true  "File to upload (max 10MB)"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      500   {object}  response.Response
+// @Router       /files/upload [post]
+// @Security     AccessToken
 func (h *FileHandler) uploadImage(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadImageSize)
 
