@@ -19,3 +19,13 @@ const (
 	ComicStatusHiatus    ComicStatus = "hiatus"
 	ComicStatusCancelled ComicStatus = "cancelled"
 )
+
+// ComicAgeRating represents the age rating of a comic.
+type ComicAgeRating string
+
+const (
+	AgeRatingAll    ComicAgeRating = "all"
+	AgeRating13Plus ComicAgeRating = "13+"
+	AgeRating16Plus ComicAgeRating = "16+"
+	AgeRating18Plus ComicAgeRating = "18+"
+)

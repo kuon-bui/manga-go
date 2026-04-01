@@ -56,6 +56,10 @@ func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicr
 		updateData["is_featured"] = *req.IsFeatured
 	}
 
+	if req.AgeRating != "" {
+		updateData["age_rating"] = req.AgeRating
+	}
+
 	associations := make(map[string]any)
 
 	var genres []*model.Genre
