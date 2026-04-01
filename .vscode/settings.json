@@ -74,7 +74,7 @@
     "userroute",
     "userserivce",
     "userservice",
-    "wneessen"
+    "wneessen",
   ],
   "sqltools.connections": [
     {
@@ -86,7 +86,7 @@
       "name": "manga",
       "database": "mydb",
       "username": "admin",
-      "password": "postgres"
-    }
-  ]
+      "password": "postgres",
+    },
+  ],
 }

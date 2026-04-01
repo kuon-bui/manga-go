@@ -40,5 +40,6 @@ func (cr *ChapterRoute) Setup() {
 	rg.GET("/:chapterSlug", cr.slugMiddleware.ResolveChapterID, cr.handler.getChapter)
 	rg.POST("", cr.handler.createChapter)
 	rg.PUT("/:chapterSlug", cr.slugMiddleware.ResolveChapterID, cr.handler.updateChapter)
+	rg.PUT("/:chapterSlug/pages", cr.slugMiddleware.ResolveChapterID, cr.handler.updateChapterPages)
 	rg.PATCH("/:chapterSlug/publish", cr.slugMiddleware.ResolveChapterID, cr.handler.publishChapter)
 }

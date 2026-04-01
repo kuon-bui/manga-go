@@ -15,7 +15,7 @@ type Chapter struct {
 	IsPublished bool      `json:"isPublished" gorm:"column:is_published"`
 
 	// Relationships
-	Pages []Page `json:"pages,omitempty" gorm:"foreignKey:ChapterID"`
+	Pages []*Page `json:"pages,omitempty" gorm:"foreignKey:ChapterID"`
 }
 
 func (Chapter) TableName() string {
