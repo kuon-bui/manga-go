@@ -22,7 +22,7 @@ func (s *ChapterService) CreateChapter(ctx context.Context, req *chapterrequest.
 	}
 
 	for i, page := range req.Pages {
-		chapter.Pages = append(chapter.Pages, model.Page{
+		chapter.Pages = append(chapter.Pages, &model.Page{
 			PageNumber: i + 1,
 			ImageURL:   page,
 		})
