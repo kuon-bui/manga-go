@@ -62,6 +62,8 @@
     "samber",
     "slugmiddleware",
     "sslmode",
+    "swaggerrouter",
+    "swaggo",
     "tabroute",
     "tagrepo",
     "tagrequest",
