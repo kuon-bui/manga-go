@@ -8,6 +8,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary      Create translation group
+// @Description  Create a new translation group
+// @Tags         TranslationGroup
+// @Accept       json
+// @Produce      json
+// @Param        body  body      translationgrouprequest.CreateTranslationGroupRequest  true  "Translation group creation request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Router       /translation-groups [post]
+// @Security     AccessToken
 func (h *TranslationGroupHandler) createTranslationGroup(c *gin.Context) {
 	var req translationgrouprequest.CreateTranslationGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

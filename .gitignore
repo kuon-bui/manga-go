@@ -103,3 +103,4 @@ __debug_bin*
 
 sql/*
 docker-data/*
+docs/*

@@ -17,7 +17,9 @@ Your job is to define the model and the related CRUD API layers for one resource
 - Create repository, service, and route layers.
 - Register all required fx modules.
 - Add a migration when a new table is required.
+- Add Swagger/OpenAPI annotations to all handler methods.
 - Run `go build ./...` and fix compile errors caused by the new resource.
+- Run `swag init` to generate Swagger documentation.
 
 ## Constraints
 
@@ -50,8 +52,10 @@ When you finish, report:
 8. Create the service files in `internal/pkg/services/<resource>/` and register them in `internal/pkg/services/fx.go`.
 9. Create the API route files in `internal/app/api/route/<resource>/` and register them in `internal/app/api/route/fx.go`.
 10. Ensure handlers validate input, parse identifiers correctly, and return the existing response helpers.
-11. Run `go build ./...`.
-12. Fix only the compile errors introduced by the new resource.
+11. Add Swagger/OpenAPI annotations to all handler methods using `@Summary`, `@Description`, `@Tags`, `@Param`, `@Success`, `@Failure`, `@Security`, `@Router` directives. See section 9 in `.github/copilot-instructions.md` for details.
+12. Run `go build ./...`.
+13. If build passes, run `swag init -g cmd/dev/main.go -o docs/ --parseDependency --parseInternal` to generate Swagger documentation.
+14. Fix only the compile errors introduced by the new resource.
 
 ## Implementation Notes
 

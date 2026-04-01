@@ -8,6 +8,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// @Summary      Update author
+// @Description  Update author information
+// @Tags         Author
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                       true  "Author ID"
+// @Param        body  body      authorrequest.UpdateAuthorRequest  true  "Author update request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      404   {object}  response.Response
+// @Router       /authors/{id} [put]
+// @Security     AccessToken
 func (h *AuthorHandler) updateAuthor(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

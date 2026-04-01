@@ -7,6 +7,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// @Summary      Update translation group
+// @Description  Update translation group information
+// @Tags         TranslationGroup
+// @Accept       json
+// @Produce      json
+// @Param        slug  path      string                                      true  "Translation group slug"
+// @Param        body  body      translationgrouprequest.UpdateTranslationGroupRequest  true  "Translation group update request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      404   {object}  response.Response
+// @Router       /translation-groups/{slug} [put]
+// @Security     AccessToken
 func (h *TranslationGroupHandler) updateTranslationGroup(c *gin.Context) {
 	slug := c.Param("slug")
 

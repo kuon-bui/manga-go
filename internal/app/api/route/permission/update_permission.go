@@ -8,6 +8,19 @@ import (
 	"github.com/google/uuid"
 )
 
+// @Summary      Update permission
+// @Description  Update permission information
+// @Tags         Permission
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string                            true  "Permission ID"
+// @Param        body  body      permissionrequest.UpdatePermissionRequest  true  "Permission update request"
+// @Success      200   {object}  response.Response
+// @Failure      400   {object}  response.Response
+// @Failure      401   {object}  response.Response
+// @Failure      404   {object}  response.Response
+// @Router       /permissions/{id} [put]
+// @Security     AccessToken
 func (h *PermissionHandler) updatePermission(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
