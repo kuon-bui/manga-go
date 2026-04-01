@@ -53,6 +53,7 @@
     "presign",
     "qname",
     "queueconstant",
+    "reactionrepo",
     "readinghistoryrepo",
     "readinghistoryrequest",
     "readinghistoryroute",

@@ -117,21 +117,6 @@ services:
     networks:
       - app-network
 
-  minio:
-    image: cuongbui1203/minio:RELEASE.2025-04-22T22-12-26Z
-    ports:
-      - 9001:9000
-      - 9002:9001
-    volumes:
-      - ./docker-data/minio:/data
-    command: server --console-address ":9001" /data
-
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    networks:
-      - app-network
-
 
 volumes:
   postgres_data:
