@@ -1,15 +1,12 @@
 package server
 
 import (
-	_ "manga-go/docs"
 	"manga-go/internal/pkg/config"
 	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
@@ -37,9 +34,6 @@ func NewGinEngine(config *config.Config) *gin.Engine {
 	}
 	ginConfig.ExposeHeaders = []string{"Content-Disposition"}
 	g.Use(cors.New(ginConfig))
-
-	// Swagger API documentation route
-	g.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return g
 }
