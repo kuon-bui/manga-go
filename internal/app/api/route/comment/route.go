@@ -40,4 +40,5 @@ func (cr *CommentRoute) Setup() {
 	rg.POST("", cr.commentHandler.createComment)
 	rg.PUT("/:id", cr.commentHandler.updateComment)
 	rg.DELETE("/:id", cr.commentHandler.deleteComment)
+	rg.POST("/:id/reactions", cr.commentHandler.handleReaction)
 }
