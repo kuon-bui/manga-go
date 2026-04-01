@@ -19,6 +19,7 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 		Banner:            req.Banner,
 		Type:              constant.ComicTypeManga,
 		Status:            constant.ComicStatusOngoing, // Default status to ongoing
+		AgeRating:         constant.AgeRatingAll,       // Default age rating to all
 		IsPublished:       false,                       // Default to unpublished
 		PublishedYear:     req.PublishedYear,
 	}
@@ -29,6 +30,10 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 
 	if req.Type != "" {
 		comic.Type = req.Type
+	}
+
+	if req.AgeRating != "" {
+		comic.AgeRating = req.AgeRating
 	}
 
 	// Build author associations

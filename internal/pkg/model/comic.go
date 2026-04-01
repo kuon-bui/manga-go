@@ -10,20 +10,21 @@ import (
 
 type Comic struct {
 	common.SqlModel
-	Title             string               `json:"title" gorm:"column:title"`
-	Slug              string               `json:"slug" gorm:"column:slug"`
-	AlternativeTitles common.StringSlice   `json:"alternativeTitles" gorm:"column:alternative_titles;type:jsonb"`
-	Description       *string              `json:"description" gorm:"column:description"`
-	Thumbnail         *string              `json:"thumbnail" gorm:"column:thumbnail"`
-	Banner            *string              `json:"banner" gorm:"column:banner"`
-	Type              constant.ComicType   `json:"type" gorm:"column:type"`
-	Status            constant.ComicStatus `json:"status" gorm:"column:status"`
-	IsPublished       bool                 `json:"isPublished" gorm:"column:is_published"`
-	IsHot             bool                 `json:"isHot" gorm:"column:is_hot"`
-	IsFeatured        bool                 `json:"isFeatured" gorm:"column:is_featured"`
-	PublishedYear     *int                 `json:"publishedYear" gorm:"column:published_year"`
-	LastChapterAt     *time.Time           `json:"lastChapterAt" gorm:"column:last_chapter_at"`
-	ArtistId          *uuid.UUID           `json:"artistId" gorm:"column:artist_id"`
+	Title             string                  `json:"title" gorm:"column:title"`
+	Slug              string                  `json:"slug" gorm:"column:slug"`
+	AlternativeTitles common.StringSlice      `json:"alternativeTitles" gorm:"column:alternative_titles;type:jsonb"`
+	Description       *string                 `json:"description" gorm:"column:description"`
+	Thumbnail         *string                 `json:"thumbnail" gorm:"column:thumbnail"`
+	Banner            *string                 `json:"banner" gorm:"column:banner"`
+	Type              constant.ComicType      `json:"type" gorm:"column:type"`
+	Status            constant.ComicStatus    `json:"status" gorm:"column:status"`
+	AgeRating         constant.ComicAgeRating `json:"ageRating" gorm:"column:age_rating"`
+	IsPublished       bool                    `json:"isPublished" gorm:"column:is_published"`
+	IsHot             bool                    `json:"isHot" gorm:"column:is_hot"`
+	IsFeatured        bool                    `json:"isFeatured" gorm:"column:is_featured"`
+	PublishedYear     *int                    `json:"publishedYear" gorm:"column:published_year"`
+	LastChapterAt     *time.Time              `json:"lastChapterAt" gorm:"column:last_chapter_at"`
+	ArtistId          *uuid.UUID              `json:"artistId" gorm:"column:artist_id"`
 
 	// Relationships
 	Artist   *Author    `json:"artist" gorm:"foreignKey:ArtistId"`
