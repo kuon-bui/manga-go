@@ -4,10 +4,11 @@ import (
 	authorservice "manga-go/internal/pkg/services/author"
 	chapterservice "manga-go/internal/pkg/services/chapter"
 	comicservice "manga-go/internal/pkg/services/comic"
+	commentservice "manga-go/internal/pkg/services/comment"
 	fileservice "manga-go/internal/pkg/services/file"
 	genreservice "manga-go/internal/pkg/services/genre"
 	permissionservice "manga-go/internal/pkg/services/permission"
-	readinghistoryservice "manga-go/internal/pkg/services/readinghistory"
+	readinghistoryservice "manga-go/internal/pkg/services/reading_history"
 	roleservice "manga-go/internal/pkg/services/role"
 	tagservice "manga-go/internal/pkg/services/tag"
 	translationgroupservice "manga-go/internal/pkg/services/translation_group"
@@ -29,4 +30,5 @@ var Module = fx.Module(
 	roleservice.Module,
 	permissionservice.Module,
 	readinghistoryservice.Module,
+	commentservice.Module,
 )

@@ -2,7 +2,7 @@ package readinghistoryservice
 
 import (
 	"manga-go/internal/pkg/logger"
-	readinghistoryrepo "manga-go/internal/pkg/repo/readinghistory"
+	readinghistoryrepo "manga-go/internal/pkg/repo/reading_history"
 
 	"go.uber.org/fx"
 )

@@ -3,6 +3,6 @@ package readinghistoryrepo
 import "go.uber.org/fx"
 
 var Module = fx.Module(
-	"readinghistory-repo",
+	"reading-history-repo",
 	fx.Provide(NewReadingHistoryRepo),
 )

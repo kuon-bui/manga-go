@@ -1,7 +1,7 @@
 package readinghistoryroute
 
 import (
-	readinghistoryservice "manga-go/internal/pkg/services/readinghistory"
+	readinghistoryservice "manga-go/internal/pkg/services/reading_history"
 
 	"go.uber.org/fx"
 )
