@@ -10,7 +10,6 @@ import (
 
 type ChapterRepo struct {
 	*base.BaseRepository[model.Chapter]
-	rds *redis.Redis
 }
 
 func NewChapterRepo(db *gorm.DB, rds *redis.Redis) *ChapterRepo {
@@ -18,6 +17,5 @@ func NewChapterRepo(db *gorm.DB, rds *redis.Redis) *ChapterRepo {
 		BaseRepository: &base.BaseRepository[model.Chapter]{
 			DB: db,
 		},
-		rds: rds,
 	}
 }

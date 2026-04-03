@@ -15,7 +15,7 @@ import (
 // @Param        chapterId  query  string  true   "Chapter ID"
 // @Param        page       query  int     false  "Page number (default: 1)"
 // @Param        limit      query  int     false  "Records per page (default: 10)"
-// @Success      200        {object}  response.PaginationResponse
+// @Success      200        {object}  response.Result
 // @Failure      400        {object}  response.Response
 // @Failure      401        {object}  response.Response
 // @Failure      500        {object}  response.Response

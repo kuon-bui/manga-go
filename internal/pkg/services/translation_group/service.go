@@ -2,6 +2,7 @@ package translationgroupservice
 
 import (
 	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/redis"
 	translationgrouprepo "manga-go/internal/pkg/repo/translation_group"
 	userrepo "manga-go/internal/pkg/repo/user"
 
@@ -12,6 +13,7 @@ type TranslationGroupService struct {
 	logger               *logger.Logger
 	translationGroupRepo *translationgrouprepo.TranslationGroupRepo
 	userRepo             *userrepo.UserRepository
+	rds                  *redis.Redis
 }
 
 type TranslationGroupServiceParams struct {
@@ -19,6 +21,7 @@ type TranslationGroupServiceParams struct {
 	Logger               *logger.Logger
 	TranslationGroupRepo *translationgrouprepo.TranslationGroupRepo
 	UserRepo             *userrepo.UserRepository
+	Redis                *redis.Redis
 }
 
 func NewTranslationGroupService(params TranslationGroupServiceParams) *TranslationGroupService {
@@ -26,5 +29,6 @@ func NewTranslationGroupService(params TranslationGroupServiceParams) *Translati
 		logger:               params.Logger,
 		translationGroupRepo: params.TranslationGroupRepo,
 		userRepo:             params.UserRepo,
+		rds:                  params.Redis,
 	}
 }

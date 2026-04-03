@@ -57,7 +57,7 @@ func (result Result) ResponseResult(c *gin.Context) {
 	if result.Error != nil {
 		errorDetails = result.Error.Error()
 	}
-	c.JSON(result.HttpStatus, response{
+	c.JSON(result.HttpStatus, Response{
 		Message:          result.Message,
 		Data:             result.Data,
 		Err:              errorDetails,

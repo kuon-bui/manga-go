@@ -293,7 +293,7 @@ func (h *AuthorHandler) createAuthor(c *gin.Context) { ... }
 - `@Router`: Đường dẫn chính xác từ route.go, method lowercase ([get], [post], [put], [delete], [patch])
 
 **Loại endpoint:**
-- GET list (paginated): `@Success 200 {object} response.PaginationResponse`
+- GET list (paginated): `@Success 200 {object} response.Result`
 - GET detail: `@Success 200 {object} response.Result`
 - POST/PUT/DELETE: `@Success 200 {object} response.Result`
 - File upload: `@Accept multipart/form-data` + `@Param file formData file true "File to upload"`
