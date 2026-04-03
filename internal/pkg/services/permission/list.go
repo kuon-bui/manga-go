@@ -13,5 +13,5 @@ func (s *PermissionService) ListPermissions(ctx context.Context, paging *common.
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Permissions retrieved successfully", response.ResponsePaginationData(permissions, total))
+	return response.ResultPaginationData(permissions, total, "Permissions retrieved successfully")
 }

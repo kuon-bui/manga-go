@@ -13,5 +13,5 @@ func (s *GenreService) ListGenres(ctx context.Context, paging *common.Paging) re
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Genres retrieved successfully", response.ResponsePaginationData(genres, total))
+	return response.ResultPaginationData(genres, total, "Genres retrieved successfully")
 }

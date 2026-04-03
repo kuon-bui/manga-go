@@ -22,5 +22,5 @@ func (s *ChapterService) ListChapters(ctx context.Context, paging *common.Paging
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Chapters retrieved successfully", response.ResponsePaginationData(chapters, total))
+	return response.ResultPaginationData(chapters, total, "Chapters retrieved successfully")
 }

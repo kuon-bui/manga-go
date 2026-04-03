@@ -18,5 +18,5 @@ func (s *ReadingHistoryService) ListReadingHistories(ctx context.Context, userID
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Reading histories retrieved successfully", response.ResponsePaginationData(readingHistories, total))
+	return response.ResultPaginationData(readingHistories, total, "Reading histories retrieved successfully")
 }

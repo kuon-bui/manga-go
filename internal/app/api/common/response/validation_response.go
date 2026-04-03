@@ -1,0 +1,49 @@
+package response
+
+import (
+	"fmt"
+
+	"github.com/go-playground/validator/v10"
+)
+
+func parseValidationErrors(err error) []ValidationFieldError {
+	if err == nil {
+		return nil
+	}
+
+	validationErrors, ok := err.(validator.ValidationErrors)
+	if !ok {
+		return nil
+	}
+
+	result := make([]ValidationFieldError, 0, len(validationErrors))
+	for _, validationErr := range validationErrors {
+		result = append(result, ValidationFieldError{
+			Field:   validationErr.Field(),
+			Message: buildValidationMessage(validationErr),
+		})
+	}
+
+	return result
+}
+
+func buildValidationMessage(validationErr validator.FieldError) string {
+	switch validationErr.Tag() {
+	case "required":
+		return fmt.Sprintf("%s is required", validationErr.Field())
+	case "email":
+		return fmt.Sprintf("%s must be a valid email", validationErr.Field())
+	case "oneof":
+		return fmt.Sprintf("%s must be one of: %s", validationErr.Field(), validationErr.Param())
+	case "min":
+		return fmt.Sprintf("%s must be at least %s", validationErr.Field(), validationErr.Param())
+	case "max":
+		return fmt.Sprintf("%s must be at most %s", validationErr.Field(), validationErr.Param())
+	case "len":
+		return fmt.Sprintf("%s must have length %s", validationErr.Field(), validationErr.Param())
+	case "uuid", "uuid4":
+		return fmt.Sprintf("%s must be a valid UUID", validationErr.Field())
+	default:
+		return fmt.Sprintf("%s is invalid (%s)", validationErr.Field(), validationErr.Tag())
+	}
+}

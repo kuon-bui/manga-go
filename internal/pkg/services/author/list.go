@@ -13,5 +13,5 @@ func (s *AuthorService) ListAuthors(ctx context.Context, paging *common.Paging) 
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Authors retrieved successfully", response.ResponsePaginationData(authors, total))
+	return response.ResultPaginationData(authors, total, "Authors retrieved successfully")
 }

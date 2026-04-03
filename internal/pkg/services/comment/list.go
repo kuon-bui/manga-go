@@ -17,5 +17,5 @@ func (s *CommentService) ListComments(ctx context.Context, req *commentrequest.L
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Comments retrieved successfully", response.ResponsePaginationData(comments, total))
+	return response.ResultPaginationData(comments, total, "Comments retrieved successfully")
 }

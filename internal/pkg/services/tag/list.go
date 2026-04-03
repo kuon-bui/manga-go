@@ -13,5 +13,5 @@ func (s *TagService) ListTags(ctx context.Context, paging *common.Paging) respon
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Tags retrieved successfully", response.ResponsePaginationData(tags, total))
+	return response.ResultPaginationData(tags, total, "Tags retrieved successfully")
 }
