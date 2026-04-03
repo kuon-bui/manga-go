@@ -13,5 +13,5 @@ func (s *TranslationGroupService) ListTranslationGroups(ctx context.Context, pag
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Translation groups retrieved successfully", response.ResponsePaginationData(groups, total))
+	return response.ResultPaginationData(groups, total, "Translation groups retrieved successfully")
 }

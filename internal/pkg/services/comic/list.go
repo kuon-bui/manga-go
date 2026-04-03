@@ -17,5 +17,5 @@ func (s *ComicService) ListComics(ctx context.Context, paging *common.Paging) re
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Comics retrieved successfully", response.ResponsePaginationData(comics, total))
+	return response.ResultPaginationData(comics, total, "Comics retrieved successfully")
 }

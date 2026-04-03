@@ -13,5 +13,5 @@ func (s *RoleService) ListRoles(ctx context.Context, paging *common.Paging) resp
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Roles retrieved successfully", response.ResponsePaginationData(roles, total))
+	return response.ResultPaginationData(roles, total, "Roles retrieved successfully")
 }

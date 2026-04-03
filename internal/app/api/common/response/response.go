@@ -2,32 +2,11 @@ package response
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 )
-
-type Response struct {
-	Message string `json:"message"`
-	Data    any    `json:"data,omitempty"`
-	Err     string `json:"error,omitempty"`
-}
-
-type PaginationResponse struct {
-	Message string `json:"message"`
-	Data    any    `json:"data"`
-	Total   int    `json:"total"`
-}
-
-type Result struct {
-	Success    bool
-	HttpStatus int
-	Message    string
-	Data       any
-	Error      error
-}
 
 func NewResult(success bool, status int, message string, data any, err error) Result {
 	return Result{
@@ -39,11 +18,21 @@ func NewResult(success bool, status int, message string, data any, err error) Re
 	}
 }
 
-func ResponsePaginationData(elements any, total int64) map[string]any {
-	return map[string]any{
-		"elements": elements,
-		"total":    total,
+func responsePaginationData(elements any, total int64) paginationResponse {
+	return paginationResponse{
+		Data:  elements,
+		Total: total,
 	}
+}
+
+func ResultPaginationData(elements any, total int64, message string) Result {
+	return NewResult(
+		true,
+		http.StatusOK,
+		message,
+		responsePaginationData(elements, total),
+		nil,
+	)
 }
 
 func (result Result) ResponseResult(c *gin.Context) {
@@ -64,23 +53,15 @@ func (result Result) ResponseResult(c *gin.Context) {
 		span.RecordError(result.Error)
 		span.SetAttributes(attribute.String("error", result.Error.Error()))
 	}
-
-	c.JSON(result.HttpStatus, Response{
-		Message: result.Message,
-		Data:    result.Data,
-		Err: func() string {
-			if result.Error != nil {
-				return result.Error.Error()
-			} else {
-				return ""
-			}
-		}(),
-	})
-}
-
-func ResponseBadRequest(c *gin.Context, message ...string) {
-	c.JSON(http.StatusBadRequest, Response{
-		Message: strings.Join(message, ", "),
+	errorDetails := ""
+	if result.Error != nil {
+		errorDetails = result.Error.Error()
+	}
+	c.JSON(result.HttpStatus, response{
+		Message:          result.Message,
+		Data:             result.Data,
+		Err:              errorDetails,
+		ValidationErrors: result.ValidationErrors,
 	})
 }
 
@@ -153,11 +134,19 @@ func ResultSuccess(message string, data any) Result {
 }
 
 func ResultInvalidRequestErr(err error) Result {
+	validationErrors := parseValidationErrors(err)
+
 	return NewResult(
 		false,
 		http.StatusBadRequest,
 		"invalid request",
 		nil,
 		err,
-	)
+	).withValidationErrors(validationErrors)
+}
+
+func (r Result) withValidationErrors(validationErrors []ValidationFieldError) Result {
+	r.ValidationErrors = validationErrors
+
+	return r
 }
