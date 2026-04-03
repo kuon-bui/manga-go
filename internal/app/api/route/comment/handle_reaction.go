@@ -13,7 +13,7 @@ import (
 // @Description  Add or update a reaction for a specific comment
 // @Tags         Comment
 // @Accept       json
-// @Produce      json;
+// @Produce      application/json
 // @Param        id  path      string  true  "Comment ID"
 // @Param        request body commentrequest.AddReactionRequest true "Reaction data"
 // @Success      200  {object}  response.Response
