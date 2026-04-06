@@ -14,11 +14,18 @@ func (s *ChapterService) CreateChapter(ctx context.Context, req *chapterrequest.
 		return response.ResultError("Comic not found in context")
 	}
 
+	chapterIdx, err := s.chapterRepo.GetNextChapterIdx(ctx, comicID)
+	if err != nil {
+		s.logger.Error("Failed to get next chapter index", "error", err)
+		return response.ResultErrDb(err)
+	}
+
 	chapter := model.Chapter{
-		ComicID: comicID,
-		Number:  req.Number,
-		Title:   req.Title,
-		Slug:    req.Slug,
+		ComicID:    comicID,
+		Number:     req.Number,
+		ChapterIdx: chapterIdx,
+		Title:      req.Title,
+		Slug:       req.Slug,
 	}
 
 	for i, page := range req.Pages {

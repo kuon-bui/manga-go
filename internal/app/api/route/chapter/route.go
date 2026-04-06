@@ -45,6 +45,7 @@ func (cr *ChapterRoute) Setup() {
 	rgSlug.PUT("", cr.handler.updateChapter)
 	rgSlug.PUT("/pages", cr.handler.updateChapterPages)
 	rgSlug.PATCH("/publish", cr.handler.publishChapter)
+	rgSlug.PATCH("/mark-as-read", cr.handler.markChapterAsRead)
 
 	readingProgressRg := rgSlug.Group("/reading-progress")
 	readingProgressRg.GET("", cr.handler.getReadingProgress)
