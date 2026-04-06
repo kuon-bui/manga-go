@@ -1,6 +1,6 @@
 package response
 
-type response struct {
+type Response struct {
 	Message          string                 `json:"message"`
 	Data             any                    `json:"data,omitempty"`
 	Err              string                 `json:"error,omitempty"`

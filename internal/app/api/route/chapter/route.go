@@ -37,9 +37,16 @@ func (cr *ChapterRoute) Setup() {
 	rg := cr.r.Group("/comics/:comicSlug/chapters", cr.authMiddleware.RequireJwt, cr.slugMiddleware.ResolveComicID)
 
 	rg.GET("", cr.handler.listChapters)
-	rg.GET("/:chapterSlug", cr.slugMiddleware.ResolveChapterID, cr.handler.getChapter)
 	rg.POST("", cr.handler.createChapter)
-	rg.PUT("/:chapterSlug", cr.slugMiddleware.ResolveChapterID, cr.handler.updateChapter)
-	rg.PUT("/:chapterSlug/pages", cr.slugMiddleware.ResolveChapterID, cr.handler.updateChapterPages)
-	rg.PATCH("/:chapterSlug/publish", cr.slugMiddleware.ResolveChapterID, cr.handler.publishChapter)
+
+	rgSlug := rg.Group("/:chapterSlug", cr.slugMiddleware.ResolveChapterID)
+
+	rgSlug.GET("", cr.handler.getChapter)
+	rgSlug.PUT("", cr.handler.updateChapter)
+	rgSlug.PUT("/pages", cr.handler.updateChapterPages)
+	rgSlug.PATCH("/publish", cr.handler.publishChapter)
+
+	readingProgressRg := rgSlug.Group("/reading-progress")
+	readingProgressRg.GET("", cr.handler.getReadingProgress)
+	readingProgressRg.PATCH("", cr.handler.updateReadingProgress)
 }

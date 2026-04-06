@@ -172,6 +172,14 @@ func (r *BaseRepository[T]) FindPaginated(ctx context.Context, conditions []any,
 	return models, total, nil
 }
 
+func (r *BaseRepository[T]) Save(ctx context.Context, t *T) error {
+	return r.DB.WithContext(ctx).Save(t).Error
+}
+
+func (r *BaseRepository[T]) SaveWithTransaction(tx *gorm.DB, t *T) error {
+	return tx.Save(t).Error
+}
+
 func (r *BaseRepository[T]) Create(ctx context.Context, t *T) error {
 	return r.DB.WithContext(ctx).Create(t).Error
 }

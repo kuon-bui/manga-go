@@ -2,7 +2,6 @@ package comicrepo
 
 import (
 	"manga-go/internal/pkg/model"
-	"manga-go/internal/pkg/redis"
 	"manga-go/internal/pkg/repo/base"
 
 	"gorm.io/gorm"
@@ -10,14 +9,12 @@ import (
 
 type ComicRepo struct {
 	*base.BaseRepository[model.Comic]
-	rds *redis.Redis
 }
 
-func NewComicRepo(db *gorm.DB, rds *redis.Redis) *ComicRepo {
+func NewComicRepo(db *gorm.DB) *ComicRepo {
 	return &ComicRepo{
 		BaseRepository: &base.BaseRepository[model.Comic]{
 			DB: db,
 		},
-		rds: rds,
 	}
 }

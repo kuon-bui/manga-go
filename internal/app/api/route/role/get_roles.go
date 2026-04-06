@@ -14,7 +14,7 @@ import (
 // @Produce      json
 // @Param        page   query     int  false  "Page number"
 // @Param        limit  query     int  false  "Items per page"
-// @Success      200    {object}  response.PaginationResponse
+// @Success      200    {object}  response.Result
 // @Failure      400    {object}  response.Response
 // @Failure      401    {object}  response.Response
 // @Router       /roles [get]

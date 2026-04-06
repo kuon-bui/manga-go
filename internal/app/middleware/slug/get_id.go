@@ -68,7 +68,14 @@ func (m *SlugMiddleware) ResolveChapterID(g *gin.Context) {
 		return
 	}
 
-	id, err := m.chapterService.GetChapterIDBySlug(g.Request.Context(), chapterSlug)
+	comicId, ok := common.GetComicIdFromContext(g.Request.Context())
+	if !ok {
+		m.logger.Error("Comic ID not found in context")
+		g.AbortWithStatusJSON(500, gin.H{"error": "Internal server error"})
+		return
+	}
+
+	id, err := m.chapterService.GetChapterIDBySlug(g.Request.Context(), comicId, chapterSlug)
 	if err != nil {
 		m.logger.Errorf("Failed to get chapter ID for slug %s: %v", chapterSlug, err)
 		g.AbortWithStatusJSON(404, gin.H{"error": "Chapter not found"})

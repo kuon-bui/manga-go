@@ -11,8 +11,8 @@ import (
 )
 
 func NewGinEngine(config *config.Config) *gin.Engine {
+	gin.ForceConsoleColor()
 	g := gin.Default()
-
 	g.Use(gzip.Gzip(gzip.DefaultCompression))
 	g.Use(otelgin.Middleware(config.Service.Name))
 	g.Use(gin.Recovery())

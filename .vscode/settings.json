@@ -58,6 +58,7 @@
     "readinghistoryrequest",
     "readinghistoryroute",
     "readinghistoryservice",
+    "readingprogressrepo",
     "rediswatcher",
     "resty",
     "rolerepo",
