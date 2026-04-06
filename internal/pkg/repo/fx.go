@@ -14,6 +14,7 @@ import (
 	tagrepo "manga-go/internal/pkg/repo/tag"
 	translationgrouprepo "manga-go/internal/pkg/repo/translation_group"
 	userrepo "manga-go/internal/pkg/repo/user"
+	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 
 	"go.uber.org/fx"
 )
@@ -33,4 +34,5 @@ var Module = fx.Module(
 	commentrepo.Module,
 	reactionrepo.Module,
 	readingprogressrepo.Module,
+	usercomicreadrepo.Module,
 )
