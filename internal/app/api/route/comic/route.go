@@ -37,9 +37,12 @@ func (cr *ComicRoute) Setup() {
 	rg := cr.r.Group("/comics", cr.authMiddleware.RequireJwt)
 
 	rg.GET("", cr.comicHandler.getComics)
-	rg.GET("/:comicSlug", cr.comicHandler.getComic)
 	rg.POST("", cr.comicHandler.createComic)
-	rg.PUT("/:comicSlug", cr.comicHandler.updateComic)
-	rg.PATCH("/:comicSlug/publish", cr.comicHandler.publishComic)
-	rg.DELETE("/:comicSlug", cr.comicHandler.deleteComic)
+
+	slugRg := rg.Group("/:comicSlug")
+	slugRg.GET("", cr.comicHandler.getComic)
+	slugRg.PUT("", cr.comicHandler.updateComic)
+	slugRg.PATCH("/status", cr.comicHandler.updateComicStatus)
+	slugRg.PATCH("/publish", cr.comicHandler.publishComic)
+	slugRg.DELETE("", cr.comicHandler.deleteComic)
 }
