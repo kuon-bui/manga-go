@@ -175,6 +175,8 @@ func TestListGenres_Success(t *testing.T) {
 	svc := newTestService(repo)
 
 	genres := []*model.Genre{sampleGenre(), sampleGenre()}
+	// Each call to sampleGenre() returns a struct with a freshly-generated UUID,
+	// so the two elements in the slice are guaranteed to be distinct.
 	paging := &common.Paging{Page: 1, Limit: 20}
 	repo.On("FindPaginated", mock.Anything, mock.Anything, paging, mock.Anything).Return(genres, int64(2), nil)
 

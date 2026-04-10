@@ -169,6 +169,8 @@ func TestListAuthors_Success(t *testing.T) {
 	svc := newTestService(repo)
 
 	authors := []*model.Author{sampleAuthor(), sampleAuthor()}
+	// Each call to sampleAuthor() returns a struct with a freshly-generated UUID,
+	// so the two elements in the slice are guaranteed to be distinct.
 	paging := &common.Paging{Page: 1, Limit: 20}
 	repo.On("FindPaginated", mock.Anything, mock.Anything, paging, mock.Anything).Return(authors, int64(2), nil)
 

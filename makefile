@@ -11,5 +11,5 @@ migrate-rollback-all:
 swagger:
 	swag init -g cmd/dev/main.go -o docs/ --parseDependency --parseInternal
 test:
-	go test ./internal/...
+	go test -v -cover ./internal/...
 
