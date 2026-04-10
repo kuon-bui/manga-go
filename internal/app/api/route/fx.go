@@ -8,6 +8,7 @@ import (
 	fileroute "manga-go/internal/app/api/route/file"
 	genreroute "manga-go/internal/app/api/route/genre"
 	permissionroute "manga-go/internal/app/api/route/permission"
+	ratingroute "manga-go/internal/app/api/route/rating"
 	readinghistoryroute "manga-go/internal/app/api/route/reading_history"
 	roleroute "manga-go/internal/app/api/route/role"
 	swaggerrouter "manga-go/internal/app/api/route/swagger"
@@ -30,6 +31,7 @@ var Module = fx.Module(
 	translationgrouproute.Module,
 	roleroute.Module,
 	permissionroute.Module,
+	ratingroute.Module,
 	readinghistoryroute.Module,
 	commentroute.Module,
 	swaggerrouter.Module,
