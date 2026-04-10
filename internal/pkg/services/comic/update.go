@@ -29,7 +29,6 @@ func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicr
 		"slug":               req.Slug,
 		"alternative_titles": common.StringSlice(req.AlternativeTitles),
 		"type":               req.Type,
-		"status":             req.Status,
 	}
 
 	if req.Description != nil {
