@@ -11,12 +11,14 @@ import (
 	userseeder "manga-go/internal/pkg/seeder/user"
 
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 )
 
 // SeederRunnerParams holds all individual seeders in the correct dependency order.
 type SeederRunnerParams struct {
 	fx.In
 
+	Db               *gorm.DB
 	Logger           *logger.Logger
 	PermissionSeeder *permissionseeder.PermissionSeeder
 	RoleSeeder       *roleseeder.RoleSeeder
@@ -38,7 +40,7 @@ func newSeederRunner(p SeederRunnerParams) *SeederRunner {
 		p.TagSeeder,
 		p.ComicSeeder,
 	}
-	return NewSeederRunner(seeders, p.Logger)
+	return NewSeederRunner(seeders, p.Logger, p.Db)
 }
 
 var Module = fx.Module(

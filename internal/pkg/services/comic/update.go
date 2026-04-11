@@ -7,12 +7,25 @@ import (
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	comicrequest "manga-go/internal/pkg/request/comic"
+	"runtime/debug"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicrequest.UpdateComicRequest) response.Result {
+func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicrequest.UpdateComicRequest) (result response.Result) {
+	tx := s.gormDb.Begin().WithContext(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			common.ShowDebugTrace("update comic", debug.Stack())
+			result = response.ResultErrInternal(r.(error))
+		} else if result.IsError() {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
 	comic, err := s.comicRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "slug", Value: slug},
 	}, nil)
@@ -107,23 +120,35 @@ func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicr
 		associations["Tags"] = tags
 	}
 
-	if req.AuthorIDs != nil {
-		var authors []*model.Author
-		for _, aid := range req.AuthorIDs {
-			authors = append(authors, &model.Author{SqlModel: common.SqlModel{ID: aid}})
+	if req.AuthorNames != nil {
+		authors, err := s.resolveOrCreateAuthorsByNames(tx, req.AuthorNames)
+		if err != nil {
+			s.logger.Error("Failed to resolve authors by name", "error", err)
+			return response.ResultErrDb(err)
 		}
+
 		associations["Authors"] = authors
 	}
 
-	err = s.comicRepo.UpdateComicWithTransaction(ctx, comic.ID, updateData, associations)
+	if req.ArtistNames != nil {
+		artists, err := s.resolveOrCreateAuthorsByNames(tx, req.ArtistNames)
+		if err != nil {
+			s.logger.Error("Failed to resolve artists by name", "error", err)
+			return response.ResultErrDb(err)
+		}
+		associations["Artists"] = artists
+	}
+
+	err = s.comicRepo.UpdateComicWithTransaction(tx, comic.ID, updateData, associations)
 	if err != nil {
 		s.logger.Error("Failed to update comic", "error", err)
 		return response.ResultErrDb(err)
 	}
 
-	updated, err := s.comicRepo.FindOne(ctx, []any{
+	updated, err := s.comicRepo.FindOneWithTransaction(tx, []any{
 		clause.Eq{Column: "id", Value: comic.ID},
 	}, map[string]common.MoreKeyOption{
+		"Artists": {},
 		"Authors": {},
 		"Genres":  {},
 		"Tags":    {},

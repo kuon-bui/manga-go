@@ -5,12 +5,19 @@ import (
 	"manga-go/internal/pkg/model"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func (r *RoleRepo) AssignPermissions(ctx context.Context, roleID uuid.UUID, perms []*model.Permission) error {
 	role := &model.Role{}
 	role.ID = roleID
 	return r.DB.WithContext(ctx).Model(role).Association("Permissions").Replace(perms)
+}
+
+func (r *RoleRepo) AssignPermissionsWithTransaction(tx *gorm.DB, roleID uuid.UUID, perms []*model.Permission) error {
+	role := &model.Role{}
+	role.ID = roleID
+	return tx.Model(role).Association("Permissions").Replace(perms)
 }
 
 func (r *RoleRepo) RemovePermission(ctx context.Context, roleID uuid.UUID, perm *model.Permission) error {

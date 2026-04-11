@@ -2,8 +2,6 @@ package comicrequest
 
 import (
 	"manga-go/internal/pkg/constant"
-
-	"github.com/google/uuid"
 )
 
 type CreateComicRequest struct {
@@ -15,9 +13,9 @@ type CreateComicRequest struct {
 	Banner            *string                 `json:"banner"`
 	Type              constant.ComicType      `json:"type"`
 	AgeRating         constant.ComicAgeRating `json:"ageRating"`
-	ArtistId          *uuid.UUID              `json:"artistId"`
 	PublishedYear     *int                    `json:"publishedYear"`
-	AuthorIDs         []uuid.UUID             `json:"authorIds"`
+	AuthorNames       []string                `json:"authorNames"`
+	ArtistNames       []string                `json:"artistNames"`
 	GenreSlugs        []string                `json:"genreSlugs"`
 	TagSlugs          []string                `json:"tagSlugs"`
 }

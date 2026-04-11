@@ -7,9 +7,23 @@ import (
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/model"
 	comicrequest "manga-go/internal/pkg/request/comic"
+	"runtime/debug"
 )
 
-func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.CreateComicRequest) response.Result {
+func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.CreateComicRequest) (result response.Result) {
+	tx := s.gormDb.Begin().WithContext(ctx)
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			common.ShowDebugTrace("create comic", debug.Stack())
+			result = response.ResultErrInternal(r.(error))
+		} else if result.IsError() {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
 	comic := model.Comic{
 		Title:             req.Title,
 		Slug:              req.Slug,
@@ -24,10 +38,6 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 		PublishedYear:     req.PublishedYear,
 	}
 
-	if req.ArtistId != nil {
-		comic.ArtistId = req.ArtistId
-	}
-
 	if req.Type != "" {
 		comic.Type = req.Type
 	}
@@ -36,9 +46,22 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 		comic.AgeRating = req.AgeRating
 	}
 
-	// Build author associations
-	for _, aid := range req.AuthorIDs {
-		comic.Authors = append(comic.Authors, &model.Author{SqlModel: common.SqlModel{ID: aid}})
+	if req.AuthorNames != nil {
+		authors, err := s.resolveOrCreateAuthorsByNames(tx, req.AuthorNames)
+		if err != nil {
+			s.logger.Error("Failed to resolve authors by name", "error", err)
+			return response.ResultErrDb(err)
+		}
+		comic.Authors = authors
+	}
+
+	if req.ArtistNames != nil {
+		artists, err := s.resolveOrCreateAuthorsByNames(tx, req.ArtistNames)
+		if err != nil {
+			s.logger.Error("Failed to resolve artists by name", "error", err)
+			return response.ResultErrDb(err)
+		}
+		comic.Artists = artists
 	}
 
 	if len(req.GenreSlugs) > 0 {

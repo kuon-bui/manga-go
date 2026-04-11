@@ -8,6 +8,7 @@ import (
 
 func (s *ComicService) ListComics(ctx context.Context, paging *common.Paging) response.Result {
 	comics, total, err := s.comicRepo.FindPaginated(ctx, nil, paging, map[string]common.MoreKeyOption{
+		"Artists": {},
 		"Authors": {},
 		"Genres":  {},
 		"Tags":    {},

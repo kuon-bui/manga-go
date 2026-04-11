@@ -16,7 +16,7 @@ func (s *ComicService) GetComic(ctx context.Context, slug string) response.Resul
 		clause.Eq{Column: "slug", Value: slug},
 	}, map[string]common.MoreKeyOption{
 		"Authors":  {},
-		"Artist":   {},
+		"Artists":  {},
 		"Genres":   {},
 		"Tags":     {},
 		"Chapters": {},
