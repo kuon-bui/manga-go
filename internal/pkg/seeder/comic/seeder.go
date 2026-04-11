@@ -2,15 +2,17 @@ package comicseeder
 
 import (
 	"context"
-	"manga-go/internal/pkg/common"
+	"errors"
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/model"
 	authorrepo "manga-go/internal/pkg/repo/author"
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
 	genrerepo "manga-go/internal/pkg/repo/genre"
+	pagerepo "manga-go/internal/pkg/repo/page"
 	tagrepo "manga-go/internal/pkg/repo/tag"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -278,6 +280,7 @@ type ComicSeeder struct {
 	genreRepo   *genrerepo.GenreRepo
 	tagRepo     *tagrepo.TagRepo
 	chapterRepo *chapterrepo.ChapterRepo
+	pageRepo    *pagerepo.PageRepo
 }
 
 func NewComicSeeder(
@@ -286,6 +289,7 @@ func NewComicSeeder(
 	genreRepo *genrerepo.GenreRepo,
 	tagRepo *tagrepo.TagRepo,
 	chapterRepo *chapterrepo.ChapterRepo,
+	pageRepo *pagerepo.PageRepo,
 ) *ComicSeeder {
 	return &ComicSeeder{
 		comicRepo:   comicRepo,
@@ -293,6 +297,7 @@ func NewComicSeeder(
 		genreRepo:   genreRepo,
 		tagRepo:     tagRepo,
 		chapterRepo: chapterRepo,
+		pageRepo:    pageRepo,
 	}
 }
 
@@ -302,21 +307,26 @@ func (s *ComicSeeder) Name() string {
 
 func (s *ComicSeeder) Seed(ctx context.Context) error {
 	for _, cs := range comics {
-		description := cs.Description
-		comic := model.Comic{
-			Title:       cs.Title,
-			Slug:        cs.Slug,
-			Description: &description,
-			Type:        cs.Type,
-			Status:      cs.Status,
-			AgeRating:   cs.AgeRating,
-			IsPublished: cs.IsPublished,
-			IsHot:       cs.IsHot,
-		}
-		if err := s.comicRepo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "slug", Value: cs.Slug}).
-			FirstOrCreate(&comic).Error; err != nil {
+		// Find or create comic by slug
+		comic, err := s.comicRepo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: cs.Slug}}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			description := cs.Description
+			comic = &model.Comic{
+				Title:       cs.Title,
+				Slug:        cs.Slug,
+				Description: &description,
+				Type:        cs.Type,
+				Status:      cs.Status,
+				AgeRating:   cs.AgeRating,
+				IsPublished: cs.IsPublished,
+				IsHot:       cs.IsHot,
+			}
+			if err := s.comicRepo.Create(ctx, comic); err != nil {
+				return err
+			}
 		}
 
 		authors, err := s.lookupAuthors(ctx, cs.Authors)
@@ -333,47 +343,54 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 		}
 
 		// Replace associations (idempotent)
-		if err := s.comicRepo.DB.WithContext(ctx).Model(&model.Comic{SqlModel: common.SqlModel{ID: comic.ID}}).
-			Association("Authors").Replace(authors); err != nil {
-			return err
-		}
-		if err := s.comicRepo.DB.WithContext(ctx).Model(&model.Comic{SqlModel: common.SqlModel{ID: comic.ID}}).
-			Association("Genres").Replace(genres); err != nil {
-			return err
-		}
-		if err := s.comicRepo.DB.WithContext(ctx).Model(&model.Comic{SqlModel: common.SqlModel{ID: comic.ID}}).
-			Association("Tags").Replace(tags); err != nil {
+		if err := s.comicRepo.UpdateComicWithTransaction(ctx, comic.ID, map[string]any{}, map[string]any{
+			"Authors": authors,
+			"Genres":  genres,
+			"Tags":    tags,
+		}); err != nil {
 			return err
 		}
 
 		// Seed chapters and their pages
 		for _, ch := range cs.Chapters {
-			chapter := model.Chapter{
-				ComicID:     comic.ID,
-				Number:      ch.Number,
-				Title:       ch.Title,
-				Slug:        comic.Slug + "-chapter-" + ch.Number,
-				IsPublished: true,
-			}
-			if err := s.chapterRepo.DB.WithContext(ctx).
-				Where(clause.Eq{Column: "comic_id", Value: comic.ID}).
-				Where(clause.Eq{Column: "number", Value: ch.Number}).
-				FirstOrCreate(&chapter).Error; err != nil {
+			chapter, err := s.chapterRepo.FindOne(ctx, []any{
+				clause.Eq{Column: "comic_id", Value: comic.ID},
+				clause.Eq{Column: "number", Value: ch.Number},
+			}, nil)
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
+			}
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				chapter = &model.Chapter{
+					ComicID:     comic.ID,
+					Number:      ch.Number,
+					Title:       ch.Title,
+					Slug:        comic.Slug + "-chapter-" + ch.Number,
+					IsPublished: true,
+				}
+				if err := s.chapterRepo.Create(ctx, chapter); err != nil {
+					return err
+				}
 			}
 
 			// Seed pages for this chapter
 			for _, pg := range ch.Pages {
-				page := model.Page{
-					ChapterID:  chapter.ID,
-					PageNumber: pg.PageNumber,
-					ImageURL:   pg.ImageURL,
-				}
-				if err := s.chapterRepo.DB.WithContext(ctx).
-					Where(clause.Eq{Column: "chapter_id", Value: chapter.ID}).
-					Where(clause.Eq{Column: "page_number", Value: pg.PageNumber}).
-					FirstOrCreate(&page).Error; err != nil {
+				_, err := s.pageRepo.FindOne(ctx, []any{
+					clause.Eq{Column: "chapter_id", Value: chapter.ID},
+					clause.Eq{Column: "page_number", Value: pg.PageNumber},
+				}, nil)
+				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 					return err
+				}
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					page := &model.Page{
+						ChapterID:  chapter.ID,
+						PageNumber: pg.PageNumber,
+						ImageURL:   pg.ImageURL,
+					}
+					if err := s.pageRepo.Create(ctx, page); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -384,13 +401,11 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 func (s *ComicSeeder) lookupAuthors(ctx context.Context, names []string) ([]*model.Author, error) {
 	result := make([]*model.Author, 0, len(names))
 	for _, name := range names {
-		var a model.Author
-		if err := s.authorRepo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "name", Value: name}).
-			First(&a).Error; err != nil {
+		a, err := s.authorRepo.FindOne(ctx, []any{clause.Eq{Column: "name", Value: name}}, nil)
+		if err != nil {
 			return nil, err
 		}
-		result = append(result, &a)
+		result = append(result, a)
 	}
 	return result, nil
 }
@@ -398,13 +413,11 @@ func (s *ComicSeeder) lookupAuthors(ctx context.Context, names []string) ([]*mod
 func (s *ComicSeeder) lookupGenres(ctx context.Context, slugs []string) ([]*model.Genre, error) {
 	result := make([]*model.Genre, 0, len(slugs))
 	for _, slug := range slugs {
-		var g model.Genre
-		if err := s.genreRepo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "slug", Value: slug}).
-			First(&g).Error; err != nil {
+		g, err := s.genreRepo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: slug}}, nil)
+		if err != nil {
 			return nil, err
 		}
-		result = append(result, &g)
+		result = append(result, g)
 	}
 	return result, nil
 }
@@ -412,13 +425,11 @@ func (s *ComicSeeder) lookupGenres(ctx context.Context, slugs []string) ([]*mode
 func (s *ComicSeeder) lookupTags(ctx context.Context, slugs []string) ([]*model.Tag, error) {
 	result := make([]*model.Tag, 0, len(slugs))
 	for _, slug := range slugs {
-		var t model.Tag
-		if err := s.tagRepo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "slug", Value: slug}).
-			First(&t).Error; err != nil {
+		t, err := s.tagRepo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: slug}}, nil)
+		if err != nil {
 			return nil, err
 		}
-		result = append(result, &t)
+		result = append(result, t)
 	}
 	return result, nil
 }

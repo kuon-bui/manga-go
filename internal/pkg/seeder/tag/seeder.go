@@ -2,9 +2,11 @@ package tagseeder
 
 import (
 	"context"
+	"errors"
 	"manga-go/internal/pkg/model"
 	tagrepo "manga-go/internal/pkg/repo/tag"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -50,14 +52,18 @@ func (s *TagSeeder) Name() string {
 
 func (s *TagSeeder) Seed(ctx context.Context) error {
 	for _, t := range tags {
-		tag := model.Tag{
-			Name: t.Name,
-			Slug: t.Slug,
-		}
-		if err := s.repo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "slug", Value: t.Slug}).
-			FirstOrCreate(&tag).Error; err != nil {
+		_, err := s.repo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: t.Slug}}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			tag := &model.Tag{
+				Name: t.Name,
+				Slug: t.Slug,
+			}
+			if err := s.repo.Create(ctx, tag); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

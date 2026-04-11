@@ -2,9 +2,11 @@ package genreseeder
 
 import (
 	"context"
+	"errors"
 	"manga-go/internal/pkg/model"
 	genrerepo "manga-go/internal/pkg/repo/genre"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -46,15 +48,19 @@ func (s *GenreSeeder) Name() string {
 
 func (s *GenreSeeder) Seed(ctx context.Context) error {
 	for _, g := range genres {
-		genre := model.Genre{
-			Name:        g.Name,
-			Slug:        g.Slug,
-			Description: g.Description,
-		}
-		if err := s.repo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "slug", Value: g.Slug}).
-			FirstOrCreate(&genre).Error; err != nil {
+		_, err := s.repo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: g.Slug}}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			genre := &model.Genre{
+				Name:        g.Name,
+				Slug:        g.Slug,
+				Description: g.Description,
+			}
+			if err := s.repo.Create(ctx, genre); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

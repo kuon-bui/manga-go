@@ -2,9 +2,11 @@ package permissionseeder
 
 import (
 	"context"
+	"errors"
 	"manga-go/internal/pkg/model"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -44,11 +46,15 @@ func (s *PermissionSeeder) Name() string {
 
 func (s *PermissionSeeder) Seed(ctx context.Context) error {
 	for _, name := range permissions {
-		perm := model.Permission{Name: name}
-		if err := s.repo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "name", Value: name}).
-			FirstOrCreate(&perm).Error; err != nil {
+		_, err := s.repo.FindOne(ctx, []any{clause.Eq{Column: "name", Value: name}}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			perm := &model.Permission{Name: name}
+			if err := s.repo.Create(ctx, perm); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

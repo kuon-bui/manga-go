@@ -2,9 +2,11 @@ package authorseeder
 
 import (
 	"context"
+	"errors"
 	"manga-go/internal/pkg/model"
 	authorrepo "manga-go/internal/pkg/repo/author"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -40,11 +42,15 @@ func (s *AuthorSeeder) Name() string {
 
 func (s *AuthorSeeder) Seed(ctx context.Context) error {
 	for _, name := range authors {
-		author := model.Author{Name: name}
-		if err := s.repo.DB.WithContext(ctx).
-			Where(clause.Eq{Column: "name", Value: name}).
-			FirstOrCreate(&author).Error; err != nil {
+		_, err := s.repo.FindOne(ctx, []any{clause.Eq{Column: "name", Value: name}}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			author := &model.Author{Name: name}
+			if err := s.repo.Create(ctx, author); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
