@@ -14,9 +14,15 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+type pageSeed struct {
+	PageNumber int
+	ImageURL   string
+}
+
 type chapterSeed struct {
 	Number string
 	Title  string
+	Pages  []pageSeed
 }
 
 type comicSeed struct {
@@ -48,9 +54,39 @@ var comics = []comicSeed{
 		Genres:      []string{"action", "adventure", "comedy"},
 		Tags:        []string{"sword-art", "demons"},
 		Chapters: []chapterSeed{
-			{Number: "1", Title: "Romance Dawn"},
-			{Number: "2", Title: "They Call Him Straw Hat Luffy"},
-			{Number: "3", Title: "Enter Zoro: Pirate Hunter"},
+			{
+				Number: "1",
+				Title:  "Romance Dawn",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/op-1-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/op-1-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/op-1-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/op-1-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/op-1-5/800/1200"},
+				},
+			},
+			{
+				Number: "2",
+				Title:  "They Call Him Straw Hat Luffy",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/op-2-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/op-2-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/op-2-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/op-2-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/op-2-5/800/1200"},
+				},
+			},
+			{
+				Number: "3",
+				Title:  "Enter Zoro: Pirate Hunter",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/op-3-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/op-3-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/op-3-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/op-3-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/op-3-5/800/1200"},
+				},
+			},
 		},
 	},
 	{
@@ -66,9 +102,39 @@ var comics = []comicSeed{
 		Genres:      []string{"action", "adventure", "fantasy"},
 		Tags:        []string{"martial-arts", "demons", "magic"},
 		Chapters: []chapterSeed{
-			{Number: "1", Title: "Uzumaki Naruto"},
-			{Number: "2", Title: "Konohamaru!"},
-			{Number: "3", Title: "Sasuke Uchiha"},
+			{
+				Number: "1",
+				Title:  "Uzumaki Naruto",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/na-1-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/na-1-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/na-1-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/na-1-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/na-1-5/800/1200"},
+				},
+			},
+			{
+				Number: "2",
+				Title:  "Konohamaru!",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/na-2-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/na-2-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/na-2-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/na-2-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/na-2-5/800/1200"},
+				},
+			},
+			{
+				Number: "3",
+				Title:  "Sasuke Uchiha",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/na-3-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/na-3-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/na-3-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/na-3-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/na-3-5/800/1200"},
+				},
+			},
 		},
 	},
 	{
@@ -84,9 +150,39 @@ var comics = []comicSeed{
 		Genres:      []string{"action", "drama", "thriller"},
 		Tags:        []string{"military", "post-apocalyptic"},
 		Chapters: []chapterSeed{
-			{Number: "1", Title: "To You, 2000 Years From Now"},
-			{Number: "2", Title: "That Day"},
-			{Number: "3", Title: "Night of the Disbanding Ceremony"},
+			{
+				Number: "1",
+				Title:  "To You, 2000 Years From Now",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/aot-1-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/aot-1-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/aot-1-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/aot-1-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/aot-1-5/800/1200"},
+				},
+			},
+			{
+				Number: "2",
+				Title:  "That Day",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/aot-2-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/aot-2-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/aot-2-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/aot-2-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/aot-2-5/800/1200"},
+				},
+			},
+			{
+				Number: "3",
+				Title:  "Night of the Disbanding Ceremony",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/aot-3-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/aot-3-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/aot-3-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/aot-3-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/aot-3-5/800/1200"},
+				},
+			},
 		},
 	},
 	{
@@ -102,8 +198,28 @@ var comics = []comicSeed{
 		Genres:      []string{"action", "adventure", "fantasy"},
 		Tags:        []string{"magic", "military"},
 		Chapters: []chapterSeed{
-			{Number: "1", Title: "The Two Alchemists"},
-			{Number: "2", Title: "Body of the Sanctioned"},
+			{
+				Number: "1",
+				Title:  "The Two Alchemists",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/fma-1-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/fma-1-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/fma-1-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/fma-1-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/fma-1-5/800/1200"},
+				},
+			},
+			{
+				Number: "2",
+				Title:  "Body of the Sanctioned",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/fma-2-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/fma-2-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/fma-2-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/fma-2-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/fma-2-5/800/1200"},
+				},
+			},
 		},
 	},
 	{
@@ -119,9 +235,39 @@ var comics = []comicSeed{
 		Genres:      []string{"action", "supernatural", "horror"},
 		Tags:        []string{"demons", "martial-arts"},
 		Chapters: []chapterSeed{
-			{Number: "1", Title: "Ryomen Sukuna"},
-			{Number: "2", Title: "For Myself"},
-			{Number: "3", Title: "Girl of Steel"},
+			{
+				Number: "1",
+				Title:  "Ryomen Sukuna",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/jjk-1-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/jjk-1-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/jjk-1-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/jjk-1-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/jjk-1-5/800/1200"},
+				},
+			},
+			{
+				Number: "2",
+				Title:  "For Myself",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/jjk-2-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/jjk-2-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/jjk-2-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/jjk-2-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/jjk-2-5/800/1200"},
+				},
+			},
+			{
+				Number: "3",
+				Title:  "Girl of Steel",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/jjk-3-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/jjk-3-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/jjk-3-3/800/1200"},
+					{PageNumber: 4, ImageURL: "https://picsum.photos/seed/jjk-3-4/800/1200"},
+					{PageNumber: 5, ImageURL: "https://picsum.photos/seed/jjk-3-5/800/1200"},
+				},
+			},
 		},
 	},
 }
@@ -200,7 +346,7 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 			return err
 		}
 
-		// Seed chapters
+		// Seed chapters and their pages
 		for _, ch := range cs.Chapters {
 			chapter := model.Chapter{
 				ComicID:     comic.ID,
@@ -214,6 +360,21 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 				Where(clause.Eq{Column: "number", Value: ch.Number}).
 				FirstOrCreate(&chapter).Error; err != nil {
 				return err
+			}
+
+			// Seed pages for this chapter
+			for _, pg := range ch.Pages {
+				page := model.Page{
+					ChapterID:  chapter.ID,
+					PageNumber: pg.PageNumber,
+					ImageURL:   pg.ImageURL,
+				}
+				if err := s.chapterRepo.DB.WithContext(ctx).
+					Where(clause.Eq{Column: "chapter_id", Value: chapter.ID}).
+					Where(clause.Eq{Column: "page_number", Value: pg.PageNumber}).
+					FirstOrCreate(&page).Error; err != nil {
+					return err
+				}
 			}
 		}
 	}
