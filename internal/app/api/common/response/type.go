@@ -25,3 +25,7 @@ type Result struct {
 	Error            error
 	ValidationErrors []ValidationFieldError
 }
+
+func (r Result) IsError() bool {
+	return !r.Success
+}

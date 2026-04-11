@@ -1,7 +1,6 @@
 package permissionseeder
 
 import (
-	"context"
 	"errors"
 	"manga-go/internal/pkg/model"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
@@ -44,15 +43,15 @@ func (s *PermissionSeeder) Name() string {
 	return "PermissionSeeder"
 }
 
-func (s *PermissionSeeder) Seed(ctx context.Context) error {
+func (s *PermissionSeeder) Seed(tx *gorm.DB) error {
 	for _, name := range permissions {
-		_, err := s.repo.FindOne(ctx, []any{clause.Eq{Column: "name", Value: name}}, nil)
+		_, err := s.repo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: name}}, nil)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			perm := &model.Permission{Name: name}
-			if err := s.repo.Create(ctx, perm); err != nil {
+			if err := s.repo.CreateWithTransaction(tx, perm); err != nil {
 				return err
 			}
 		}

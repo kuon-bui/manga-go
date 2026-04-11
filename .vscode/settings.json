@@ -51,6 +51,7 @@
     "otelgin",
     "otlptrace",
     "otlptracegrpc",
+    "pagerepo",
     "permissionrepo",
     "permissionrequest",
     "permissionroute",

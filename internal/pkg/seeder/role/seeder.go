@@ -1,7 +1,6 @@
 package roleseeder
 
 import (
-	"context"
 	"errors"
 	"manga-go/internal/pkg/model"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
@@ -48,29 +47,29 @@ func (s *RoleSeeder) Name() string {
 	return "RoleSeeder"
 }
 
-func (s *RoleSeeder) Seed(ctx context.Context) error {
+func (s *RoleSeeder) Seed(tx *gorm.DB) error {
 	for roleName, permNames := range rolePermissions {
-		role, err := s.roleRepo.FindOne(ctx, []any{clause.Eq{Column: "name", Value: roleName}}, nil)
+		role, err := s.roleRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: roleName}}, nil)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			role = &model.Role{Name: roleName}
-			if err := s.roleRepo.Create(ctx, role); err != nil {
+			if err := s.roleRepo.CreateWithTransaction(tx, role); err != nil {
 				return err
 			}
 		}
 
 		perms := make([]*model.Permission, 0, len(permNames))
 		for _, pn := range permNames {
-			perm, err := s.permissionRepo.FindOne(ctx, []any{clause.Eq{Column: "name", Value: pn}}, nil)
+			perm, err := s.permissionRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: pn}}, nil)
 			if err != nil {
 				return err
 			}
 			perms = append(perms, perm)
 		}
 
-		if err := s.roleRepo.AssignPermissions(ctx, role.ID, perms); err != nil {
+		if err := s.roleRepo.AssignPermissionsWithTransaction(tx, role.ID, perms); err != nil {
 			return err
 		}
 	}

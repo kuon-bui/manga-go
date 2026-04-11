@@ -126,6 +126,24 @@ func (r *BaseRepository[T]) FindAll(ctx context.Context, conditions []any, moreK
 	return models, nil
 }
 
+func (r *BaseRepository[T]) FindAllWithTx(tx *gorm.DB, conditions []any, moreKeys map[string]common.MoreKeyOption) ([]*T, error) {
+	var models []*T
+	db := tx
+
+	// where
+	db = r.ApplyWhereConditions(db, conditions)
+
+	// PRELOAD relationships with options
+	db = r.ApplyPreloadMoreKeys(db, moreKeys)
+
+	// Lấy tất cả bản ghi
+	if err := db.Find(&models).Error; err != nil {
+		return nil, err
+	}
+
+	return models, nil
+}
+
 func (r *BaseRepository[T]) FindAllWithUnscoped(ctx context.Context, conditions []any, moreKeys map[string]common.MoreKeyOption) ([]*T, error) {
 	var models []*T
 	db := r.DB.WithContext(ctx)

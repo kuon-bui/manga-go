@@ -1,7 +1,6 @@
 package comicseeder
 
 import (
-	"context"
 	"errors"
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/model"
@@ -37,6 +36,7 @@ type comicSeed struct {
 	IsPublished bool
 	IsHot       bool
 	Authors     []string
+	Artists     []string
 	Genres      []string
 	Tags        []string
 	Chapters    []chapterSeed
@@ -53,6 +53,7 @@ var comics = []comicSeed{
 		IsPublished: true,
 		IsHot:       true,
 		Authors:     []string{"Eiichiro Oda"},
+		Artists:     []string{"Eiichiro Oda"},
 		Genres:      []string{"action", "adventure", "comedy"},
 		Tags:        []string{"sword-art", "demons"},
 		Chapters: []chapterSeed{
@@ -101,6 +102,7 @@ var comics = []comicSeed{
 		IsPublished: true,
 		IsHot:       false,
 		Authors:     []string{"Masashi Kishimoto"},
+		Artists:     []string{"Masashi Kishimoto"},
 		Genres:      []string{"action", "adventure", "fantasy"},
 		Tags:        []string{"martial-arts", "demons", "magic"},
 		Chapters: []chapterSeed{
@@ -149,6 +151,7 @@ var comics = []comicSeed{
 		IsPublished: true,
 		IsHot:       true,
 		Authors:     []string{"Hajime Isayama"},
+		Artists:     []string{"Hajime Isayama"},
 		Genres:      []string{"action", "drama", "thriller"},
 		Tags:        []string{"military", "post-apocalyptic"},
 		Chapters: []chapterSeed{
@@ -197,6 +200,7 @@ var comics = []comicSeed{
 		IsPublished: true,
 		IsHot:       false,
 		Authors:     []string{"Hiromu Arakawa"},
+		Artists:     []string{"Hiromu Arakawa"},
 		Genres:      []string{"action", "adventure", "fantasy"},
 		Tags:        []string{"magic", "military"},
 		Chapters: []chapterSeed{
@@ -234,6 +238,7 @@ var comics = []comicSeed{
 		IsPublished: true,
 		IsHot:       true,
 		Authors:     []string{"Gege Akutami"},
+		Artists:     []string{"Gege Akutami"},
 		Genres:      []string{"action", "supernatural", "horror"},
 		Tags:        []string{"demons", "martial-arts"},
 		Chapters: []chapterSeed{
@@ -305,10 +310,10 @@ func (s *ComicSeeder) Name() string {
 	return "ComicSeeder"
 }
 
-func (s *ComicSeeder) Seed(ctx context.Context) error {
+func (s *ComicSeeder) Seed(tx *gorm.DB) error {
 	for _, cs := range comics {
 		// Find or create comic by slug
-		comic, err := s.comicRepo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: cs.Slug}}, nil)
+		comic, err := s.comicRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "slug", Value: cs.Slug}}, nil)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
@@ -324,27 +329,34 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 				IsPublished: cs.IsPublished,
 				IsHot:       cs.IsHot,
 			}
-			if err := s.comicRepo.Create(ctx, comic); err != nil {
+			if err := s.comicRepo.CreateWithTransaction(tx, comic); err != nil {
 				return err
 			}
 		}
 
-		authors, err := s.lookupAuthors(ctx, cs.Authors)
+		authors, err := s.lookupAuthors(tx, cs.Authors)
 		if err != nil {
 			return err
 		}
-		genres, err := s.lookupGenres(ctx, cs.Genres)
+
+		artists, err := s.lookupAuthors(tx, cs.Artists)
 		if err != nil {
 			return err
 		}
-		tags, err := s.lookupTags(ctx, cs.Tags)
+
+		genres, err := s.lookupGenres(tx, cs.Genres)
+		if err != nil {
+			return err
+		}
+		tags, err := s.lookupTags(tx, cs.Tags)
 		if err != nil {
 			return err
 		}
 
 		// Replace associations (idempotent)
-		if err := s.comicRepo.UpdateComicWithTransaction(ctx, comic.ID, map[string]any{}, map[string]any{
+		if err := s.comicRepo.UpdateComicWithTransaction(tx, comic.ID, map[string]any{}, map[string]any{
 			"Authors": authors,
+			"Artists": artists,
 			"Genres":  genres,
 			"Tags":    tags,
 		}); err != nil {
@@ -353,7 +365,7 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 
 		// Seed chapters and their pages
 		for _, ch := range cs.Chapters {
-			chapter, err := s.chapterRepo.FindOne(ctx, []any{
+			chapter, err := s.chapterRepo.FindOneWithTransaction(tx, []any{
 				clause.Eq{Column: "comic_id", Value: comic.ID},
 				clause.Eq{Column: "number", Value: ch.Number},
 			}, nil)
@@ -365,17 +377,17 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 					ComicID:     comic.ID,
 					Number:      ch.Number,
 					Title:       ch.Title,
-					Slug:        comic.Slug + "-chapter-" + ch.Number,
+					Slug:        comic.Slug + "-ch-" + ch.Number,
 					IsPublished: true,
 				}
-				if err := s.chapterRepo.Create(ctx, chapter); err != nil {
+				if err := s.chapterRepo.CreateWithTransaction(tx, chapter); err != nil {
 					return err
 				}
 			}
 
 			// Seed pages for this chapter
 			for _, pg := range ch.Pages {
-				_, err := s.pageRepo.FindOne(ctx, []any{
+				_, err := s.pageRepo.FindOneWithTransaction(tx, []any{
 					clause.Eq{Column: "chapter_id", Value: chapter.ID},
 					clause.Eq{Column: "page_number", Value: pg.PageNumber},
 				}, nil)
@@ -388,7 +400,7 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 						PageNumber: pg.PageNumber,
 						ImageURL:   pg.ImageURL,
 					}
-					if err := s.pageRepo.Create(ctx, page); err != nil {
+					if err := s.pageRepo.CreateWithTransaction(tx, page); err != nil {
 						return err
 					}
 				}
@@ -398,10 +410,10 @@ func (s *ComicSeeder) Seed(ctx context.Context) error {
 	return nil
 }
 
-func (s *ComicSeeder) lookupAuthors(ctx context.Context, names []string) ([]*model.Author, error) {
+func (s *ComicSeeder) lookupAuthors(tx *gorm.DB, names []string) ([]*model.Author, error) {
 	result := make([]*model.Author, 0, len(names))
 	for _, name := range names {
-		a, err := s.authorRepo.FindOne(ctx, []any{clause.Eq{Column: "name", Value: name}}, nil)
+		a, err := s.authorRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: name}}, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -410,10 +422,10 @@ func (s *ComicSeeder) lookupAuthors(ctx context.Context, names []string) ([]*mod
 	return result, nil
 }
 
-func (s *ComicSeeder) lookupGenres(ctx context.Context, slugs []string) ([]*model.Genre, error) {
+func (s *ComicSeeder) lookupGenres(tx *gorm.DB, slugs []string) ([]*model.Genre, error) {
 	result := make([]*model.Genre, 0, len(slugs))
 	for _, slug := range slugs {
-		g, err := s.genreRepo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: slug}}, nil)
+		g, err := s.genreRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "slug", Value: slug}}, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -422,10 +434,10 @@ func (s *ComicSeeder) lookupGenres(ctx context.Context, slugs []string) ([]*mode
 	return result, nil
 }
 
-func (s *ComicSeeder) lookupTags(ctx context.Context, slugs []string) ([]*model.Tag, error) {
+func (s *ComicSeeder) lookupTags(tx *gorm.DB, slugs []string) ([]*model.Tag, error) {
 	result := make([]*model.Tag, 0, len(slugs))
 	for _, slug := range slugs {
-		t, err := s.tagRepo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: slug}}, nil)
+		t, err := s.tagRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "slug", Value: slug}}, nil)
 		if err != nil {
 			return nil, err
 		}

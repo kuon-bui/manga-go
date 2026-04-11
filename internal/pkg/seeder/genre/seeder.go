@@ -1,7 +1,6 @@
 package genreseeder
 
 import (
-	"context"
 	"errors"
 	"manga-go/internal/pkg/model"
 	genrerepo "manga-go/internal/pkg/repo/genre"
@@ -46,9 +45,9 @@ func (s *GenreSeeder) Name() string {
 	return "GenreSeeder"
 }
 
-func (s *GenreSeeder) Seed(ctx context.Context) error {
+func (s *GenreSeeder) Seed(tx *gorm.DB) error {
 	for _, g := range genres {
-		_, err := s.repo.FindOne(ctx, []any{clause.Eq{Column: "slug", Value: g.Slug}}, nil)
+		_, err := s.repo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "slug", Value: g.Slug}}, nil)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
@@ -58,7 +57,7 @@ func (s *GenreSeeder) Seed(ctx context.Context) error {
 				Slug:        g.Slug,
 				Description: g.Description,
 			}
-			if err := s.repo.Create(ctx, genre); err != nil {
+			if err := s.repo.CreateWithTransaction(tx, genre); err != nil {
 				return err
 			}
 		}

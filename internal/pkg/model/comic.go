@@ -4,8 +4,6 @@ import (
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/constant"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Comic struct {
@@ -24,10 +22,9 @@ type Comic struct {
 	IsFeatured        bool                    `json:"isFeatured" gorm:"column:is_featured"`
 	PublishedYear     *int                    `json:"publishedYear" gorm:"column:published_year"`
 	LastChapterAt     *time.Time              `json:"lastChapterAt" gorm:"column:last_chapter_at"`
-	ArtistId          *uuid.UUID              `json:"artistId" gorm:"column:artist_id"`
 
 	// Relationships
-	Artist   *Author    `json:"artist" gorm:"foreignKey:ArtistId"`
+	Artists  []*Author  `json:"artists" gorm:"many2many:comic_artists;joinForeignKey:ComicID;joinReferences:ArtistID"`
 	Authors  []*Author  `json:"authors" gorm:"many2many:comic_authors;"`
 	Genres   []*Genre   `json:"genres" gorm:"many2many:comic_genres;"`
 	Tags     []*Tag     `json:"tags" gorm:"many2many:comic_tags;"`
