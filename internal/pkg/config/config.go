@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"manga-go/internal/pkg/logger"
 
 	"github.com/spf13/viper"
@@ -72,6 +73,11 @@ type ObjectStorageConfig struct {
 	Region          string `mapstructure:"region"`
 }
 
+type SeederConfig struct {
+	AdminEmail    string `mapstructure:"admin_email"`
+	AdminPassword string `mapstructure:"admin_password"`
+}
+
 type Config struct {
 	Production    bool                `mapstructure:"production"`
 	PostgreSQL    postgresqlConfig    `mapstructure:"db"`
@@ -84,6 +90,7 @@ type Config struct {
 	CookieName    CookieNameConfig    `mapstructure:"cookie_name"`
 	ResetPassword ResetPasswordConfig `mapstructure:"reset_password"`
 	ObjectStorage ObjectStorageConfig `mapstructure:"object_storage"`
+	Seeder        SeederConfig        `mapstructure:"seeder"`
 }
 
 func LoadConfig() *Config {
@@ -103,6 +110,6 @@ func LoadConfig() *Config {
 		logger.GetLogger().Fatalf("Error while unmarshaling config file: %v", err)
 		panic(err)
 	}
-
+	fmt.Printf("\n\nconfig: %+v\n", config)
 	return &config
 }
