@@ -41,3 +41,6 @@ object_storage:
   secret_key: secretkey
   bucket_name: manga
   region: us-east-1
+seeder:
+  admin_email:
+  admin_password:
