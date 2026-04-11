@@ -5,13 +5,28 @@ import (
 	"manga-go/internal/pkg/model"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	userrepo "manga-go/internal/pkg/repo/user"
+	"os"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm/clause"
 )
 
-const adminEmail = "admin@manga.com"
-const adminPassword = "Admin@123456"
+const defaultAdminEmail = "admin@manga.com"
+const defaultAdminPassword = "Admin@123456"
+
+func adminEmail() string {
+	if v := os.Getenv("SEED_ADMIN_EMAIL"); v != "" {
+		return v
+	}
+	return defaultAdminEmail
+}
+
+func adminPassword() string {
+	if v := os.Getenv("SEED_ADMIN_PASSWORD"); v != "" {
+		return v
+	}
+	return defaultAdminPassword
+}
 
 type UserSeeder struct {
 	userRepo *userrepo.UserRepository
@@ -27,18 +42,19 @@ func (s *UserSeeder) Name() string {
 }
 
 func (s *UserSeeder) Seed(ctx context.Context) error {
-	hashed, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
+	email := adminEmail()
+	hashed, err := bcrypt.GenerateFromPassword([]byte(adminPassword()), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
 	user := model.User{
 		Name:     "Admin",
-		Email:    adminEmail,
+		Email:    email,
 		Password: string(hashed),
 	}
 	if err := s.userRepo.DB.WithContext(ctx).
-		Where(clause.Eq{Column: "email", Value: adminEmail}).
+		Where(clause.Eq{Column: "email", Value: email}).
 		FirstOrCreate(&user).Error; err != nil {
 		return err
 	}

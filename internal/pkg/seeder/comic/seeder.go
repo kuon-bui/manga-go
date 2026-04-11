@@ -156,11 +156,11 @@ func (s *ComicSeeder) Name() string {
 
 func (s *ComicSeeder) Seed(ctx context.Context) error {
 	for _, cs := range comics {
-		desc := cs.Description
+		description := cs.Description
 		comic := model.Comic{
 			Title:       cs.Title,
 			Slug:        cs.Slug,
-			Description: &desc,
+			Description: &description,
 			Type:        cs.Type,
 			Status:      cs.Status,
 			AgeRating:   cs.AgeRating,
