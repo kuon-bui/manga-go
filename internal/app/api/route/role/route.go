@@ -36,10 +36,10 @@ func NewRoleRoute(params RoleRouteParams) *RoleRoute {
 func (rr *RoleRoute) Setup() {
 	rg := rr.r.Group("/roles", rr.authMiddleware.RequireJwt)
 
-	rg.GET("/", rr.roleHandler.getRoles)
+	rg.GET("", rr.roleHandler.getRoles)
 	rg.GET("/all", rr.roleHandler.getAllRoles)
 	rg.GET("/:id", rr.roleHandler.getRole)
-	rg.POST("/", rr.roleHandler.createRole)
+	rg.POST("", rr.roleHandler.createRole)
 	rg.PUT("/:id", rr.roleHandler.updateRole)
 	rg.DELETE("/:id", rr.roleHandler.deleteRole)
 	rg.POST("/:id/permissions", rr.roleHandler.assignRolePermission)

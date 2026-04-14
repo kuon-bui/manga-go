@@ -8,6 +8,7 @@ const (
 	ComicTypeManhwa ComicType = "manhwa"
 	ComicTypeManhua ComicType = "manhua"
 	ComicTypeComic  ComicType = "comic"
+	ComicTypeNovel  ComicType = "novel"
 )
 
 // ComicStatus represents the publication status of a comic.
@@ -24,8 +25,8 @@ const (
 type ComicAgeRating string
 
 const (
-	AgeRatingAll    ComicAgeRating = "all"
-	AgeRating13Plus ComicAgeRating = "13+"
+	AgeRatingAll    ComicAgeRating = "ALL"
+	AgeRating13Plus ComicAgeRating = "T"
 	AgeRating16Plus ComicAgeRating = "16+"
 	AgeRating18Plus ComicAgeRating = "18+"
 )

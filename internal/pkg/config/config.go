@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"manga-go/internal/pkg/logger"
 
 	"github.com/spf13/viper"
@@ -110,6 +109,6 @@ func LoadConfig() *Config {
 		logger.GetLogger().Fatalf("Error while unmarshaling config file: %v", err)
 		panic(err)
 	}
-	fmt.Printf("\n\nconfig: %+v\n", config)
+
 	return &config
 }

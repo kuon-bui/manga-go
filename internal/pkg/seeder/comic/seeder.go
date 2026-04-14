@@ -2,6 +2,7 @@ package comicseeder
 
 import (
 	"errors"
+	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/model"
 	authorrepo "manga-go/internal/pkg/repo/author"
@@ -277,6 +278,40 @@ var comics = []comicSeed{
 			},
 		},
 	},
+	{
+		Title:       "The Wandering Archivist",
+		Slug:        "the-wandering-archivist",
+		Description: "A young archivist travels across ruined kingdoms to recover forbidden books and uncover the truth behind a vanished empire.",
+		Type:        constant.ComicTypeNovel,
+		Status:      constant.ComicStatusOngoing,
+		AgeRating:   constant.AgeRating13Plus,
+		IsPublished: true,
+		IsHot:       false,
+		Authors:     []string{"Naoki Urasawa"},
+		Artists:     []string{"Naoki Urasawa"},
+		Genres:      []string{"fantasy", "mystery", "drama"},
+		Tags:        []string{"magic", "time-travel"},
+		Chapters: []chapterSeed{
+			{
+				Number: "1",
+				Title:  "The Last Library",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/novel-1-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/novel-1-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/novel-1-3/800/1200"},
+				},
+			},
+			{
+				Number: "2",
+				Title:  "Map of Ashes",
+				Pages: []pageSeed{
+					{PageNumber: 1, ImageURL: "https://picsum.photos/seed/novel-2-1/800/1200"},
+					{PageNumber: 2, ImageURL: "https://picsum.photos/seed/novel-2-2/800/1200"},
+					{PageNumber: 3, ImageURL: "https://picsum.photos/seed/novel-2-3/800/1200"},
+				},
+			},
+		},
+	},
 }
 
 type ComicSeeder struct {
@@ -398,6 +433,7 @@ func (s *ComicSeeder) Seed(tx *gorm.DB) error {
 					page := &model.Page{
 						ChapterID:  chapter.ID,
 						PageNumber: pg.PageNumber,
+						PageType:   common.ContentTypeImage,
 						ImageURL:   pg.ImageURL,
 					}
 					if err := s.pageRepo.CreateWithTransaction(tx, page); err != nil {

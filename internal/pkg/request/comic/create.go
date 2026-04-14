@@ -11,8 +11,8 @@ type CreateComicRequest struct {
 	Description       *string                 `json:"description"`
 	Thumbnail         *string                 `json:"thumbnail"`
 	Banner            *string                 `json:"banner"`
-	Type              constant.ComicType      `json:"type"`
-	AgeRating         constant.ComicAgeRating `json:"ageRating"`
+	Type              constant.ComicType      `json:"type" binding:"comics_type"`
+	AgeRating         constant.ComicAgeRating `json:"ageRating" binding:"required,age_rating"`
 	PublishedYear     *int                    `json:"publishedYear"`
 	AuthorNames       []string                `json:"authorNames"`
 	ArtistNames       []string                `json:"artistNames"`

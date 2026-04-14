@@ -41,7 +41,10 @@ func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicr
 		"title":              req.Title,
 		"slug":               req.Slug,
 		"alternative_titles": common.StringSlice(req.AlternativeTitles),
-		"type":               req.Type,
+	}
+
+	if req.Type != nil && *req.Type != comic.Type {
+		return response.ResultError("Comic type cannot be changed")
 	}
 
 	if req.Description != nil {
@@ -68,7 +71,7 @@ func (s *ComicService) UpdateComic(ctx context.Context, slug string, req *comicr
 		updateData["is_featured"] = *req.IsFeatured
 	}
 
-	if req.AgeRating != "" {
+	if req.AgeRating != nil {
 		updateData["age_rating"] = req.AgeRating
 	}
 

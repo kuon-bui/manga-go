@@ -8,9 +8,11 @@ import (
 
 type Page struct {
 	common.SqlModel
-	ChapterID  uuid.UUID `json:"chapterId" gorm:"column:chapter_id"`
-	PageNumber int       `json:"pageNumber" gorm:"column:page_number"`
-	ImageURL   string    `json:"imageUrl" gorm:"column:image_url"`
+	ChapterID  uuid.UUID          `json:"chapterId" gorm:"column:chapter_id"`
+	PageNumber int                `json:"pageNumber" gorm:"column:page_number"`
+	PageType   common.ContentType `json:"pageType" gorm:"column:page_type"`
+	ImageURL   string             `json:"imageUrl" gorm:"column:image_url"`
+	Content    string             `json:"content" gorm:"column:content"`
 }
 
 func (Page) TableName() string {
