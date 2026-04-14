@@ -2,6 +2,7 @@ package translationgrouproute
 
 import (
 	authmiddleware "manga-go/internal/app/middleware/auth"
+	slugmiddleware "manga-go/internal/app/middleware/slug"
 	"manga-go/internal/pkg/logger"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ type TranslationGroupRoute struct {
 	r                       *gin.Engine
 	authMiddleware          *authmiddleware.AuthMiddleware
 	translationGroupHandler *TranslationGroupHandler
+	slugMiddleware          *slugmiddleware.SlugMiddleware
 }
 
 type TranslationGroupRouteParams struct {
@@ -22,6 +24,7 @@ type TranslationGroupRouteParams struct {
 	Logger                  *logger.Logger
 	AuthMiddleware          *authmiddleware.AuthMiddleware
 	TranslationGroupHandler *TranslationGroupHandler
+	SlugMiddleware          *slugmiddleware.SlugMiddleware
 }
 
 func NewTranslationGroupRoute(params TranslationGroupRouteParams) *TranslationGroupRoute {
@@ -30,6 +33,7 @@ func NewTranslationGroupRoute(params TranslationGroupRouteParams) *TranslationGr
 		r:                       params.R,
 		authMiddleware:          params.AuthMiddleware,
 		translationGroupHandler: params.TranslationGroupHandler,
+		slugMiddleware:          params.SlugMiddleware,
 	}
 }
 
@@ -37,9 +41,11 @@ func (r *TranslationGroupRoute) Setup() {
 	rg := r.r.Group("/translation-groups", r.authMiddleware.RequireJwt)
 
 	rg.GET("", r.translationGroupHandler.getTranslationGroups)
-	rg.GET("/:slug", r.translationGroupHandler.getTranslationGroup)
 	rg.POST("", r.translationGroupHandler.createTranslationGroup)
-	rg.PUT("/:slug", r.translationGroupHandler.updateTranslationGroup)
-	rg.DELETE("/:slug", r.translationGroupHandler.deleteTranslationGroup)
-	rg.PUT("/:slug/transfer-ownership", r.translationGroupHandler.transferOwnership)
+
+	slugRg := r.r.Group("/translation-groups/:translationGroupSlug", r.authMiddleware.RequireJwt, r.slugMiddleware.ResolveTranslationGroupID)
+	slugRg.GET("", r.translationGroupHandler.getTranslationGroup)
+	slugRg.PUT("", r.translationGroupHandler.updateTranslationGroup)
+	slugRg.DELETE("", r.translationGroupHandler.deleteTranslationGroup)
+	slugRg.PUT("/transfer-ownership", r.translationGroupHandler.transferOwnership)
 }

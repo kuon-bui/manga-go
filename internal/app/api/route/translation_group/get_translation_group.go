@@ -1,8 +1,8 @@
 package translationgrouproute
 
 import (
-	_ "manga-go/internal/app/api/common/response"
 	"github.com/gin-gonic/gin"
+	_ "manga-go/internal/app/api/common/response"
 )
 
 // @Summary      Get translation group by slug
@@ -18,7 +18,7 @@ import (
 // @Router       /translation-groups/{slug} [get]
 // @Security     AccessToken
 func (h *TranslationGroupHandler) getTranslationGroup(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("translationGroupSlug")
 
 	result := h.translationGroupService.GetTranslationGroup(c.Request.Context(), slug)
 	result.ResponseResult(c)
