@@ -21,7 +21,7 @@ import (
 // @Router       /translation-groups/{slug}/transfer-ownership [put]
 // @Security     AccessToken
 func (h *TranslationGroupHandler) transferOwnership(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("translationGroupSlug")
 
 	var req translationgrouprequest.TransferOwnershipRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

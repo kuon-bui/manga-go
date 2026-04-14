@@ -21,7 +21,7 @@ import (
 // @Router       /translation-groups/{slug} [put]
 // @Security     AccessToken
 func (h *TranslationGroupHandler) updateTranslationGroup(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("translationGroupSlug")
 
 	var req translationgrouprequest.UpdateTranslationGroupRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

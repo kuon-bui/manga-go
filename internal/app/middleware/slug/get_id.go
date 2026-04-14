@@ -87,9 +87,9 @@ func (m *SlugMiddleware) ResolveChapterID(g *gin.Context) {
 }
 
 func (m *SlugMiddleware) ResolveTranslationGroupID(g *gin.Context) {
-	slug := g.Param("slug")
+	slug := g.Param("translationGroupSlug")
 	if slug == "" {
-		g.AbortWithStatusJSON(400, gin.H{"error": "slug parameter is required"})
+		g.AbortWithStatusJSON(400, gin.H{"error": "translationGroupSlug parameter is required"})
 		return
 	}
 

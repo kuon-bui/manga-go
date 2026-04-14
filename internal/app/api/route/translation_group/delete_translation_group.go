@@ -1,8 +1,8 @@
 package translationgrouproute
 
 import (
-	_ "manga-go/internal/app/api/common/response"
 	"github.com/gin-gonic/gin"
+	_ "manga-go/internal/app/api/common/response"
 )
 
 // @Summary      Delete translation group
@@ -18,7 +18,7 @@ import (
 // @Router       /translation-groups/{slug} [delete]
 // @Security     AccessToken
 func (h *TranslationGroupHandler) deleteTranslationGroup(c *gin.Context) {
-	slug := c.Param("slug")
+	slug := c.Param("translationGroupSlug")
 
 	result := h.translationGroupService.DeleteTranslationGroup(c.Request.Context(), slug)
 	result.ResponseResult(c)
