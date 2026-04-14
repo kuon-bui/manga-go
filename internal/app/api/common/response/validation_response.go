@@ -2,6 +2,7 @@ package response
 
 import (
 	"fmt"
+	"manga-go/internal/pkg/constant"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -43,6 +44,25 @@ func buildValidationMessage(validationErr validator.FieldError) string {
 		return fmt.Sprintf("%s must have length %s", validationErr.Field(), validationErr.Param())
 	case "uuid", "uuid4":
 		return fmt.Sprintf("%s must be a valid UUID", validationErr.Field())
+	case "age_rating":
+		return fmt.Sprintf(
+			"%s must be a valid age rating (%s, %s,%s, %s)",
+			validationErr.Field(),
+			constant.AgeRatingAll,
+			constant.AgeRating13Plus,
+			constant.AgeRating16Plus,
+			constant.AgeRating18Plus,
+		)
+	case "comic_type":
+		return fmt.Sprintf(
+			"%s must be a valid comic type (%s, %s, %s, %s, %s)",
+			validationErr.Field(),
+			constant.ComicTypeManga,
+			constant.ComicTypeManhwa,
+			constant.ComicTypeManhua,
+			constant.ComicTypeComic,
+			constant.ComicTypeNovel,
+		)
 	default:
 		return fmt.Sprintf("%s is invalid (%s)", validationErr.Field(), validationErr.Tag())
 	}

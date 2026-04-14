@@ -2,10 +2,12 @@ package chapterserivce
 
 import (
 	"context"
+	"fmt"
 	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	chapterrequest "manga-go/internal/pkg/request/chapter"
+	"strings"
 )
 
 func (s *ChapterService) CreateChapter(ctx context.Context, req *chapterrequest.CreateChapterRequest) response.Result {
@@ -29,10 +31,32 @@ func (s *ChapterService) CreateChapter(ctx context.Context, req *chapterrequest.
 	}
 
 	for i, page := range req.Pages {
-		chapter.Pages = append(chapter.Pages, &model.Page{
+		pageType := page.PageType
+		if pageType == "" {
+			pageType = common.ContentTypeImage
+		}
+
+		newPage := &model.Page{
 			PageNumber: i + 1,
-			ImageURL:   page,
-		})
+			PageType:   pageType,
+		}
+
+		switch pageType {
+		case common.ContentTypeImage:
+			if strings.TrimSpace(page.ImageURL) == "" {
+				return response.ResultError(fmt.Sprintf("page %d: imageUrl is required for image page", i+1))
+			}
+			newPage.ImageURL = strings.TrimSpace(page.ImageURL)
+		case common.ContentTypeText:
+			if strings.TrimSpace(page.Content) == "" {
+				return response.ResultError(fmt.Sprintf("page %d: content is required for text page", i+1))
+			}
+			newPage.Content = strings.TrimSpace(page.Content)
+		default:
+			return response.ResultError(fmt.Sprintf("page %d: invalid pageType", i+1))
+		}
+
+		chapter.Pages = append(chapter.Pages, newPage)
 	}
 
 	if err := s.chapterRepo.Create(ctx, &chapter); err != nil {

@@ -36,9 +36,9 @@ func NewTranslationGroupRoute(params TranslationGroupRouteParams) *TranslationGr
 func (r *TranslationGroupRoute) Setup() {
 	rg := r.r.Group("/translation-groups", r.authMiddleware.RequireJwt)
 
-	rg.GET("/", r.translationGroupHandler.getTranslationGroups)
+	rg.GET("", r.translationGroupHandler.getTranslationGroups)
 	rg.GET("/:slug", r.translationGroupHandler.getTranslationGroup)
-	rg.POST("/", r.translationGroupHandler.createTranslationGroup)
+	rg.POST("", r.translationGroupHandler.createTranslationGroup)
 	rg.PUT("/:slug", r.translationGroupHandler.updateTranslationGroup)
 	rg.DELETE("/:slug", r.translationGroupHandler.deleteTranslationGroup)
 	rg.PUT("/:slug/transfer-ownership", r.translationGroupHandler.transferOwnership)

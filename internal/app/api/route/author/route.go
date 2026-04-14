@@ -36,10 +36,10 @@ func NewAuthorRoute(params AuthorRouteParams) *AuthorRoute {
 func (ar *AuthorRoute) Setup() {
 	rg := ar.r.Group("/authors", ar.authMiddleware.RequireJwt)
 
-	rg.GET("/", ar.authorHandler.getAuthors)
+	rg.GET("", ar.authorHandler.getAuthors)
 	rg.GET("/all", ar.authorHandler.getAllAuthors)
 	rg.GET("/:id", ar.authorHandler.getAuthor)
-	rg.POST("/", ar.authorHandler.createAuthor)
+	rg.POST("", ar.authorHandler.createAuthor)
 	rg.PUT("/:id", ar.authorHandler.updateAuthor)
 	rg.DELETE("/:id", ar.authorHandler.deleteAuthor)
 }

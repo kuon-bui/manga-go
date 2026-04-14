@@ -36,9 +36,9 @@ func NewPermissionRoute(params PermissionRouteParams) *PermissionRoute {
 func (pr *PermissionRoute) Setup() {
 	rg := pr.r.Group("/permissions", pr.authMiddleware.RequireJwt)
 
-	rg.GET("/", pr.permissionHandler.getPermissions)
+	rg.GET("", pr.permissionHandler.getPermissions)
 	rg.GET("/all", pr.permissionHandler.getAllPermissions)
-	rg.POST("/", pr.permissionHandler.createPermission)
+	rg.POST("", pr.permissionHandler.createPermission)
 	rg.PUT("/:id", pr.permissionHandler.updatePermission)
 	rg.DELETE("/:id", pr.permissionHandler.deletePermission)
 }

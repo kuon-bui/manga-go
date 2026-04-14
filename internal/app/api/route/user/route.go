@@ -35,7 +35,7 @@ func NewUserRoute(p UserRouteParams) *UserRoute {
 
 func (ur *UserRoute) Setup() {
 	rg := ur.r.Group("/users")
-	rg.POST("/", ur.userHandler.createAccount)
+	rg.POST("", ur.userHandler.createAccount)
 	rg.POST("sign-in", ur.userHandler.signIn)
 	rg.POST("/request-reset-password", ur.userHandler.requestResetPassword)
 	rg.POST("/reset-password", ur.userHandler.resetPassword)

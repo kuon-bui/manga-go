@@ -3,10 +3,12 @@ package chapterserivce
 import (
 	"context"
 	"errors"
+	"fmt"
 	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	chapterrequest "manga-go/internal/pkg/request/chapter"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -31,12 +33,34 @@ func (s *ChapterService) UpdateChapterPages(ctx context.Context, chapterSlug str
 	}
 
 	newPages := make([]*model.Page, len(req.Pages))
-	for i, imageURL := range req.Pages {
-		newPages[i] = &model.Page{
+	for i, page := range req.Pages {
+		pageType := page.PageType
+		if pageType == "" {
+			pageType = common.ContentTypeImage
+		}
+
+		newPage := &model.Page{
 			ChapterID:  chapter.ID,
 			PageNumber: i + 1,
-			ImageURL:   imageURL,
+			PageType:   pageType,
 		}
+
+		switch pageType {
+		case common.ContentTypeImage:
+			if strings.TrimSpace(page.ImageURL) == "" {
+				return response.ResultError(fmt.Sprintf("page %d: imageUrl is required for image page", i+1))
+			}
+			newPage.ImageURL = strings.TrimSpace(page.ImageURL)
+		case common.ContentTypeText:
+			if strings.TrimSpace(page.Content) == "" {
+				return response.ResultError(fmt.Sprintf("page %d: content is required for text page", i+1))
+			}
+			newPage.Content = strings.TrimSpace(page.Content)
+		default:
+			return response.ResultError(fmt.Sprintf("page %d: invalid pageType", i+1))
+		}
+
+		newPages[i] = newPage
 	}
 
 	err = s.chapterRepo.UpdateChapterPages(ctx, chapterSlug, newPages)
