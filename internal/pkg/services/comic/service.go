@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/redis"
 	authorrepo "manga-go/internal/pkg/repo/author"
 	comicrepo "manga-go/internal/pkg/repo/comic"
+	comicfollowrepo "manga-go/internal/pkg/repo/comic_follow"
 	genrerepo "manga-go/internal/pkg/repo/genre"
 	tagrepo "manga-go/internal/pkg/repo/tag"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
@@ -16,6 +17,7 @@ import (
 type ComicService struct {
 	logger            *logger.Logger
 	authorRepo        *authorrepo.AuthorRepo
+	comicFollowRepo   *comicfollowrepo.ComicFollowRepo
 	comicRepo         *comicrepo.ComicRepo
 	genreRepo         *genrerepo.GenreRepo
 	tagRepo           *tagrepo.TagRepo
@@ -28,6 +30,7 @@ type ComicServiceParams struct {
 	fx.In
 	Logger            *logger.Logger
 	AuthorRepo        *authorrepo.AuthorRepo
+	ComicFollowRepo   *comicfollowrepo.ComicFollowRepo
 	ComicRepo         *comicrepo.ComicRepo
 	GenreRepo         *genrerepo.GenreRepo
 	TagRepo           *tagrepo.TagRepo
@@ -40,6 +43,7 @@ func NewComicService(params ComicServiceParams) *ComicService {
 	return &ComicService{
 		logger:            params.Logger,
 		authorRepo:        params.AuthorRepo,
+		comicFollowRepo:   params.ComicFollowRepo,
 		comicRepo:         params.ComicRepo,
 		genreRepo:         params.GenreRepo,
 		tagRepo:           params.TagRepo,
