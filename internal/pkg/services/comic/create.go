@@ -7,6 +7,7 @@ import (
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/model"
 	comicrequest "manga-go/internal/pkg/request/comic"
+	"manga-go/internal/pkg/utils"
 	"runtime/debug"
 )
 
@@ -44,6 +45,16 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 
 	if req.AgeRating != "" {
 		comic.AgeRating = req.AgeRating
+	}
+
+	currentUser, err := utils.GetCurrentUserFormContext(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get current user from context", "error", err)
+		return response.ResultErrInternal(err)
+	}
+
+	if currentUser.TranslationGroupID != nil {
+		comic.TranslationGroupID = currentUser.TranslationGroupID
 	}
 
 	if req.AuthorNames != nil {
