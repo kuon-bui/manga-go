@@ -17,6 +17,7 @@
     "chapterroute",
     "chapterserivce",
     "chapterservice",
+    "comicfollowrepo",
     "comicmiddleware",
     "comicrepo",
     "comicrequest",

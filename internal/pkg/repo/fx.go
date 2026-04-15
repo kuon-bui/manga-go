@@ -4,6 +4,7 @@ import (
 	authorrepo "manga-go/internal/pkg/repo/author"
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
+	comicfollowrepo "manga-go/internal/pkg/repo/comic_follow"
 	commentrepo "manga-go/internal/pkg/repo/comment"
 	genrerepo "manga-go/internal/pkg/repo/genre"
 	pagerepo "manga-go/internal/pkg/repo/page"
@@ -27,6 +28,7 @@ var Module = fx.Module(
 	authorrepo.Module,
 	genrerepo.Module,
 	tagrepo.Module,
+	comicfollowrepo.Module,
 	comicrepo.Module,
 	chapterrepo.Module,
 	pagerepo.Module,
