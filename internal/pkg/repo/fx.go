@@ -7,6 +7,7 @@ import (
 	comicfollowrepo "manga-go/internal/pkg/repo/comic_follow"
 	commentrepo "manga-go/internal/pkg/repo/comment"
 	genrerepo "manga-go/internal/pkg/repo/genre"
+	notificationrepo "manga-go/internal/pkg/repo/notification"
 	pagerepo "manga-go/internal/pkg/repo/page"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
 	ratingrepo "manga-go/internal/pkg/repo/rating"
@@ -18,6 +19,7 @@ import (
 	translationgrouprepo "manga-go/internal/pkg/repo/translation_group"
 	userrepo "manga-go/internal/pkg/repo/user"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
+	usernotificationrepo "manga-go/internal/pkg/repo/user_notification"
 
 	"go.uber.org/fx"
 )
@@ -41,4 +43,6 @@ var Module = fx.Module(
 	reactionrepo.Module,
 	readingprogressrepo.Module,
 	usercomicreadrepo.Module,
+	notificationrepo.Module,
+	usernotificationrepo.Module,
 )

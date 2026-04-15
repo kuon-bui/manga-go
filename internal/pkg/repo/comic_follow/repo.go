@@ -68,3 +68,22 @@ func (r *ComicFollowRepo) FindPaginatedByUserID(ctx context.Context, userID uuid
 
 	return follows, total, nil
 }
+
+func (r *ComicFollowRepo) FindFollowersByComicID(ctx context.Context, comicID uuid.UUID) ([]*model.User, error) {
+	var users []*model.User
+
+	err := r.DB.WithContext(ctx).
+		Model(&model.User{}).
+		Joins("JOIN comic_follows ON comic_follows.user_id = users.id").
+		Where("comic_follows.comic_id = ?", comicID).
+		Where("comic_follows.deleted_at IS NULL").
+		Where("users.deleted_at IS NULL").
+		Distinct("users.*").
+		Find(&users).Error
+
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}

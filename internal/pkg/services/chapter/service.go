@@ -8,6 +8,7 @@ import (
 	readingprogressrepo "manga-go/internal/pkg/repo/reading_progress"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 
+	"github.com/hibiken/asynq"
 	"go.uber.org/fx"
 )
 
@@ -18,6 +19,7 @@ type ChapterService struct {
 	readingProgressRepo *readingprogressrepo.ReadingProgressRepo
 	userComicReadRepo   *usercomicreadrepo.UserComicReadRepo
 	rds                 *redis.Redis
+	asynqClient         *asynq.Client
 }
 
 type ChapterServiceParams struct {
@@ -28,6 +30,7 @@ type ChapterServiceParams struct {
 	ReadingProgressRepo *readingprogressrepo.ReadingProgressRepo
 	UserComicReadRepo   *usercomicreadrepo.UserComicReadRepo
 	Redis               *redis.Redis
+	AsynqClient         *asynq.Client
 }
 
 func NewChapterService(params ChapterServiceParams) *ChapterService {
@@ -38,5 +41,6 @@ func NewChapterService(params ChapterServiceParams) *ChapterService {
 		readingProgressRepo: params.ReadingProgressRepo,
 		rds:                 params.Redis,
 		userComicReadRepo:   params.UserComicReadRepo,
+		asynqClient:         params.AsynqClient,
 	}
 }

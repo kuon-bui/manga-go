@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Chapter Available</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f1ea;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #222222;
+    }
+    .email-wrapper {
+      max-width: 620px;
+      margin: 0 auto;
+      background-color: #fffdf8;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1d3557, #264653);
+      padding: 32px 36px;
+      color: #ffffff;
+    }
+    .eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      opacity: 0.82;
+      margin-bottom: 10px;
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.25;
+    }
+    .hero p {
+      margin: 10px 0 0;
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.88);
+    }
+    .content {
+      padding: 30px 36px 36px;
+    }
+    .cover {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      display: block;
+      border-bottom: 1px solid #ece6d9;
+    }
+    .lead {
+      font-size: 16px;
+      line-height: 1.7;
+      margin: 0 0 22px;
+    }
+    .chapter-card {
+      background-color: #f7f1e5;
+      border: 1px solid #eadfca;
+      border-radius: 12px;
+      padding: 20px 22px;
+      margin: 24px 0;
+    }
+    .chapter-label {
+      color: #9a3412;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .chapter-name {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1f2937;
+      margin: 0 0 8px;
+    }
+    .chapter-meta {
+      margin: 0;
+      font-size: 14px;
+      color: #5b6470;
+    }
+    .note {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #525252;
+      margin-top: 24px;
+    }
+    .footer {
+      background-color: #f1ebdd;
+      color: #6b7280;
+      text-align: center;
+      padding: 18px 24px 24px;
+      font-size: 12px;
+      line-height: 1.7;
+      border-top: 1px solid #e7deca;
+    }
+  </style>
+</head>
+<body>
+  <div class="email-wrapper">
+    <div class="hero">
+      <div class="eyebrow">Manga-Go Notification</div>
+      <h1>{{.ComicTitle}} has a new chapter</h1>
+      <p>A comic you follow was just updated.</p>
+    </div>
+
+    {{if .ComicThumbnailURL}}
+    <img class="cover" src="{{.ComicThumbnailURL}}" alt="{{.ComicTitle}} cover">
+    {{end}}
+
+    <div class="content">
+      <p class="lead">Hi <strong>{{.UserName}}</strong>,</p>
+      <p class="lead">A new chapter is now available for <strong>{{.ComicTitle}}</strong>.</p>
+
+      <div class="chapter-card">
+        <div class="chapter-label">New Chapter Available</div>
+        <p class="chapter-name">{{.ChapterDisplayName}}</p>
+        <p class="chapter-meta">
+          {{if .ChapterNumber}}Chapter number: <strong>{{.ChapterNumber}}</strong>{{end}}
+          {{if and .ChapterNumber .ChapterTitle}}<br>{{end}}
+          {{if .ChapterTitle}}Title: <strong>{{.ChapterTitle}}</strong>{{end}}
+        </p>
+      </div>
+
+      <p class="note">Open Manga-Go to continue reading. This email was sent because your account is configured to receive chapter update notifications by email.</p>
+    </div>
+
+    <div class="footer">
+      <div>Manga-Go</div>
+      <div>&copy; {{.CurrentYear}} Manga-Go. This is an automated message.</div>
+    </div>
+  </div>
+</body>
+</html>

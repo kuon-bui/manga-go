@@ -7,6 +7,7 @@ import (
 	commentservice "manga-go/internal/pkg/services/comment"
 	fileservice "manga-go/internal/pkg/services/file"
 	genreservice "manga-go/internal/pkg/services/genre"
+	notificationservice "manga-go/internal/pkg/services/notification"
 	permissionservice "manga-go/internal/pkg/services/permission"
 	ratingservice "manga-go/internal/pkg/services/rating"
 	readinghistoryservice "manga-go/internal/pkg/services/reading_history"
@@ -33,4 +34,5 @@ var Module = fx.Module(
 	ratingservice.Module,
 	readinghistoryservice.Module,
 	commentservice.Module,
+	notificationservice.Module,
 )

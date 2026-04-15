@@ -27,9 +27,10 @@ func (s *UserService) CreateAccount(ctx context.Context, req *userrequest.Create
 	}
 
 	user := model.User{
-		Name:     req.Name,
-		Email:    req.Email,
-		Password: hash.HashPassword(req.Password),
+		Name:       req.Name,
+		Email:      req.Email,
+		Password:   hash.HashPassword(req.Password),
+		UserConfig: model.DefaultUserConfig(),
 	}
 	err = s.userRepo.Create(ctx, &user)
 	if err != nil {

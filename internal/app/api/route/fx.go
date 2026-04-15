@@ -7,6 +7,7 @@ import (
 	commentroute "manga-go/internal/app/api/route/comment"
 	fileroute "manga-go/internal/app/api/route/file"
 	genreroute "manga-go/internal/app/api/route/genre"
+	notificationroute "manga-go/internal/app/api/route/notification"
 	permissionroute "manga-go/internal/app/api/route/permission"
 	ratingroute "manga-go/internal/app/api/route/rating"
 	readinghistoryroute "manga-go/internal/app/api/route/reading_history"
@@ -34,5 +35,6 @@ var Module = fx.Module(
 	ratingroute.Module,
 	readinghistoryroute.Module,
 	commentroute.Module,
+	notificationroute.Module,
 	swaggerrouter.Module,
 )

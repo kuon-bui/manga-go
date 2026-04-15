@@ -29,6 +29,7 @@ func NewAsynqServerMux() *asynq.ServeMux {
 func NewAsynqServer(p RunAsynqParams) *asynq.Server {
 	queues := map[string]int{
 		queueconstant.MAIL_DELIVER_QUEUE: 3,
+		queueconstant.NOTIFICATION_QUEUE: 5,
 	}
 
 	var redisConnOpt asynq.RedisConnOpt = asynq.RedisClientOpt{

@@ -58,9 +58,10 @@ func (s *UserSeeder) Seed(tx *gorm.DB) error {
 			return err
 		}
 		user = &model.User{
-			Name:     "Admin",
-			Email:    email,
-			Password: string(hashed),
+			Name:       "Admin",
+			Email:      email,
+			Password:   string(hashed),
+			UserConfig: model.DefaultUserConfig(),
 		}
 		if err := s.userRepo.CreateWithTransaction(tx, user); err != nil {
 			return err
