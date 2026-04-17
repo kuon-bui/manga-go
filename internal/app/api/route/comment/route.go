@@ -36,9 +36,12 @@ func (cr *CommentRoute) Setup() {
 	rg := cr.r.Group("/comments", cr.authMiddleware.RequireJwt)
 
 	rg.GET("", cr.commentHandler.getComments)
-	rg.GET("/:id", cr.commentHandler.getComment)
 	rg.POST("", cr.commentHandler.createComment)
-	rg.PUT("/:id", cr.commentHandler.updateComment)
-	rg.DELETE("/:id", cr.commentHandler.deleteComment)
-	rg.POST("/:id/reactions", cr.commentHandler.handleReaction)
+
+	idRg := rg.Group("/:id")
+	idRg.GET("", cr.commentHandler.getComment)
+	idRg.GET("/replies", cr.commentHandler.getCommentReplies)
+	idRg.PUT("", cr.commentHandler.updateComment)
+	idRg.DELETE("", cr.commentHandler.deleteComment)
+	idRg.POST("/reactions", cr.commentHandler.handleReaction)
 }

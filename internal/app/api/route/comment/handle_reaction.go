@@ -16,11 +16,11 @@ import (
 // @Produce      application/json
 // @Param        id  path      string  true  "Comment ID"
 // @Param        request body commentrequest.AddReactionRequest true "Reaction data"
-// @Success      200  {object}  response.Response
-// @Failure      400  {object}  response.Response
-// @Failure      401  {object}  response.Response
-// @Failure      404  {object}  response.Response
-// @Failure      500  {object}  response.Response
+// @Success      200  {object}  response.Result
+// @Failure      400  {object}  response.Result
+// @Failure      401  {object}  response.Result
+// @Failure      404  {object}  response.Result
+// @Failure      500  {object}  response.Result
 // @Security     AccessToken
 // @Router       /comments/{id}/reactions [post]
 func (h *CommentHandler) handleReaction(c *gin.Context) {

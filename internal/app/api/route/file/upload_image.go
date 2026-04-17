@@ -18,6 +18,7 @@ const maxUploadImageSize int64 = 10 * 1024 * 1024
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        file  formData  file  true  "File to upload (max 10MB)"
+// @Param        filename  formData  string  false  "Optional filename (if not provided, original filename will be used)"
 // @Success      200   {object}  response.Response
 // @Failure      400   {object}  response.Response
 // @Failure      401   {object}  response.Response

@@ -10,5 +10,5 @@ type ListCommentsRequest struct {
 	common.Paging
 
 	ChapterId uuid.UUID `form:"chapterId" binding:"required"`
-	PageIndex int       `form:"pageIndex"`
+	PageIndex *int      `form:"pageIndex"`
 }
