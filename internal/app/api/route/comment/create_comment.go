@@ -9,15 +9,15 @@ import (
 )
 
 // @Summary      Create comment
-// @Description  Create a new comment on a chapter
+// @Description  Create a new comment on a chapter or reply to an existing comment
 // @Tags         Comment
 // @Accept       json
 // @Produce      json
 // @Param        body  body      commentrequest.CreateCommentRequest  true  "Comment creation request"
-// @Success      200   {object}  response.Response
-// @Failure      400   {object}  response.Response
-// @Failure      401   {object}  response.Response
-// @Failure      500   {object}  response.Response
+// @Success      200   {object}  response.Result
+// @Failure      400   {object}  response.Result
+// @Failure      401   {object}  response.Result
+// @Failure      500   {object}  response.Result
 // @Security     AccessToken
 // @Router       /comments [post]
 func (h *CommentHandler) createComment(c *gin.Context) {

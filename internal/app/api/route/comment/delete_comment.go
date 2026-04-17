@@ -13,11 +13,11 @@ import (
 // @Accept       json
 // @Produce      json
 // @Param        id  path      string  true  "Comment ID"
-// @Success      200  {object}  response.Response
-// @Failure      400  {object}  response.Response
-// @Failure      401  {object}  response.Response
-// @Failure      404  {object}  response.Response
-// @Failure      500  {object}  response.Response
+// @Success      200  {object}  response.Result
+// @Failure      400  {object}  response.Result
+// @Failure      401  {object}  response.Result
+// @Failure      404  {object}  response.Result
+// @Failure      500  {object}  response.Result
 // @Security     AccessToken
 // @Router       /comments/{id} [delete]
 func (h *CommentHandler) deleteComment(c *gin.Context) {

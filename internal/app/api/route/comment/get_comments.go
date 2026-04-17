@@ -14,11 +14,11 @@ import (
 // @Produce      json
 // @Param        chapterId  query  string  true   "Chapter ID"
 // @Param        page       query  int     false  "Page number (default: 1)"
-// @Param        limit      query  int     false  "Records per page (default: 10)"
+// @Param        limit      query  int     false  "Records per page (default: 20)"
 // @Success      200        {object}  response.Result
-// @Failure      400        {object}  response.Response
-// @Failure      401        {object}  response.Response
-// @Failure      500        {object}  response.Response
+// @Failure      400        {object}  response.Result
+// @Failure      401        {object}  response.Result
+// @Failure      500        {object}  response.Result
 // @Security     AccessToken
 // @Router       /comments [get]
 func (h *CommentHandler) getComments(c *gin.Context) {
