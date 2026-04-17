@@ -88,6 +88,7 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 	}
 
 	response.ResultSuccess("Upload image successfully", map[string]any{
+		"url":          "/files/content/" + filename,
 		"filename":     filename,
 		"content_type": contentType,
 		"size":         fileHeader.Size,

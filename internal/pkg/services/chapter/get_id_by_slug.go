@@ -65,5 +65,5 @@ func (s *ChapterService) GetChapterIDBySlug(ctx context.Context, comicID uuid.UU
 		"1",
 	)
 
-	return uuid.Nil, defaultErr
+	return chapter.ID, nil
 }

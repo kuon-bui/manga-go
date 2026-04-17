@@ -29,9 +29,10 @@ func NewFileRoute(params FileRouteParams) *FileRoute {
 }
 
 func (fr *FileRoute) Setup() {
-	rg := fr.r.Group("/files", fr.authmiddleware.RequireJwt)
+	rg := fr.r.Group("/files")
+	privateRg := rg.Group("", fr.authmiddleware.RequireJwt)
 
-	rg.POST("/upload", fr.fileHandler.uploadImage)
-	rg.GET("/presign/*filename", fr.fileHandler.getPresignURL)
+	privateRg.POST("/upload", fr.fileHandler.uploadImage)
+	privateRg.GET("/presign/*filename", fr.fileHandler.getPresignURL)
 	rg.GET("/content/*filename", fr.fileHandler.getFileContent)
 }

@@ -19,10 +19,8 @@ import (
 // @Param        filename  path      string  true  "File path"
 // @Success      200       {file}    string  "File content"
 // @Failure      400       {object}  response.Response
-// @Failure      401       {object}  response.Response
 // @Failure      500       {object}  response.Response
 // @Router       /files/content/{filename} [get]
-// @Security     AccessToken
 func (h *FileHandler) getFileContent(c *gin.Context) {
 	filename := strings.TrimPrefix(c.Param("filename"), "/")
 	if filename == "" {

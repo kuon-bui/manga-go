@@ -23,5 +23,6 @@ func (h *ChapterHandler) getChapter(c *gin.Context) {
 	chapterSlug := c.Param("chapterSlug")
 	var result response.Result
 	result = h.chapterService.GetChapter(c.Request.Context(), chapterSlug)
+	h.normalizeChapterImageURLs(c, &result)
 	result.ResponseResult(c)
 }
