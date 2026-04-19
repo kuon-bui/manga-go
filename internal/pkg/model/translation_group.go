@@ -11,6 +11,7 @@ type TranslationGroup struct {
 	Name    string    `json:"name" gorm:"column:name"`
 	Slug    string    `json:"slug" gorm:"column:slug"`
 	OwnerID uuid.UUID `json:"ownerId" gorm:"column:owner_id"`
+	LogoUrl *string   `json:"logoUrl,omitempty" gorm:"column:logo_url"`
 
 	Owner   *User  `json:"owner,omitempty" gorm:"foreignKey:OwnerID"`
 	Members []User `json:"members,omitempty" gorm:"foreignKey:TranslationGroupID"`

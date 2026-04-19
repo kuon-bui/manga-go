@@ -48,4 +48,6 @@ func (r *TranslationGroupRoute) Setup() {
 	slugRg.PUT("", r.translationGroupHandler.updateTranslationGroup)
 	slugRg.DELETE("", r.translationGroupHandler.deleteTranslationGroup)
 	slugRg.PUT("/transfer-ownership", r.translationGroupHandler.transferOwnership)
+	slugRg.GET("/members", r.translationGroupHandler.getMembers)
+	slugRg.PUT("/logo", r.translationGroupHandler.updateLogo)
 }

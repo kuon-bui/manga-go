@@ -14,22 +14,48 @@ import (
 )
 
 func (s *CommentService) ListComments(ctx context.Context, req *commentrequest.ListCommentsRequest) response.Result {
-	chapterID, err := parseChapterID(req.ChapterId)
-	if err != nil {
-		return response.ResultError("invalid chapterId")
+	// Validate: must provide either comicId or chapterId
+	if strings.TrimSpace(req.ComicId) == "" && strings.TrimSpace(req.ChapterId) == "" {
+		return response.ResultError("Either comicId or chapterId query parameter is required")
 	}
 
 	conditions := []any{
-		clause.Eq{Column: "chapter_id", Value: chapterID},
 		clause.Eq{Column: "parent_id", Value: nil},
 	}
 
-	if req.PageIndex != nil {
-		conditions = append(conditions, clause.Eq{Column: "page_index", Value: *req.PageIndex})
+	if strings.TrimSpace(req.ChapterId) != "" {
+		// Chapter-level or page-level comments
+		chapterID, err := parseChapterID(req.ChapterId)
+		if err != nil {
+			return response.ResultError("invalid chapterId")
+		}
+		conditions = append(conditions, clause.Eq{Column: "chapter_id", Value: chapterID})
+
+		if req.PageIndex != nil {
+			conditions = append(conditions, clause.Eq{Column: "page_index", Value: *req.PageIndex})
+		}
+	} else {
+		// Comic-level comments: comicId provided, chapterId must be nil
+		comicID, err := uuid.Parse(strings.TrimSpace(req.ComicId))
+		if err != nil {
+			return response.ResultError("invalid comicId")
+		}
+		conditions = append(conditions,
+			clause.Eq{Column: "comic_id", Value: comicID},
+			clause.Eq{Column: "chapter_id", Value: nil},
+		)
 	}
 
 	comments, total, err := s.commentRepo.FindPaginated(ctx, conditions, &req.Paging, map[string]common.MoreKeyOption{
-		"User": {},
+		"User":                                 {},
+		"Replies":                              {},
+		"Replies.User":                         {},
+		"Replies.Replies":                      {},
+		"Replies.Replies.User":                 {},
+		"Replies.Replies.Replies":              {},
+		"Replies.Replies.Replies.User":         {},
+		"Replies.Replies.Replies.Replies":      {},
+		"Replies.Replies.Replies.Replies.User": {},
 	})
 	if err != nil {
 		s.logger.Error("Failed to list comments", "error", err)

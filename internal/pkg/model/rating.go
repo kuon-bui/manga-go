@@ -11,6 +11,7 @@ type Rating struct {
 	UserId  uuid.UUID `json:"userId" gorm:"column:user_id"`
 	ComicId uuid.UUID `json:"comicId" gorm:"column:comic_id"`
 	Score   int       `json:"score" gorm:"column:score"`
+	Comment *string   `json:"comment,omitempty" gorm:"column:comment"`
 
 	// Relationships
 	User  *User  `json:"user,omitempty" gorm:"foreignKey:UserId"`

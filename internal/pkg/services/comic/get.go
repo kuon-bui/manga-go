@@ -12,14 +12,16 @@ import (
 )
 
 func (s *ComicService) GetComic(ctx context.Context, slug string) response.Result {
-	comic, err := s.comicRepo.FindOne(ctx, []any{
+	comic, err := s.comicRepo.FindOneWithStats(ctx, []any{
 		clause.Eq{Column: "slug", Value: slug},
 	}, map[string]common.MoreKeyOption{
-		"Authors":  {},
-		"Artists":  {},
-		"Genres":   {},
-		"Tags":     {},
-		"Chapters": {},
+		"Authors":          {},
+		"Artists":          {},
+		"Genres":           {},
+		"Tags":             {},
+		"Chapters":         {},
+		"TranslationGroup": {},
+		"UploadedBy":       {},
 	})
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

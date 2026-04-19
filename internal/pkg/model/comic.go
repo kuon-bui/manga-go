@@ -25,9 +25,17 @@ type Comic struct {
 	PublishedYear      *int                    `json:"publishedYear" gorm:"column:published_year"`
 	LastChapterAt      *time.Time              `json:"lastChapterAt" gorm:"column:last_chapter_at"`
 	TranslationGroupID *uuid.UUID              `json:"translationGroupId,omitempty" gorm:"column:translation_group_id"`
+	UploadedByID       *uuid.UUID              `json:"uploadedById,omitempty" gorm:"column:uploaded_by_id"`
+
+	// Aggregated stats (computed via subquery, not stored)
+	FollowCount  int      `json:"followCount" gorm:"column:follow_count;->"`
+	RatingCount  int      `json:"ratingCount" gorm:"column:rating_count;->"`
+	ChapterCount int      `json:"chapterCount" gorm:"column:chapter_count;->"`
+	AvgRating    *float64 `json:"avgRating" gorm:"column:avg_rating;->"`
 
 	// Relationships
 	TranslationGroup *TranslationGroup `json:"translationGroup,omitempty" gorm:"foreignKey:TranslationGroupID"`
+	UploadedBy       *User             `json:"uploadedBy,omitempty" gorm:"foreignKey:UploadedByID"`
 	Artists          []*Author         `json:"artists" gorm:"many2many:comic_artists;joinForeignKey:ComicID;joinReferences:ArtistID"`
 	Authors          []*Author         `json:"authors" gorm:"many2many:comic_authors;"`
 	Genres           []*Genre          `json:"genres" gorm:"many2many:comic_genres;"`

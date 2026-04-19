@@ -13,23 +13,45 @@ import (
 )
 
 func (s *CommentService) CreateComment(ctx context.Context, userID uuid.UUID, req *commentrequest.CreateCommentRequest) response.Result {
-	chapter, err := s.chapterRepo.FindOne(ctx, []any{
-		clause.Eq{Column: "id", Value: req.ChapterID},
-	}, nil)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return response.ResultNotFound("Chapter")
+	// Validate: must have either comicId or chapterId
+	if req.ComicID == nil && req.ChapterID == nil {
+		return response.ResultError("Either comicId or chapterId is required")
+	}
+
+	var comment model.Comment
+	comment.UserId = userID
+	comment.ParentId = req.ParentId
+	comment.Content = req.Content
+	comment.PageIndex = req.PageIndex
+
+	if req.ChapterID != nil {
+		// Chapter-level or page-level comment
+		chapter, err := s.chapterRepo.FindOne(ctx, []any{
+			clause.Eq{Column: "id", Value: *req.ChapterID},
+		}, nil)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return response.ResultNotFound("Chapter")
+			}
+			s.logger.Error("Failed to find chapter", "error", err)
+			return response.ResultErrDb(err)
 		}
-		s.logger.Error("Failed to find chapter", "error", err)
-		return response.ResultErrDb(err)
+		comment.ChapterId = &chapter.ID
+		comment.ComicId = chapter.ComicID
+	} else {
+		// Comic-level comment: comicId only, no chapter
+		comicID := *req.ComicID
+		comment.ComicId = comicID
+		comment.ChapterId = nil // no chapter for comic-level
 	}
 
 	if req.ParentId != nil {
-		_, err = s.commentRepo.FindOne(ctx, []any{
+		// Validate parent comment exists in same scope
+		parentConditions := []any{
 			clause.Eq{Column: "id", Value: *req.ParentId},
-			clause.Eq{Column: "chapter_id", Value: chapter.ID},
-			clause.Eq{Column: "comic_id", Value: chapter.ComicID},
-		}, nil)
+			clause.Eq{Column: "comic_id", Value: comment.ComicId},
+		}
+		_, err := s.commentRepo.FindOne(ctx, parentConditions, nil)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return response.ResultNotFound("Parent comment")
@@ -37,15 +59,6 @@ func (s *CommentService) CreateComment(ctx context.Context, userID uuid.UUID, re
 			s.logger.Error("Failed to find parent comment", "error", err)
 			return response.ResultErrDb(err)
 		}
-	}
-
-	comment := model.Comment{
-		UserId:    userID,
-		ChapterId: chapter.ID,
-		ComicId:   chapter.ComicID,
-		ParentId:  req.ParentId,
-		Content:   req.Content,
-		PageIndex: req.PageIndex,
 	}
 
 	if err := s.commentRepo.Create(ctx, &comment); err != nil {

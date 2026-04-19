@@ -24,13 +24,15 @@ func (s *RatingService) CreateRating(ctx context.Context, userID, comicId uuid.U
 			clause.Eq{Column: "id", Value: existingRating.ID},
 			clause.Eq{Column: "user_id", Value: userID},
 		}, map[string]any{
-			"score": req.Score,
+			"score":   req.Score,
+			"comment": req.Comment,
 		}); err != nil {
 			s.logger.Error("Failed to update rating", "error", err)
 			return response.ResultErrDb(err)
 		}
 
 		existingRating.Score = req.Score
+		existingRating.Comment = req.Comment
 		return response.ResultSuccess("Rating updated successfully", existingRating)
 	}
 
@@ -38,6 +40,7 @@ func (s *RatingService) CreateRating(ctx context.Context, userID, comicId uuid.U
 		UserId:  userID,
 		ComicId: comicId,
 		Score:   req.Score,
+		Comment: req.Comment,
 	}
 
 	if err := s.ratingRepo.Create(ctx, &rating); err != nil {

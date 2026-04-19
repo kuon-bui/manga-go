@@ -17,6 +17,9 @@ func (s *ComicService) ListComics(ctx context.Context, req *comicrequest.ListCom
 		GenreSlugs: req.GenreSlugs,
 		TagSlugs:   req.TagSlugs,
 		Search:     strings.TrimSpace(req.Search),
+		SortBy:     req.SortBy,
+		Order:      req.Order,
+		Status:     req.Status,
 	}
 
 	if req.TranslationGroupSlug != "" {
@@ -33,10 +36,12 @@ func (s *ComicService) ListComics(ctx context.Context, req *comicrequest.ListCom
 	}
 
 	comics, total, err := s.comicRepo.FindPaginatedWithFilters(ctx, filters, &req.Paging, map[string]common.MoreKeyOption{
-		"Artists": {},
-		"Authors": {},
-		"Genres":  {},
-		"Tags":    {},
+		"Artists":          {},
+		"Authors":          {},
+		"Genres":           {},
+		"Tags":             {},
+		"TranslationGroup": {},
+		"UploadedBy":       {},
 	})
 	if err != nil {
 		s.logger.Error("Failed to list comics", "error", err)

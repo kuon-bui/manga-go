@@ -8,14 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// @Summary      List ratings
-// @Description  Get paginated ratings in the current comic context
+// @Summary      Get user rating
+// @Description  Get the current user's rating for the specified comic
 // @Tags         Rating
 // @Accept       json
 // @Produce      json
 // @Param        comicSlug  path      string  true   "Comic slug"
-// @Param        page   query     int  false  "Page number"
-// @Param        limit  query     int  false  "Items per page"
 // @Success      200    {object}  response.Result
 // @Failure      400    {object}  response.Result
 // @Failure      401    {object}  response.Result
@@ -30,12 +28,12 @@ func (h *RatingHandler) getRatings(c *gin.Context) {
 		return
 	}
 
-	var paging common.Paging
-	if err := c.ShouldBindQuery(&paging); err != nil {
-		response.ResultInvalidRequestErr(err).ResponseResult(c)
+	comicID, ok := common.GetComicIdFromContext(c.Request.Context())
+	if !ok {
+		response.ResultError("invalid comic id").ResponseResult(c)
 		return
 	}
 
-	result := h.ratingService.ListRatings(c.Request.Context(), user.ID, &paging)
+	result := h.ratingService.GetUserRatingForComic(c.Request.Context(), user.ID, comicID)
 	result.ResponseResult(c)
 }

@@ -53,6 +53,8 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 		return response.ResultErrInternal(err)
 	}
 
+	comic.UploadedByID = &currentUser.ID
+
 	if currentUser.TranslationGroupID != nil {
 		comic.TranslationGroupID = currentUser.TranslationGroupID
 	}

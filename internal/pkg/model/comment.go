@@ -9,7 +9,7 @@ import (
 type Comment struct {
 	common.SqlModel
 	UserId    uuid.UUID  `json:"userId" gorm:"column:user_id"`
-	ChapterId uuid.UUID  `json:"chapterId" gorm:"column:chapter_id"`
+	ChapterId *uuid.UUID `json:"chapterId" gorm:"column:chapter_id"`
 	ComicId   uuid.UUID  `json:"comicId" gorm:"column:comic_id"`
 	ParentId  *uuid.UUID `json:"parentId,omitempty" gorm:"column:parent_id"`
 	PageIndex *int       `json:"pageIndex" gorm:"column:page_index"`
