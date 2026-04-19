@@ -7,6 +7,7 @@ import (
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	chapterrequest "manga-go/internal/pkg/request/chapter"
+	"manga-go/internal/pkg/utils"
 	"strings"
 )
 
@@ -22,12 +23,24 @@ func (s *ChapterService) CreateChapter(ctx context.Context, req *chapterrequest.
 		return response.ResultErrDb(err)
 	}
 
+	currentUser, err := utils.GetCurrentUserFormContext(ctx)
+	if err != nil {
+		s.logger.Error("Failed to get current user from context", "error", err)
+		return response.ResultErrInternal(err)
+	}
+
+	slug := req.Slug
+	if slug == "" {
+		slug = utils.Slugify(req.Title)
+	}
+
 	chapter := model.Chapter{
-		ComicID:    comicID,
-		Number:     req.Number,
-		ChapterIdx: chapterIdx,
-		Title:      req.Title,
-		Slug:       req.Slug,
+		ComicID:      comicID,
+		Number:       req.Number,
+		ChapterIdx:   chapterIdx,
+		Title:        req.Title,
+		Slug:         slug,
+		UploadedByID: &currentUser.ID,
 	}
 
 	for i, page := range req.Pages {

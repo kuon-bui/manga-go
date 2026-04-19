@@ -3,25 +3,30 @@ package fileroute
 import (
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"manga-go/internal/app/api/common/response"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const maxUploadImageSize int64 = 10 * 1024 * 1024
 
-// @Summary      Upload file
-// @Description  Upload a file to object storage
+// @Summary      Upload image (chapter or comic cover)
+// @Description  Upload image with automatic folder organization. For chapter type: if chapterId provided -> comics/{comicSlug}/chapters/{chapterSlug}/pages/{uuid}.ext, else -> comics/{comicSlug}/temp-uploads/{uuid}.ext. For cover -> comics/{comicSlug}/cover/{uuid}.ext
 // @Tags         File
 // @Accept       multipart/form-data
 // @Produce      json
-// @Param        file  formData  file  true  "File to upload (max 10MB)"
-// @Param        filename  formData  string  false  "Optional filename (if not provided, original filename will be used)"
+// @Param        file  formData  file  true  "Image file (max 10MB, image/* only)"
+// @Param        type  formData  string  true  "Image type: 'chapter' or 'cover'"
+// @Param        comicId  formData  string  true  "Comic ID (UUID)"
+// @Param        chapterId  formData  string  false  "Chapter ID (UUID) - optional. If not provided, image saved to temp folder for later assignment"
 // @Success      200   {object}  response.Response
 // @Failure      400   {object}  response.Response
 // @Failure      401   {object}  response.Response
+// @Failure      413   {object}  response.Response
 // @Failure      500   {object}  response.Response
 // @Router       /files/upload [post]
 // @Security     AccessToken
@@ -34,7 +39,6 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 			response.ResultError("File size exceeds 10MB").ResponseResult(c)
 			return
 		}
-
 		response.ResultInvalidRequestErr(err).ResponseResult(c)
 		return
 	}
@@ -72,24 +76,78 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		return
 	}
 
-	filename := strings.TrimPrefix(c.PostForm("filename"), "/")
-	if filename == "" {
-		filename = strings.TrimPrefix(fileHeader.Filename, "/")
-	}
-	if filename == "" {
-		response.ResultError("Invalid filename").ResponseResult(c)
+	// Get parameters from form
+	uploadType := strings.TrimSpace(c.PostForm("type"))
+	comicIdStr := strings.TrimSpace(c.PostForm("comicId"))
+	chapterIdStr := strings.TrimSpace(c.PostForm("chapterId"))
+
+	if uploadType == "" {
+		response.ResultError("'type' parameter is required (chapter or cover)").ResponseResult(c)
 		return
 	}
 
-	err = h.fileService.UploadFile(c.Request.Context(), filename, file, fileHeader.Size, contentType)
+	if comicIdStr == "" {
+		response.ResultError("'comicId' parameter is required").ResponseResult(c)
+		return
+	}
+
+	if uploadType != "chapter" && uploadType != "cover" {
+		response.ResultError("'type' must be 'chapter' or 'cover'").ResponseResult(c)
+		return
+	}
+
+	// For chapter type: chapterId is optional
+	// - If provided: save to comics/{comicSlug}/chapters/{chapterSlug}/pages/
+	// - If NOT provided: save to comics/{comicSlug}/temp-uploads/ (pending assignment)
+
+	// Generate unique filename with UUID
+	ext := filepath.Ext(fileHeader.Filename)
+	if ext == "" {
+		ext = ".jpg"
+	}
+	uniqueFilename := uuid.New().String() + ext
+
+	// Resolve slugs from IDs via fileService
+	var filePath string
+	if uploadType == "chapter" {
+		if chapterIdStr != "" {
+			// Backend resolves: comicId -> comicSlug, chapterId -> chapterSlug
+			path, err := h.fileService.BuildChapterImagePath(c.Request.Context(), comicIdStr, chapterIdStr, uniqueFilename)
+			if err != nil {
+				response.ResultError(err.Error()).ResponseResult(c)
+				return
+			}
+			filePath = path
+		} else {
+			// No chapterId provided: save to temp-uploads folder
+			// Frontend will assign these images to chapter when creating
+			path, err := h.fileService.BuildTempChapterImagePath(c.Request.Context(), comicIdStr, uniqueFilename)
+			if err != nil {
+				response.ResultError(err.Error()).ResponseResult(c)
+				return
+			}
+			filePath = path
+		}
+	} else if uploadType == "cover" {
+		// Build path: comics/{comicSlug}/cover/{uuid}.ext
+		path, err := h.fileService.BuildCoverImagePath(c.Request.Context(), comicIdStr, uniqueFilename)
+		if err != nil {
+			response.ResultError(err.Error()).ResponseResult(c)
+			return
+		}
+		filePath = path
+	}
+
+	err = h.fileService.UploadFile(c.Request.Context(), filePath, file, fileHeader.Size, contentType)
 	if err != nil {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
 
 	response.ResultSuccess("Upload image successfully", map[string]any{
-		"url":          "/files/content/" + filename,
-		"filename":     filename,
+		"url":          "/files/content/" + filePath,
+		"filename":     uniqueFilename,
+		"path":         filePath,
 		"content_type": contentType,
 		"size":         fileHeader.Size,
 	}).ResponseResult(c)

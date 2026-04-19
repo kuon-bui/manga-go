@@ -54,6 +54,18 @@ func (s *ChapterService) PublishChapter(ctx context.Context, chapterSlug string,
 
 	chapter.IsPublished = req.IsPublished
 
+	// Update comic's last_chapter_at when chapter is published
+	if req.IsPublished {
+		if err := s.comicRepo.Update(ctx, []any{
+			clause.Eq{Column: "id", Value: comicID},
+		}, map[string]any{
+			"last_chapter_at": gorm.Expr("CURRENT_TIMESTAMP"),
+		}); err != nil {
+			s.logger.Error("Failed to update comic last_chapter_at", "error", err)
+			return response.ResultErrDb(err)
+		}
+	}
+
 	msg := "Chapter unpublished successfully"
 	if req.IsPublished {
 		msg = "Chapter published successfully"
