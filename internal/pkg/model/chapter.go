@@ -16,6 +16,7 @@ type Chapter struct {
 	IsPublished bool      `json:"isPublished" gorm:"column:is_published"`
 
 	// Relationships
+	Comic *Comic  `json:"comic,omitempty" gorm:"foreignKey:ComicID"`
 	Pages []*Page `json:"pages,omitempty" gorm:"foreignKey:ChapterID"`
 
 	IsRead bool `json:"isRead" gorm:"-"`

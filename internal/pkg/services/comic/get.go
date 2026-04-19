@@ -54,5 +54,6 @@ func (s *ComicService) GetComic(ctx context.Context, slug string) response.Resul
 		}
 	}
 
+	comic.UploaderId = comic.UploadedByID
 	return response.ResultSuccess("Comic retrieved successfully", comic)
 }

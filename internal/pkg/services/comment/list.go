@@ -6,7 +6,9 @@ import (
 	"errors"
 	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/common"
+	"manga-go/internal/pkg/model"
 	commentrequest "manga-go/internal/pkg/request/comment"
+	"manga-go/internal/pkg/utils"
 	"strings"
 
 	"github.com/google/uuid"
@@ -62,7 +64,28 @@ func (s *CommentService) ListComments(ctx context.Context, req *commentrequest.L
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultPaginationData(comments, total, "Comments retrieved successfully")
+	// Get reaction counts and user reactions for all comments
+	commentIds := extractAllCommentIds(comments)
+	reactionCounts, err := s.reactionRepo.CountByCommentIds(ctx, commentIds)
+	if err != nil {
+		s.logger.Error("Failed to fetch reaction counts", "error", err)
+		return response.ResultErrDb(err)
+	}
+
+	userReactions := make(map[uuid.UUID]string)
+	user, err := utils.GetCurrentUserFormContext(ctx)
+	if err == nil && user != nil {
+		userReactions, err = s.reactionRepo.GetUserReactionsByCommentIds(ctx, commentIds, user.ID)
+		if err != nil {
+			s.logger.Error("Failed to fetch user reactions", "error", err)
+			return response.ResultErrDb(err)
+		}
+	}
+
+	// Map to response DTOs
+	commentResponses := mapCommentsToResponses(comments, reactionCounts, userReactions)
+
+	return response.ResultPaginationData(commentResponses, total, "Comments retrieved successfully")
 }
 
 func parseChapterID(raw string) (uuid.UUID, error) {
@@ -84,4 +107,19 @@ func parseChapterID(raw string) (uuid.UUID, error) {
 
 	trimmed = strings.Trim(trimmed, `"`)
 	return uuid.Parse(trimmed)
+}
+
+func extractAllCommentIds(comments []*model.Comment) []uuid.UUID {
+	ids := make([]uuid.UUID, 0)
+	var extract func([]*model.Comment)
+	extract = func(cmts []*model.Comment) {
+		for _, c := range cmts {
+			ids = append(ids, c.ID)
+			if c.Replies != nil {
+				extract(c.Replies)
+			}
+		}
+	}
+	extract(comments)
+	return ids
 }

@@ -26,6 +26,7 @@ type Comic struct {
 	LastChapterAt      *time.Time              `json:"lastChapterAt" gorm:"column:last_chapter_at"`
 	TranslationGroupID *uuid.UUID              `json:"translationGroupId,omitempty" gorm:"column:translation_group_id"`
 	UploadedByID       *uuid.UUID              `json:"uploadedById,omitempty" gorm:"column:uploaded_by_id"`
+	UploaderId         *uuid.UUID              `json:"uploaderId,omitempty" gorm:"-"`
 
 	// Aggregated stats (computed via subquery, not stored)
 	FollowCount  int      `json:"followCount" gorm:"column:follow_count;->"`

@@ -34,6 +34,8 @@ func NewChapterRoute(p ChapterRouteParams) *ChapterRoute {
 }
 
 func (cr *ChapterRoute) Setup() {
+	cr.r.GET("/chapters/recent-updates", cr.authMiddleware.RequireJwt, cr.handler.getRecentUpdates)
+
 	rg := cr.r.Group("/comics/:comicSlug/chapters", cr.authMiddleware.RequireJwt, cr.slugMiddleware.ResolveComicID)
 
 	rg.GET("", cr.handler.listChapters)

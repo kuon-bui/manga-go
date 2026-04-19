@@ -41,6 +41,7 @@ func (cr *ComicRoute) Setup() {
 	rg := cr.r.Group("/comics", cr.authMiddleware.RequireJwt)
 
 	rg.GET("", cr.comicHandler.getComics)
+	rg.GET("/trending", cr.comicHandler.getTrendingComics)
 	rg.POST("", cr.comicHandler.createComic)
 
 	slugRg := rg.Group("/:comicSlug", cr.slugMiddleware.ResolveComicID)
