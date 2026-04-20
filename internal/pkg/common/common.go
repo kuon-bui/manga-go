@@ -32,3 +32,11 @@ func ShowDebugTrace(module string, trace []byte) {
 		generateTitle("END "+module), "\033[0m",
 	)
 }
+
+func AddFileContentPrefix(s string) string {
+	if s == "" || strings.HasPrefix(s, "/") || strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://") {
+		return s
+	}
+	v := "/files/content/" + s
+	return v
+}

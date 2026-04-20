@@ -3,11 +3,8 @@ package model
 import (
 	"encoding/json"
 	"manga-go/internal/pkg/common"
-	"strings"
-	"time"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 )
 
 type Page struct {
@@ -23,34 +20,10 @@ func (Page) TableName() string {
 	return "pages"
 }
 
-// pageJSON is used to customize JSON output with full image URL
-type pageJSON struct {
-	ID         uuid.UUID          `json:"id"`
-	CreatedAt  *time.Time         `json:"createdAt"`
-	UpdatedAt  *time.Time         `json:"updatedAt"`
-	DeletedAt  gorm.DeletedAt     `json:"deletedAt"`
-	ChapterID  uuid.UUID          `json:"chapterId"`
-	PageNumber int                `json:"pageNumber"`
-	PageType   common.ContentType `json:"pageType"`
-	ImageURL   string             `json:"imageUrl"`
-	Content    string             `json:"content"`
-}
-
 func (p Page) MarshalJSON() ([]byte, error) {
-	imageURL := p.ImageURL
-	if imageURL != "" && !strings.HasPrefix(imageURL, "/") && !strings.HasPrefix(imageURL, "http://") && !strings.HasPrefix(imageURL, "https://") {
-		imageURL = "/files/content/" + imageURL
-	}
+	type alias Page
+	temp := alias(p)
+	temp.ImageURL = common.AddFileContentPrefix(temp.ImageURL)
 
-	return json.Marshal(pageJSON{
-		ID:         p.ID,
-		CreatedAt:  p.CreatedAt,
-		UpdatedAt:  p.UpdatedAt,
-		DeletedAt:  p.DeletedAt,
-		ChapterID:  p.ChapterID,
-		PageNumber: p.PageNumber,
-		PageType:   p.PageType,
-		ImageURL:   imageURL,
-		Content:    p.Content,
-	})
+	return json.Marshal(temp)
 }
