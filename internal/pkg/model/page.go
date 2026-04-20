@@ -38,7 +38,7 @@ type pageJSON struct {
 
 func (p Page) MarshalJSON() ([]byte, error) {
 	imageURL := p.ImageURL
-	if imageURL != "" && !strings.HasPrefix(imageURL, "/") {
+	if imageURL != "" && !strings.HasPrefix(imageURL, "/") && !strings.HasPrefix(imageURL, "http://") && !strings.HasPrefix(imageURL, "https://") {
 		imageURL = "/files/content/" + imageURL
 	}
 
