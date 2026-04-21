@@ -10,6 +10,7 @@ import (
 	chapterrequest "manga-go/internal/pkg/request/chapter"
 	"manga-go/internal/pkg/utils"
 	queueconstant "manga-go/internal/queue/queue_constant"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
@@ -42,29 +43,69 @@ func (s *ChapterService) PublishChapter(ctx context.Context, chapterSlug string,
 	}
 
 	wasPublished := chapter.IsPublished
+	publishedAt := chapter.PublishedAt
+	now := time.Now().UTC()
 
-	if err := s.chapterRepo.Update(ctx, []any{
-		clause.Eq{Column: "id", Value: chapter.ID},
-	}, map[string]any{
-		"is_published": req.IsPublished,
-	}); err != nil {
-		s.logger.Error("Failed to publish chapter", "error", err)
+	err = s.chapterRepo.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		chapterUpdateData := map[string]any{
+			"is_published": req.IsPublished,
+		}
+
+		switch {
+		case req.IsPublished && !wasPublished:
+			chapterUpdateData["published_at"] = now
+		case !req.IsPublished && wasPublished:
+			chapterUpdateData["published_at"] = nil
+		}
+
+		if err := s.chapterRepo.UpdateWithTransaction(tx, []any{
+			clause.Eq{Column: "id", Value: chapter.ID},
+		}, chapterUpdateData); err != nil {
+			s.logger.Error("Failed to publish chapter", "error", err)
+			return err
+		}
+
+		switch {
+		case req.IsPublished && !wasPublished:
+			if err := s.comicRepo.UpdateWithTransaction(tx, []any{
+				clause.Eq{Column: "id", Value: comicID},
+			}, map[string]any{
+				"last_chapter_at": now,
+			}); err != nil {
+				s.logger.Error("Failed to update comic last_chapter_at", "error", err)
+				return err
+			}
+		case !req.IsPublished && wasPublished:
+			latestPublishedAt, err := s.chapterRepo.GetLatestPublishedChapterTimeByComicIDWithTransaction(tx, comicID)
+			if err != nil {
+				s.logger.Error("Failed to get latest published chapter time", "error", err)
+				return err
+			}
+
+			if err := s.comicRepo.UpdateWithTransaction(tx, []any{
+				clause.Eq{Column: "id", Value: comicID},
+			}, map[string]any{
+				"last_chapter_at": latestPublishedAt,
+			}); err != nil {
+				s.logger.Error("Failed to refresh comic last_chapter_at", "error", err)
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
 		return response.ResultErrDb(err)
 	}
 
 	chapter.IsPublished = req.IsPublished
-
-	// Update comic's last_chapter_at when chapter is published
-	if req.IsPublished {
-		if err := s.comicRepo.Update(ctx, []any{
-			clause.Eq{Column: "id", Value: comicID},
-		}, map[string]any{
-			"last_chapter_at": gorm.Expr("CURRENT_TIMESTAMP"),
-		}); err != nil {
-			s.logger.Error("Failed to update comic last_chapter_at", "error", err)
-			return response.ResultErrDb(err)
-		}
+	switch {
+	case req.IsPublished && !wasPublished:
+		publishedAt = &now
+	case !req.IsPublished && wasPublished:
+		publishedAt = nil
 	}
+	chapter.PublishedAt = publishedAt
 
 	msg := "Chapter unpublished successfully"
 	if req.IsPublished {
