@@ -2,6 +2,7 @@ package model
 
 import (
 	"manga-go/internal/pkg/common"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -14,6 +15,7 @@ type Chapter struct {
 	Title        string     `json:"title" gorm:"column:title"`
 	Slug         string     `json:"slug" gorm:"column:slug"`
 	IsPublished  bool       `json:"isPublished" gorm:"column:is_published"`
+	PublishedAt  *time.Time `json:"publishedAt" gorm:"column:published_at"`
 	UploadedByID *uuid.UUID `json:"uploadedById,omitempty" gorm:"column:uploaded_by_id"`
 
 	// Relationships
