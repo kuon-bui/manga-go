@@ -5,20 +5,8 @@ import (
 	"fmt"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
-
-	"github.com/google/uuid"
-	"gorm.io/gorm"
+	comicrequest "manga-go/internal/pkg/request/comic"
 )
-
-type ListComicFilters struct {
-	TranslationGroupID *uuid.UUID
-	GenreSlugs         []string
-	TagSlugs           []string
-	Search             string
-	Status             string // ongoing | completed | hiatus | cancelled
-	SortBy             string // lastChapterAt | createdAt | rating | followCount
-	Order              string // asc | desc
-}
 
 var allowedSortFields = map[string]string{
 	"lastChapterAt": "comics.last_chapter_at",
@@ -33,32 +21,36 @@ const statsSelect = `comics.*,
 	(SELECT COUNT(*) FROM chapters ch WHERE ch.comic_id = comics.id AND ch.deleted_at IS NULL) AS chapter_count,
 	(SELECT AVG(r.score) FROM ratings r WHERE r.comic_id = comics.id AND r.deleted_at IS NULL) AS avg_rating`
 
-func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters ListComicFilters, paging *common.Paging, moreKeys map[string]common.MoreKeyOption) ([]*model.Comic, int64, error) {
+func buildComicSortOrder(sortBy, order string) string {
+	sortExpr, ok := allowedSortFields[sortBy]
+	if !ok {
+		return "comics.created_at DESC"
+	}
+
+	return fmt.Sprintf("%s %s NULLS LAST", sortExpr, order)
+}
+
+func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comicrequest.ListComicsRequest, moreKeys map[string]common.MoreKeyOption) ([]*model.Comic, int64, error) {
 	var comics []*model.Comic
 	var total int64
 
-	countQuery := r.buildFilteredQuery(ctx, filters)
+	countQuery := r.DB.WithContext(ctx).
+		Model(&model.Comic{}).
+		Scopes(applyComicFilters(filters))
 	if err := countQuery.Distinct("comics.id").Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
-	query := r.buildFilteredQuery(ctx, filters).
+	query := r.DB.WithContext(ctx).
+		Model(&model.Comic{}).
+		Scopes(applyComicFilters(filters)).
 		Select(statsSelect).
 		Distinct()
 
-	// Apply sorting
-	if sortField, ok := allowedSortFields[filters.SortBy]; ok {
-		order := "DESC"
-		if filters.Order == "asc" {
-			order = "ASC"
-		}
-		query = query.Order(fmt.Sprintf("%s %s NULLS LAST", sortField, order))
-	} else {
-		query = query.Order("comics.created_at DESC")
-	}
+	query = query.Order(buildComicSortOrder(filters.SortBy, filters.Order))
 
 	query = r.ApplyPreloadMoreKeys(query, moreKeys)
-	query = query.Scopes(r.WithPaginate(paging))
+	query = query.Scopes(r.WithPaginate(&filters.Paging))
 
 	if err := query.Find(&comics).Error; err != nil {
 		return nil, 0, err
@@ -80,48 +72,4 @@ func (r *ComicRepo) FindOneWithStats(ctx context.Context, conditions []any, more
 		return nil, err
 	}
 	return &comic, nil
-}
-
-func (r *ComicRepo) buildFilteredQuery(ctx context.Context, filters ListComicFilters) *gorm.DB {
-	db := r.DB.WithContext(ctx).Model(&model.Comic{})
-
-	if filters.TranslationGroupID != nil {
-		db = db.Where("comics.translation_group_id = ?", *filters.TranslationGroupID)
-	}
-
-	if filters.Status != "" {
-		db = db.Where("comics.status = ?", filters.Status)
-	}
-
-	if filters.Search != "" {
-		searchPattern := "%" + filters.Search + "%"
-		db = db.Where(
-			`(
-				comics.title ILIKE ?
-				OR EXISTS (
-					SELECT 1
-					FROM jsonb_array_elements_text(COALESCE(comics.alternative_titles, '[]'::jsonb)) AS alt(title)
-					WHERE alt.title ILIKE ?
-				)
-			)`,
-			searchPattern,
-			searchPattern,
-		)
-	}
-
-	if len(filters.GenreSlugs) > 0 {
-		db = db.
-			Joins("JOIN comic_genres ON comic_genres.comic_id = comics.id").
-			Joins("JOIN genres ON genres.id = comic_genres.genre_id").
-			Where("genres.slug IN ?", filters.GenreSlugs)
-	}
-
-	if len(filters.TagSlugs) > 0 {
-		db = db.
-			Joins("JOIN comic_tags ON comic_tags.comic_id = comics.id").
-			Joins("JOIN tags ON tags.id = comic_tags.tag_id").
-			Where("tags.slug IN ?", filters.TagSlugs)
-	}
-
-	return db
 }

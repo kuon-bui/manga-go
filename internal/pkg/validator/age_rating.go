@@ -13,10 +13,12 @@ var ValidateAgeRating validator.Func = func(fl validator.FieldLevel) bool {
 		return true // Allow empty value, use "required" tag to enforce presence
 	}
 
-	switch ageRating {
-	case constant.AgeRatingAll, constant.AgeRating13Plus, constant.AgeRating16Plus, constant.AgeRating18Plus:
-		return true
-	default:
-		return false
+	allowedRatings := map[constant.ComicAgeRating]bool{
+		constant.AgeRatingAll:    true,
+		constant.AgeRating13Plus: true,
+		constant.AgeRating16Plus: true,
+		constant.AgeRating18Plus: true,
 	}
+
+	return allowedRatings[ageRating]
 }
