@@ -49,6 +49,8 @@ func (r *BaseRepository[T]) ApplyWhereConditions(db *gorm.DB, conditions []any) 
 		switch c := condition.(type) {
 		case common.JoinExpr:
 			db = db.Joins(c.SQL, c.Vars...)
+		case func(*gorm.DB) *gorm.DB:
+			db = db.Scopes(c)
 		default:
 			db = db.Where(condition)
 		}

@@ -13,14 +13,13 @@ var ValidateComicType validator.Func = func(fl validator.FieldLevel) bool {
 		return true // Allow empty value, use "required" tag to enforce presence
 	}
 
-	switch comicType {
-	case constant.ComicTypeManga,
-		constant.ComicTypeManhwa,
-		constant.ComicTypeManhua,
-		constant.ComicTypeComic,
-		constant.ComicTypeNovel:
-		return true
-	default:
-		return false
+	allowedTypes := map[constant.ComicType]bool{
+		constant.ComicTypeManga:  true,
+		constant.ComicTypeManhwa: true,
+		constant.ComicTypeManhua: true,
+		constant.ComicTypeComic:  true,
+		constant.ComicTypeNovel:  true,
 	}
+
+	return allowedTypes[comicType]
 }

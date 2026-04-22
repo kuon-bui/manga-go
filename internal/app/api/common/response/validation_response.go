@@ -63,6 +63,25 @@ func buildValidationMessage(validationErr validator.FieldError) string {
 			constant.ComicTypeComic,
 			constant.ComicTypeNovel,
 		)
+	case "comic_status":
+		return fmt.Sprintf(
+			"%s must be a valid comic status (%s, %s, %s, %s)",
+			validationErr.Field(),
+			constant.ComicStatusOngoing,
+			constant.ComicStatusCompleted,
+			constant.ComicStatusHiatus,
+			constant.ComicStatusCancelled,
+		)
+	case "order_check":
+		return fmt.Sprintf(
+			"%s must be a valid order direction (ASC or DESC)",
+			validationErr.Field(),
+		)
+	case "comic_sort_by":
+		return fmt.Sprintf(
+			"%s must be a valid sort by field (lastChapterAt, createdAt, rating, followCount)",
+			validationErr.Field(),
+		)
 	default:
 		return fmt.Sprintf("%s is invalid (%s)", validationErr.Field(), validationErr.Tag())
 	}
