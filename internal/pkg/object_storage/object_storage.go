@@ -2,16 +2,20 @@ package objectstorage
 
 import (
 	"context"
+	stdErrors "errors"
 	"io"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/logger"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	s3Config "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
+	pkgerrors "github.com/pkg/errors"
 )
 
 type ObjectStorage struct {
@@ -69,7 +73,7 @@ func (o *ObjectStorage) CreatePresignedURL(ctx context.Context, key string) (str
 	)
 
 	if err != nil {
-		return "", errors.WithMessage(err, "create presigned url")
+		return "", pkgerrors.WithMessage(err, "create presigned url")
 	}
 
 	return presignResult.URL, nil
@@ -83,13 +87,13 @@ func (o *ObjectStorage) GetFile(ctx context.Context, fileName string) ([]byte, e
 
 	resp, err := o.s3.GetObject(ctx, getObjectInput)
 	if err != nil {
-		return nil, errors.WithMessage(err, "get file from object storage")
+		return nil, pkgerrors.WithMessage(err, "get file from object storage")
 	}
 	defer resp.Body.Close()
 
 	buf, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.WithMessage(err, "read file content")
+		return nil, pkgerrors.WithMessage(err, "read file content")
 	}
 
 	return buf, nil
@@ -109,8 +113,31 @@ func (o *ObjectStorage) UploadFile(ctx context.Context, fileName string, body io
 
 	_, err := o.s3.PutObject(ctx, putObjectInput)
 	if err != nil {
-		return errors.WithMessage(err, "upload file to object storage")
+		return pkgerrors.WithMessage(err, "upload file to object storage")
 	}
 
 	return nil
+}
+
+func (o *ObjectStorage) IsNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var noSuchKey *types.NoSuchKey
+	if stdErrors.As(err, &noSuchKey) {
+		return true
+	}
+
+	var apiErr smithy.APIError
+	if stdErrors.As(err, &apiErr) {
+		code := strings.TrimSpace(apiErr.ErrorCode())
+		switch code {
+		case "NoSuchKey", "NotFound":
+			return true
+		}
+	}
+
+	lower := strings.ToLower(err.Error())
+	return strings.Contains(lower, "nosuchkey") || strings.Contains(lower, "not found")
 }

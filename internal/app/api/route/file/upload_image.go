@@ -3,7 +3,6 @@ package fileroute
 import (
 	"io"
 	"net/http"
-	"path/filepath"
 	"strings"
 
 	"manga-go/internal/app/api/common/response"
@@ -15,7 +14,7 @@ import (
 const maxUploadImageSize int64 = 10 * 1024 * 1024
 
 // @Summary      Upload image (chapter or comic cover)
-// @Description  Upload image with automatic folder organization. For chapter type: if chapterId provided -> comics/{comicSlug}/chapters/{chapterSlug}/pages/{uuid}.ext, else -> comics/{comicSlug}/temp-uploads/{uuid}.ext. For cover -> comics/{comicSlug}/cover/{uuid}.ext
+// @Description  Upload image and automatically generate WebP variants (economy/small/clear/sharp). For chapter type: if chapterId provided -> comics/{comicSlug}/chapters/{chapterSlug}/pages/{uuid}.webp, else -> comics/{comicSlug}/temp-uploads/{uuid}.webp. For cover -> comics/{comicSlug}/cover/{uuid}.webp
 // @Tags         File
 // @Accept       multipart/form-data
 // @Produce      json
@@ -100,12 +99,8 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 	// - If provided: save to comics/{comicSlug}/chapters/{chapterSlug}/pages/
 	// - If NOT provided: save to comics/{comicSlug}/temp-uploads/ (pending assignment)
 
-	// Generate unique filename with UUID
-	ext := filepath.Ext(fileHeader.Filename)
-	if ext == "" {
-		ext = ".jpg"
-	}
-	uniqueFilename := uuid.New().String() + ext
+	// Generate canonical WebP filename with UUID
+	uniqueFilename := uuid.New().String() + ".webp"
 
 	// Resolve slugs from IDs via fileService
 	var filePath string
@@ -129,7 +124,7 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 			filePath = path
 		}
 	} else if uploadType == "cover" {
-		// Build path: comics/{comicSlug}/cover/{uuid}.ext
+		// Build path: comics/{comicSlug}/cover/{uuid}.webp
 		path, err := h.fileService.BuildCoverImagePath(c.Request.Context(), comicIdStr, uniqueFilename)
 		if err != nil {
 			response.ResultError(err.Error()).ResponseResult(c)
@@ -138,17 +133,11 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		filePath = path
 	}
 
-	err = h.fileService.UploadFile(c.Request.Context(), filePath, file, fileHeader.Size, contentType)
+	uploadResult, err := h.fileService.UploadImageVariants(c.Request.Context(), filePath, file)
 	if err != nil {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
 
-	response.ResultSuccess("Upload image successfully", map[string]any{
-		"url":          "/files/content/" + filePath,
-		"filename":     uniqueFilename,
-		"path":         filePath,
-		"content_type": contentType,
-		"size":         fileHeader.Size,
-	}).ResponseResult(c)
+	response.ResultSuccess("Upload image successfully", uploadResult).ResponseResult(c)
 }
