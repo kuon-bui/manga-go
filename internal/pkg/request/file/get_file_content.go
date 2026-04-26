@@ -1,5 +1,5 @@
 package filerequest
 
 type GetFileContentRequest struct {
-	Variant string `form:"variant" binding:"omitempty,oneof=economy small clear sharp"`
+	Size string `form:"size" binding:"omitempty,oneof=small medium large normal"`
 }

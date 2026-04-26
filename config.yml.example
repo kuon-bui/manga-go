@@ -17,6 +17,9 @@ redis:
   port: 6379
   password: ""
   db: 0
+asynq:
+  concurrency: 10
+  image_process_cleanup_delay_hours: 24
 smtp:
   host: mailpit
   port: 1025

@@ -18,7 +18,7 @@ import (
 // @Accept       json
 // @Produce      */*
 // @Param        filename  path      string  true  "File path"
-// @Param        variant   query     string  false  "Variant: economy|small|clear|sharp"
+// @Param        size      query     string  false  "Size: small|medium|large|normal (default: normal)"
 // @Success      200       {file}    string  "File content"
 // @Failure      400       {object}  response.Response
 // @Failure      500       {object}  response.Response
@@ -36,9 +36,9 @@ func (h *FileHandler) getFileContent(c *gin.Context) {
 		return
 	}
 
-	fileContent, resolvedKey, err := h.fileService.GetFileByVariant(c.Request.Context(), filename, req.Variant)
+	fileContent, resolvedKey, err := h.fileService.GetFileByVariant(c.Request.Context(), filename, req.Size)
 	if err != nil {
-		if strings.EqualFold(err.Error(), "invalid filename") || strings.EqualFold(err.Error(), "invalid variant") {
+		if strings.EqualFold(err.Error(), "invalid filename") || strings.EqualFold(err.Error(), "invalid size") {
 			response.ResultError(err.Error()).ResponseResult(c)
 			return
 		}

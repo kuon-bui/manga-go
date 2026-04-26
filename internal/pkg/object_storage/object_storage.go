@@ -119,6 +119,20 @@ func (o *ObjectStorage) UploadFile(ctx context.Context, fileName string, body io
 	return nil
 }
 
+func (o *ObjectStorage) DeleteFile(ctx context.Context, fileName string) error {
+	deleteObjectInput := &s3.DeleteObjectInput{
+		Bucket: aws.String(o.bucketName),
+		Key:    aws.String(fileName),
+	}
+
+	_, err := o.s3.DeleteObject(ctx, deleteObjectInput)
+	if err != nil {
+		return pkgerrors.WithMessage(err, "delete file from object storage")
+	}
+
+	return nil
+}
+
 func (o *ObjectStorage) IsNotFoundError(err error) bool {
 	if err == nil {
 		return false

@@ -57,6 +57,14 @@ func (f *fakeStorage) UploadFile(_ context.Context, fileName string, body io.Rea
 	return nil
 }
 
+func (f *fakeStorage) DeleteFile(_ context.Context, fileName string) error {
+	delete(f.files, fileName)
+	delete(f.uploaded, fileName)
+	delete(f.uploadedContentType, fileName)
+	delete(f.getErr, fileName)
+	return nil
+}
+
 func (f *fakeStorage) IsNotFoundError(err error) bool {
 	return errors.Is(err, errFakeNotFound)
 }

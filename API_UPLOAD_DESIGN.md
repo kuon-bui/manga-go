@@ -6,7 +6,8 @@ Endpoint `/files/upload` telah didesain ulang untuk:
 - ✅ Backend tự resolve ID → Slug
 - ✅ Phân biệt loại upload: chapter images vs comic cover
 - ✅ Convert mọi ảnh upload sang WebP
-- ✅ Auto-generate 4 variants: `economy`, `small`, `clear`, `sharp`
+- ✅ Auto-generate 4 size variants: `small`, `medium`, `large`, `normal`
+- ✅ Xử lý ảnh qua queue (async) thay vì xử lý trực tiếp trong request
 - ✅ Unique filename + organized folder structure
 
 ---
@@ -30,9 +31,9 @@ Endpoint `/files/upload` telah didesain ulang untuk:
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `variant` | string | ❌ | `economy \| small \| clear \| sharp` (default: `sharp`) |
+| `size` | string | ❌ | `small \| medium \| large \| normal` (default: `normal`) |
 
-Client có thể dùng cùng một `path` đã lưu trong DB và chọn biến thể bằng query param.
+Client có thể dùng cùng một `path` đã lưu trong DB và chọn kích thước bằng query.
 
 ---
 
@@ -56,50 +57,23 @@ chapterId=660e8400-e29b-41d4-a716-446655440001
 **Response:**
 ```json
 {
-  "message": "Upload image successfully",
+  "message": "Upload image queued successfully",
   "data": {
+    "status": "queued",
+    "taskId": "6f0e6fd4-6b47-4d53-8b56-42e61a4f9c06",
+    "cleanup_task_scheduled": true,
+    "cleanup_task_id": "d80d7be3-7ad1-4fd3-8ca3-a30c8d8a8ca7",
     "url": "/files/content/comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000.webp",
     "filename": "123e4567-e89b-12d3-a456-426614174000.webp",
     "path": "comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000.webp",
-    "content_type": "image/webp",
-    "size": 163840,
-    "variants": [
-      {
-        "variant": "economy",
-        "width": 480,
-        "path": "comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000__economy.webp",
-        "url": "/files/content/comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000.webp?variant=economy",
-        "content_type": "image/webp",
-        "size": 24576
-      },
-      {
-        "variant": "small",
-        "width": 720,
-        "path": "comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000__small.webp",
-        "url": "/files/content/comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000.webp?variant=small",
-        "content_type": "image/webp",
-        "size": 53248
-      },
-      {
-        "variant": "clear",
-        "width": 1080,
-        "path": "comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000__clear.webp",
-        "url": "/files/content/comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000.webp?variant=clear",
-        "content_type": "image/webp",
-        "size": 90112
-      },
-      {
-        "variant": "sharp",
-        "width": 1600,
-        "path": "comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000.webp",
-        "url": "/files/content/comics/manga-slug/chapters/ch-1-slug/pages/123e4567-e89b-12d3-a456-426614174000.webp?variant=sharp",
-        "content_type": "image/webp",
-        "size": 163840
-      }
-    ]
+    "content_type": "image/webp"
   }
 }
 ```
+
+**Lưu ý:** Worker sẽ xử lý ảnh sau khi enqueue xong. Trong thời gian ngắn ngay sau upload, file có thể chưa sẵn sàng để đọc.
+
+**Cleanup fallback config:** Delay của task dọn file tạm được cấu hình qua `asynq.image_process_cleanup_delay_hours` (mặc định 24 giờ).
 
 **Store `path` trong database (để dùng lúc cập nhật chapter)**
 
@@ -141,16 +115,16 @@ S3/MinIO Bucket:
 │   ├── manga-a-slug/
 │   │   ├── cover/
 │   │   │   ├── 123e4567-e89b-12d3.webp
-│   │   │   ├── 123e4567-e89b-12d3__economy.webp
 │   │   │   ├── 123e4567-e89b-12d3__small.webp
-│   │   │   └── 123e4567-e89b-12d3__clear.webp
+│   │   │   ├── 123e4567-e89b-12d3__medium.webp
+│   │   │   └── 123e4567-e89b-12d3__large.webp
 │   │   ├── chapters/
 │   │   │   ├── ch-1-slug/
 │   │   │   │   └── pages/
 │   │   │   │       ├── 789f1234-b89c-12d3.webp
-│   │   │   │       ├── 789f1234-b89c-12d3__economy.webp
 │   │   │   │       ├── 789f1234-b89c-12d3__small.webp
-│   │   │   │       ├── 789f1234-b89c-12d3__clear.webp
+│   │   │   │       ├── 789f1234-b89c-12d3__medium.webp
+│   │   │   │       ├── 789f1234-b89c-12d3__large.webp
 │   │   │   │       ├── 890a2345-c89d-23e4.webp
 │   │   │   │       └── ...
 │   │   │   └── ch-2-slug/
@@ -268,8 +242,8 @@ await fetch(`/api/v1/comics/:comicId/chapters/:chapterId/pages`, {
 ❌ Not an image
    → Response: "Only image files are allowed"
 
-❌ Invalid variant query
-  → Response: validation error for `variant` (allowed: economy, small, clear, sharp)
+❌ Invalid size query
+  → Response: "invalid size" (allowed: small, medium, large, normal)
 ```
 
 ---
@@ -292,10 +266,12 @@ await fetch(`/api/v1/comics/:comicId/chapters/:chapterId/pages`, {
 - Stored in `chapters.pages[].image_url` (string)
 - Format: `comics/{comicSlug}/chapters/{chapterSlug}/pages/{uuid}.webp`
 - Có thể reconstruct URL khi cần:
-  - Sharp/default: `/files/content/{path}`
-  - Economy: `/files/content/{path}?variant=economy`
-  - Small: `/files/content/{path}?variant=small`
-  - Clear: `/files/content/{path}?variant=clear`
+  - Base URL: `/files/content/{path}`
+  - Chọn size qua query `size`:
+    - `/files/content/{path}?size=small`
+    - `/files/content/{path}?size=medium`
+    - `/files/content/{path}?size=large`
+    - `/files/content/{path}?size=normal` (hoặc không truyền query)
 
 **Cleanup:**
 - Khi delete chapter → Xóa ảnh trong S3

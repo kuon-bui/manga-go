@@ -68,7 +68,7 @@ func (s *FileService) UploadImageVariants(ctx context.Context, canonicalObjectKe
 			return nil, err
 		}
 
-		if variant == ImageVariantSharp {
+		if variant == ImageVariantNormal {
 			canonicalSize = int64(len(encoded))
 		}
 
@@ -76,7 +76,7 @@ func (s *FileService) UploadImageVariants(ctx context.Context, canonicalObjectKe
 			Variant:     string(variant),
 			Width:       width,
 			Path:        variantObjectKey,
-			URL:         "/files/content/" + cleanedKey + "?variant=" + string(variant),
+			URL:         "/files/content/" + cleanedKey,
 			Size:        int64(len(encoded)),
 			ContentType: webpContentType,
 		})

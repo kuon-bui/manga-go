@@ -11,15 +11,15 @@ func TestGetFileByVariant_ReturnVariantFile(t *testing.T) {
 	service := &FileService{objectStorage: fake}
 
 	canonical := "comics/demo/cover/abc.webp"
-	variantKey := BuildVariantObjectKey(canonical, ImageVariantEconomy)
-	fake.files[variantKey] = []byte("economy-data")
+	variantKey := BuildVariantObjectKey(canonical, ImageVariantSmall)
+	fake.files[variantKey] = []byte("small-data")
 
-	content, resolvedKey, err := service.GetFileByVariant(context.Background(), canonical, "economy")
+	content, resolvedKey, err := service.GetFileByVariant(context.Background(), canonical, "small")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if string(content) != "economy-data" {
+	if string(content) != "small-data" {
 		t.Fatalf("unexpected content: %q", string(content))
 	}
 
@@ -37,15 +37,15 @@ func TestGetFileByVariant_FallbackToCanonicalWhenVariantMissing(t *testing.T) {
 	service := &FileService{objectStorage: fake}
 
 	canonical := "comics/demo/chapters/ch-1/pages/abc.webp"
-	variantKey := BuildVariantObjectKey(canonical, ImageVariantSmall)
-	fake.files[canonical] = []byte("sharp-data")
+	variantKey := BuildVariantObjectKey(canonical, ImageVariantMedium)
+	fake.files[canonical] = []byte("normal-data")
 
-	content, resolvedKey, err := service.GetFileByVariant(context.Background(), canonical, "small")
+	content, resolvedKey, err := service.GetFileByVariant(context.Background(), canonical, "medium")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if string(content) != "sharp-data" {
+	if string(content) != "normal-data" {
 		t.Fatalf("unexpected content: %q", string(content))
 	}
 
@@ -61,7 +61,7 @@ func TestGetFileByVariant_FallbackToCanonicalWhenVariantMissing(t *testing.T) {
 func TestGetFileByVariant_InvalidInputs(t *testing.T) {
 	service := &FileService{objectStorage: newFakeStorage()}
 
-	if _, _, err := service.GetFileByVariant(context.Background(), "../secret.webp", "sharp"); err == nil {
+	if _, _, err := service.GetFileByVariant(context.Background(), "../secret.webp", "normal"); err == nil {
 		t.Fatalf("expected invalid filename error")
 	}
 
@@ -108,19 +108,22 @@ func TestUploadImageVariants_Success(t *testing.T) {
 		if item.ContentType != webpContentType {
 			t.Fatalf("variant %s has unexpected content type %q", item.Variant, item.ContentType)
 		}
+		if item.URL != "/files/content/"+canonical {
+			t.Fatalf("variant %s has unexpected url %q", item.Variant, item.URL)
+		}
 	}
 
-	if widthByVariant[string(ImageVariantEconomy)] != 480 {
-		t.Fatalf("economy width should be 480, got %d", widthByVariant[string(ImageVariantEconomy)])
+	if widthByVariant[string(ImageVariantSmall)] != 480 {
+		t.Fatalf("small width should be 480, got %d", widthByVariant[string(ImageVariantSmall)])
 	}
-	if widthByVariant[string(ImageVariantSmall)] != 720 {
-		t.Fatalf("small width should be 720, got %d", widthByVariant[string(ImageVariantSmall)])
+	if widthByVariant[string(ImageVariantMedium)] != 720 {
+		t.Fatalf("medium width should be 720, got %d", widthByVariant[string(ImageVariantMedium)])
 	}
-	if widthByVariant[string(ImageVariantClear)] != 1080 {
-		t.Fatalf("clear width should be 1080, got %d", widthByVariant[string(ImageVariantClear)])
+	if widthByVariant[string(ImageVariantLarge)] != 1080 {
+		t.Fatalf("large width should be 1080, got %d", widthByVariant[string(ImageVariantLarge)])
 	}
-	if widthByVariant[string(ImageVariantSharp)] != 1200 {
-		t.Fatalf("sharp width should be 1200, got %d", widthByVariant[string(ImageVariantSharp)])
+	if widthByVariant[string(ImageVariantNormal)] != 1200 {
+		t.Fatalf("normal width should be 1200, got %d", widthByVariant[string(ImageVariantNormal)])
 	}
 
 	for _, variant := range imageVariantOrder {

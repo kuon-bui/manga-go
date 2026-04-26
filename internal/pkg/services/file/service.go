@@ -15,6 +15,7 @@ type fileStorage interface {
 	CreatePresignedURL(ctx context.Context, key string) (string, error)
 	GetFile(ctx context.Context, fileName string) ([]byte, error)
 	UploadFile(ctx context.Context, fileName string, body io.Reader, contentLength int64, contentType string) error
+	DeleteFile(ctx context.Context, fileName string) error
 	IsNotFoundError(err error) bool
 }
 

@@ -9,11 +9,11 @@ func TestParseImageVariant(t *testing.T) {
 		want      ImageVariant
 		wantError bool
 	}{
-		{name: "default to sharp", input: "", want: ImageVariantSharp},
-		{name: "economy", input: "economy", want: ImageVariantEconomy},
+		{name: "default to normal", input: "", want: ImageVariantNormal},
 		{name: "small", input: "small", want: ImageVariantSmall},
-		{name: "clear", input: "clear", want: ImageVariantClear},
-		{name: "sharp", input: "sharp", want: ImageVariantSharp},
+		{name: "medium", input: "medium", want: ImageVariantMedium},
+		{name: "large", input: "large", want: ImageVariantLarge},
+		{name: "normal", input: "normal", want: ImageVariantNormal},
 		{name: "invalid", input: "x", wantError: true},
 	}
 
@@ -41,12 +41,12 @@ func TestParseImageVariant(t *testing.T) {
 func TestBuildVariantObjectKey(t *testing.T) {
 	canonical := "comics/demo/chapters/ch-1/pages/abc.webp"
 
-	if got := BuildVariantObjectKey(canonical, ImageVariantSharp); got != canonical {
-		t.Fatalf("sharp should keep canonical key, got %q", got)
+	if got := BuildVariantObjectKey(canonical, ImageVariantNormal); got != canonical {
+		t.Fatalf("normal should keep canonical key, got %q", got)
 	}
 
-	if got := BuildVariantObjectKey(canonical, ImageVariantEconomy); got != "comics/demo/chapters/ch-1/pages/abc__economy.webp" {
-		t.Fatalf("unexpected economy key: %q", got)
+	if got := BuildVariantObjectKey(canonical, ImageVariantSmall); got != "comics/demo/chapters/ch-1/pages/abc__small.webp" {
+		t.Fatalf("unexpected small key: %q", got)
 	}
 }
 

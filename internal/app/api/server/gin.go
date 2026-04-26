@@ -73,12 +73,13 @@ func NewGinEngine(config *config.Config) *gin.Engine {
 	g := gin.Default()
 
 	validatorFuncs := map[string]validator.Func{
-		"age_rating":    validatorpkg.ValidateAgeRating,
-		"comic_type":    validatorpkg.ValidateComicType,
-		"comic_status":  validatorpkg.ValidateComicStatus,
-		"follow_status": validatorpkg.ValidateFollowStatus,
-		"order_check":   validatorpkg.ValidateOrderDirection,
-		"comic_sort_by": validatorpkg.ValidateComicSortBy,
+		"age_rating":        validatorpkg.ValidateAgeRating,
+		"comic_type":        validatorpkg.ValidateComicType,
+		"comic_status":      validatorpkg.ValidateComicStatus,
+		"follow_status":     validatorpkg.ValidateFollowStatus,
+		"order_check":       validatorpkg.ValidateOrderDirection,
+		"comic_sort_by":     validatorpkg.ValidateComicSortBy,
+		"upload_image_type": validatorpkg.ValidateUploadImageType,
 	}
 
 	for tag, fn := range validatorFuncs {

@@ -9,10 +9,10 @@ import (
 type ImageVariant string
 
 const (
-	ImageVariantEconomy ImageVariant = "economy"
-	ImageVariantSmall   ImageVariant = "small"
-	ImageVariantClear   ImageVariant = "clear"
-	ImageVariantSharp   ImageVariant = "sharp"
+	ImageVariantSmall  ImageVariant = "small"
+	ImageVariantMedium ImageVariant = "medium"
+	ImageVariantLarge  ImageVariant = "large"
+	ImageVariantNormal ImageVariant = "normal"
 )
 
 type imageVariantPreset struct {
@@ -20,35 +20,35 @@ type imageVariantPreset struct {
 }
 
 var imageVariantOrder = []ImageVariant{
-	ImageVariantEconomy,
 	ImageVariantSmall,
-	ImageVariantClear,
-	ImageVariantSharp,
+	ImageVariantMedium,
+	ImageVariantLarge,
+	ImageVariantNormal,
 }
 
 var imageVariantPresets = map[ImageVariant]imageVariantPreset{
-	ImageVariantEconomy: {Width: 480},
-	ImageVariantSmall:   {Width: 720},
-	ImageVariantClear:   {Width: 1080},
-	ImageVariantSharp:   {Width: 0},
+	ImageVariantSmall:  {Width: 480},
+	ImageVariantMedium: {Width: 720},
+	ImageVariantLarge:  {Width: 1080},
+	ImageVariantNormal: {Width: 0},
 }
 
 func ParseImageVariant(raw string) (ImageVariant, error) {
 	v := ImageVariant(strings.TrimSpace(raw))
 	if v == "" {
-		return ImageVariantSharp, nil
+		return ImageVariantNormal, nil
 	}
 
 	switch v {
-	case ImageVariantEconomy, ImageVariantSmall, ImageVariantClear, ImageVariantSharp:
+	case ImageVariantSmall, ImageVariantMedium, ImageVariantLarge, ImageVariantNormal:
 		return v, nil
 	default:
-		return "", errors.New("invalid variant")
+		return "", errors.New("invalid size")
 	}
 }
 
 func BuildVariantObjectKey(canonicalObjectKey string, variant ImageVariant) string {
-	if variant == ImageVariantSharp {
+	if variant == ImageVariantNormal {
 		return canonicalObjectKey
 	}
 
