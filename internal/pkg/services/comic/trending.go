@@ -9,19 +9,20 @@ import (
 )
 
 type TrendingChapterInfo struct {
-	Number string `json:"number"`
-	ID     string `json:"id"`
+	Name   string    `json:"name"`
+	Number string    `json:"number"`
+	ID     uuid.UUID `json:"id"`
 }
 
 type TrendingComicResponse struct {
-	ID            uuid.UUID                 `json:"id"`
-	Title         string                    `json:"title"`
-	CoverImage    *string                   `json:"coverImage"`
-	Author        string                    `json:"author"`
-	Synopsis      *string                   `json:"synopsis"`
-	Genres        []*model.Genre            `json:"genres"`
-	LatestChapter *TrendingChapterInfo      `json:"latestChapter"`
-	Views         int                       `json:"views"`
+	ID            uuid.UUID            `json:"id"`
+	Title         string               `json:"title"`
+	CoverImage    *string              `json:"coverImage"`
+	Author        string               `json:"author"`
+	Synopsis      *string              `json:"synopsis"`
+	Genres        []*model.Genre       `json:"genres"`
+	LatestChapter *TrendingChapterInfo `json:"latestChapter"`
+	Views         int                  `json:"views"`
 }
 
 func (s *ComicService) GetTrendingComics(ctx context.Context, limit int) response.Result {
@@ -53,10 +54,11 @@ func (s *ComicService) GetTrendingComics(ctx context.Context, limit int) respons
 			resp.Author = comic.Authors[0].Name
 		}
 
-		if len(comic.Chapters) > 0 && comic.Chapters[0] != nil {
+		if comic.LatestChapter != nil {
 			resp.LatestChapter = &TrendingChapterInfo{
-				Number: comic.Chapters[0].Number,
-				ID:     comic.Chapters[0].ID.String(),
+				Name:   comic.LatestChapter.Title,
+				Number: comic.LatestChapter.Number,
+				ID:     comic.LatestChapter.ID,
 			}
 		}
 

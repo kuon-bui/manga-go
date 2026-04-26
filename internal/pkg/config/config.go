@@ -92,10 +92,19 @@ type Config struct {
 	Seeder        SeederConfig        `mapstructure:"seeder"`
 }
 
-func LoadConfig() *Config {
+func LoadConfig(isSeeder bool) func() *Config {
+	return func() *Config {
+		if isSeeder {
+			return loadConfig("config.seeder.yml")
+		}
+		return loadConfig("config.yml")
+	}
+}
+
+func loadConfig(fileName string) *Config {
 	v := viper.New()
 	v.AddConfigPath(".")
-	v.SetConfigFile("config.yml")
+	v.SetConfigFile(fileName)
 	v.SetConfigType("yml")
 	v.AutomaticEnv()
 

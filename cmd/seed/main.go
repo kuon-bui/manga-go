@@ -21,7 +21,7 @@ func main() {
 
 	app := fx.New(
 		fx.Provide(
-			config.LoadConfig,
+			config.LoadConfig(true),
 			logger.NewLogger,
 			gormdb.ConnectGORM,
 			redis.ConnectRedis,

@@ -1,8 +1,6 @@
 package comicroute
 
 import (
-	"errors"
-	"io"
 	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/common"
 	comicrequest "manga-go/internal/pkg/request/comic"
@@ -12,20 +10,21 @@ import (
 	"github.com/google/uuid"
 )
 
-// @Summary      Follow comic
-// @Description  Follow a comic for the current user
+// @Summary      Update comic follow status
+// @Description  Update follow status for a followed comic of current user
 // @Tags         Comic
 // @Accept       json
 // @Produce      json
-// @Param        comicSlug  path      string  true  "Comic slug"
-// @Param        body       body      comicrequest.FollowComicRequest  false  "Follow comic request"
+// @Param        comicSlug  path      string                     true  "Comic slug"
+// @Param        body       body      comicrequest.FollowComicRequest  true  "Follow status update request"
 // @Success      200        {object}  response.Result
+// @Failure      400        {object}  response.Response
 // @Failure      401        {object}  response.Response
 // @Failure      404        {object}  response.Response
 // @Failure      500        {object}  response.Response
 // @Security     AccessToken
-// @Router       /comics/{comicSlug}/follow [post]
-func (h *ComicHandler) followComic(c *gin.Context) {
+// @Router       /comics/{comicSlug}/follow-status [patch]
+func (h *ComicHandler) updateComicFollowStatus(c *gin.Context) {
 	user, err := utils.GetCurrentUserFromGinContext(c)
 	if err != nil {
 		response.ResultUnauthorized().ResponseResult(c)
@@ -39,11 +38,11 @@ func (h *ComicHandler) followComic(c *gin.Context) {
 	}
 
 	var req comicrequest.FollowComicRequest
-	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.ResultInvalidRequestErr(err).ResponseResult(c)
 		return
 	}
 
-	result := h.comicService.FollowComic(c.Request.Context(), user.ID, comicID, req.FollowStatus)
+	result := h.comicService.UpdateComicFollowStatus(c.Request.Context(), user.ID, comicID, req.FollowStatus)
 	result.ResponseResult(c)
 }

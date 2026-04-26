@@ -4,17 +4,19 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/constant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type ComicFollowStatus struct {
-	IsFollowed bool `json:"isFollowed"`
+	IsFollowed   bool                   `json:"isFollowed"`
+	FollowStatus *constant.FollowStatus `json:"followStatus,omitempty"`
 }
 
 func (s *ComicService) GetFollowStatus(ctx context.Context, userID, comicID uuid.UUID) response.Result {
-	_, err := s.comicFollowRepo.FindByUserAndComic(ctx, userID, comicID)
+	follow, err := s.comicFollowRepo.FindByUserAndComic(ctx, userID, comicID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return response.ResultSuccess("Comic follow status retrieved successfully", ComicFollowStatus{IsFollowed: false})
@@ -24,5 +26,6 @@ func (s *ComicService) GetFollowStatus(ctx context.Context, userID, comicID uuid
 		return response.ResultErrDb(err)
 	}
 
-	return response.ResultSuccess("Comic follow status retrieved successfully", ComicFollowStatus{IsFollowed: true})
+	followStatus := follow.FollowStatus
+	return response.ResultSuccess("Comic follow status retrieved successfully", ComicFollowStatus{IsFollowed: true, FollowStatus: &followStatus})
 }

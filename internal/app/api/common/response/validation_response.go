@@ -72,6 +72,16 @@ func buildValidationMessage(validationErr validator.FieldError) string {
 			constant.ComicStatusHiatus,
 			constant.ComicStatusCancelled,
 		)
+	case "follow_status":
+		return fmt.Sprintf(
+			"%s must be a valid follow status (%s, %s, %s, %s, %s)",
+			validationErr.Field(),
+			constant.FollowStatusReading,
+			constant.FollowStatusPlanned,
+			constant.FollowStatusCompleted,
+			constant.FollowStatusDropped,
+			constant.FollowStatusFavorite,
+		)
 	case "order_check":
 		return fmt.Sprintf(
 			"%s must be a valid order direction (ASC or DESC)",

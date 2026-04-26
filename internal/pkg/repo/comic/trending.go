@@ -5,7 +5,7 @@ import (
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 
-	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func (r *ComicRepo) FindTrending(ctx context.Context, limit int) ([]*model.Comic, error) {
@@ -21,9 +21,17 @@ func (r *ComicRepo) FindTrending(ctx context.Context, limit int) ([]*model.Comic
 	db = r.ApplyPreloadMoreKeys(db, map[string]common.MoreKeyOption{
 		"Authors": {},
 		"Genres":  {},
-		"Chapters": {
-			Custom: func(tx *gorm.DB) *gorm.DB {
-				return tx.Order("chapter_idx DESC").Limit(1)
+		"LatestChapter": {
+			Order: &clause.OrderBy{
+				Columns: []clause.OrderByColumn{
+					{
+						Column: clause.Column{
+							Name:  "chapter_idx",
+							Table: clause.CurrentTable,
+						},
+						Desc: true,
+					},
+				},
 			},
 		},
 	})

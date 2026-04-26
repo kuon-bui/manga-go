@@ -21,7 +21,7 @@ func (s *ComicService) UnfollowComic(ctx context.Context, userID, comicID uuid.U
 		return response.ResultErrDb(err)
 	}
 
-	if err := s.comicFollowRepo.DeleteSoft(ctx, []any{
+	if err := s.comicFollowRepo.DeletePermanently(ctx, []any{
 		clause.Eq{Column: "user_id", Value: userID},
 		clause.Eq{Column: "comic_id", Value: comicID},
 	}); err != nil {
