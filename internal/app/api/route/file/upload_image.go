@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"manga-go/internal/app/api/common/response"
-	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/fileprocess"
-	filerequest "manga-go/internal/pkg/request/file"
 	queueconstant "manga-go/internal/queue/queue_constant"
 
 	"github.com/gin-gonic/gin"
@@ -42,8 +41,7 @@ const defaultTemporaryImageCleanupDelayHours = 24
 func (h *FileHandler) uploadImage(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadImageSize)
 
-	var req filerequest.UploadFileRequest
-	if err := c.ShouldBind(&req); err != nil {
+	if err := normalizeUploadFormValues(c); err != nil {
 		if strings.Contains(err.Error(), "http: request body too large") {
 			response.ResultError("File size exceeds 10MB").ResponseResult(c)
 			return
@@ -61,21 +59,20 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		response.ResultInvalidRequestErr(err).ResponseResult(c)
 		return
 	}
-	req.File = *fileHeader
 
-	if req.File.Size > maxUploadImageSize {
+	if fileHeader.Size > maxUploadImageSize {
 		response.ResultError("File size exceeds 10MB").ResponseResult(c)
 		return
 	}
 
-	file, err := req.File.Open()
+	file, err := fileHeader.Open()
 	if err != nil {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
 	defer file.Close()
 
-	contentType := req.File.Header.Get("Content-Type")
+	contentType := fileHeader.Header.Get("Content-Type")
 	if contentType == "" {
 		header := make([]byte, 512)
 		readN, readErr := file.Read(header)
@@ -96,47 +93,60 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		return
 	}
 
-	if req.Type != constant.UploadImageTypeChapter && req.Type != constant.UploadImageTypeComic && !strings.EqualFold(string(req.Type), "cover") {
-		response.ResultError("'type' must be 'chapter' or 'cover'").ResponseResult(c)
+	// Get parameters from form
+	uploadType := strings.TrimSpace(c.PostForm("type"))
+	comicIdStr := strings.TrimSpace(c.PostForm("comicId"))
+	chapterSlug := strings.TrimSpace(c.PostForm("chapterSlug"))
+	pageIdx := strings.TrimSpace(c.PostForm("pageIdx"))
+
+	if uploadType == "" {
+		response.ResultError("'type' parameter is required (chapter or cover)").ResponseResult(c)
 		return
 	}
 
-	comicIdStr := req.ComicId.String()
+	if comicIdStr == "" {
+		response.ResultError("'comicId' parameter is required").ResponseResult(c)
+		return
+	}
+
+	if uploadType != "chapter" && uploadType != "cover" {
+		response.ResultError("'type' must be 'chapter' or 'cover'").ResponseResult(c)
+		return
+	}
 
 	// Generate canonical WebP filename with UUID
 	uniqueFilename := uuid.New().String() + ".webp"
 
 	// Resolve slugs from IDs via fileService
 	var filePath string
-	switch req.Type {
-	case constant.UploadImageTypeChapter:
+	switch uploadType {
+	case "chapter":
 		// For chapter type: chapterSlug must be provided.
 		//
 		// save to comics/{comicSlug}/chapters/{chapterSlug}/pages/
 
-		if req.ChapterSlug == nil || strings.TrimSpace(*req.ChapterSlug) == "" {
+		if chapterSlug == "" {
 			response.ResultError("'chapterSlug' parameter is required for chapter type").ResponseResult(c)
 			return
 		}
 
-		if req.PageIdx == nil {
+		if pageIdx == "" {
 			response.ResultError("'pageIdx' parameter is required for chapter type").ResponseResult(c)
 			return
 		}
-
-		chapterSlug := strings.TrimSpace(*req.ChapterSlug)
 
 		if strings.Contains(chapterSlug, "/") || strings.Contains(chapterSlug, "\\") || strings.Contains(chapterSlug, "..") {
 			response.ResultError("'chapterSlug' contains invalid characters").ResponseResult(c)
 			return
 		}
 
-		if *req.PageIdx < 0 {
+		parsedPageIdx, parseErr := strconv.Atoi(pageIdx)
+		if parseErr != nil || parsedPageIdx < 0 {
 			response.ResultError("'pageIdx' must be a non-negative integer").ResponseResult(c)
 			return
 		}
 
-		uniqueFilename = fmt.Sprintf("page-%d.webp", *req.PageIdx)
+		uniqueFilename = fmt.Sprintf("page-%d.webp", parsedPageIdx)
 		// Backend resolves: comicId -> comicSlug
 		path, err := h.fileService.BuildChapterImagePath(c.Request.Context(), comicIdStr, chapterSlug, uniqueFilename)
 		if err != nil {
@@ -145,7 +155,7 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		}
 		filePath = path
 
-	case constant.UploadImageTypeComic:
+	case "cover":
 		// Build path: comics/{comicSlug}/cover/{uuid}.webp
 		path, err := h.fileService.BuildCoverImagePath(c.Request.Context(), comicIdStr, uniqueFilename)
 		if err != nil {
@@ -153,21 +163,10 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 			return
 		}
 		filePath = path
-
-	default:
-		// Backward-compatible alias: accept cover as comic upload type.
-		if strings.EqualFold(string(req.Type), "cover") {
-			path, err := h.fileService.BuildCoverImagePath(c.Request.Context(), comicIdStr, uniqueFilename)
-			if err != nil {
-				response.ResultError(err.Error()).ResponseResult(c)
-				return
-			}
-			filePath = path
-		}
 	}
 
 	temporaryObjectKey := "tmp/image-process/" + uuid.NewString()
-	if err := h.fileService.UploadFile(c.Request.Context(), temporaryObjectKey, file, req.File.Size, contentType); err != nil {
+	if err := h.fileService.UploadFile(c.Request.Context(), temporaryObjectKey, file, fileHeader.Size, contentType); err != nil {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
@@ -231,4 +230,47 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		"url":                    "/files/content/" + filePath,
 		"content_type":           "image/webp",
 	}).ResponseResult(c)
+}
+
+func normalizeUploadFormValues(c *gin.Context) error {
+	if err := c.Request.ParseMultipartForm(maxUploadImageSize); err != nil {
+		return err
+	}
+
+	if c.Request.MultipartForm == nil || c.Request.MultipartForm.Value == nil {
+		return nil
+	}
+
+	normalizedComicID := normalizeUUIDLikeValue(c.Request.MultipartForm.Value["comicId"])
+	if normalizedComicID == "" {
+		return nil
+	}
+
+	c.Request.MultipartForm.Value["comicId"] = []string{normalizedComicID}
+	if c.Request.PostForm != nil {
+		c.Request.PostForm.Set("comicId", normalizedComicID)
+	}
+
+	return nil
+}
+
+func normalizeUUIDLikeValue(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+
+	raw := strings.TrimSpace(values[0])
+	if raw == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(raw, "[") && strings.HasSuffix(raw, "]") {
+		var list []string
+		if err := json.Unmarshal([]byte(raw), &list); err == nil && len(list) > 0 {
+			raw = strings.TrimSpace(list[0])
+		}
+	}
+
+	raw = strings.Trim(raw, "\"")
+	return strings.TrimSpace(raw)
 }

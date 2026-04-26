@@ -8,8 +8,10 @@ import (
 
 func applyComicFilters(filters *comicrequest.ListComicsRequest) func(*gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		if filters.TranslationGroupID != "" {
-			db = db.Where("comics.translation_group_id = ?", filters.TranslationGroupID)
+		if filters.TranslationGroupSlug != "" {
+			db = db.
+				Joins("JOIN translation_groups ON translation_groups.id = comics.translation_group_id").
+				Where("translation_groups.slug = ?", filters.TranslationGroupSlug)
 		}
 
 		if filters.Status != "" {
