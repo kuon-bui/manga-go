@@ -7,6 +7,7 @@ import (
 	"manga-go/internal/pkg/hash"
 	"manga-go/internal/pkg/model"
 	userrequest "manga-go/internal/pkg/request/user"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -32,6 +33,10 @@ func (s *UserService) CreateAccount(ctx context.Context, req *userrequest.Create
 		Password:   hash.HashPassword(req.Password),
 		UserConfig: model.DefaultUserConfig(),
 	}
+	if avatar := strings.TrimSpace(req.Avatar); avatar != "" {
+		user.Avatar = &avatar
+	}
+
 	err = s.userRepo.Create(ctx, &user)
 	if err != nil {
 		s.logger.Error("Failed to create user account", "error", err)

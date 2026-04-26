@@ -3,6 +3,7 @@ package translationgroupservice
 import (
 	"context"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/common"
 	"time"
 
 	"github.com/google/uuid"
@@ -47,13 +48,19 @@ func (s *TranslationGroupService) GetMembers(ctx context.Context, groupID uuid.U
 			role = "admin"
 		}
 
+		var avatarURL *string
+		if u.Avatar != nil {
+			prefixed := common.AddFileContentPrefix(*u.Avatar)
+			avatarURL = &prefixed
+		}
+
 		res = append(res, GroupMemberResponse{
-			ID:       u.ID.String(),
-			UserID:   u.ID.String(),
+			ID:     u.ID.String(),
+			UserID: u.ID.String(),
 			User: UserObj{
 				ID:        u.ID.String(),
 				Name:      u.Name,
-				AvatarUrl: nil, // Note: Users currently don't have AvatarUrl in DB
+				AvatarUrl: avatarURL,
 			},
 			Role:     role,
 			JoinedAt: u.CreatedAt.Format(time.RFC3339),

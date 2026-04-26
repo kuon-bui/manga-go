@@ -1,6 +1,7 @@
 package commentservice
 
 import (
+	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	"time"
 
@@ -17,27 +18,35 @@ type ReactionCounts struct {
 }
 
 type CommentUserInfo struct {
-	ID   uuid.UUID `json:"id"`
-	Name string    `json:"name"`
+	ID     uuid.UUID `json:"id"`
+	Name   string    `json:"name"`
+	Avatar *string   `json:"avatar"`
 }
 
 type CommentResponse struct {
-	ID             uuid.UUID        `json:"id"`
-	Content        string           `json:"content"`
-	Author         *CommentUserInfo `json:"author"`
-	CreatedAt      *time.Time       `json:"createdAt"`
-	ReactionCounts ReactionCounts   `json:"reactionCounts"`
-	UserReaction   *string          `json:"userReaction"` // nil = no reaction
-	ReplyCount     int              `json:"replyCount"`
+	ID             uuid.UUID          `json:"id"`
+	Content        string             `json:"content"`
+	Author         *CommentUserInfo   `json:"author"`
+	CreatedAt      *time.Time         `json:"createdAt"`
+	ReactionCounts ReactionCounts     `json:"reactionCounts"`
+	UserReaction   *string            `json:"userReaction"` // nil = no reaction
+	ReplyCount     int                `json:"replyCount"`
 	Replies        []*CommentResponse `json:"replies,omitempty"`
 }
 
 func mapCommentToResponse(comment *model.Comment, reactionCounts map[uuid.UUID]map[string]int64, userReactions map[uuid.UUID]string) *CommentResponse {
 	var author *CommentUserInfo
 	if comment.User != nil {
+		var avatar *string
+		if comment.User.Avatar != nil {
+			avatarURL := common.AddFileContentPrefix(*comment.User.Avatar)
+			avatar = &avatarURL
+		}
+
 		author = &CommentUserInfo{
-			ID:   comment.User.ID,
-			Name: comment.User.Name,
+			ID:     comment.User.ID,
+			Name:   comment.User.Name,
+			Avatar: avatar,
 		}
 	}
 
