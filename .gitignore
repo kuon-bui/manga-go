@@ -96,7 +96,8 @@ fabric.properties
 #
 /pkey
 tmp/
-config.yml
+config.*
+!config.yaml.example
 dist
 
 __debug_bin*

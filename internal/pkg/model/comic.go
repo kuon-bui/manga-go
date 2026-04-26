@@ -43,6 +43,7 @@ type Comic struct {
 	Genres           []*Genre          `json:"genres" gorm:"many2many:comic_genres;"`
 	Tags             []*Tag            `json:"tags" gorm:"many2many:comic_tags;"`
 	Chapters         []*Chapter        `json:"chapters,omitempty" gorm:"foreignKey:ComicID"`
+	LatestChapter    *Chapter          `json:"latestChapter,omitempty" gorm:"foreignKey:ComicID;->"`
 }
 
 func (Comic) TableName() string {

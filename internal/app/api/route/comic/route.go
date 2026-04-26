@@ -48,6 +48,7 @@ func (cr *ComicRoute) Setup() {
 	slugRg.GET("", cr.comicHandler.getComic)
 	slugRg.POST("/follow", cr.comicHandler.followComic)
 	slugRg.GET("/follow-status", cr.comicHandler.getComicFollowStatus)
+	slugRg.PATCH("/follow-status", cr.comicHandler.updateComicFollowStatus)
 	slugRg.PUT("", cr.comicHandler.updateComic)
 	slugRg.PATCH("/status", cr.comicHandler.updateComicStatus)
 	slugRg.PATCH("/publish", cr.comicHandler.publishComic)

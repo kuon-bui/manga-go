@@ -18,7 +18,7 @@ import (
 var Module = fx.Module(
 	"queue",
 	fx.Provide(
-		config.LoadConfig,
+		config.LoadConfig(false),
 		gorm.ConnectGORM,
 		redis.ConnectRedis,
 		redis.NewRedis,
