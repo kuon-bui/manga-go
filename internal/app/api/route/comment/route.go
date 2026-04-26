@@ -36,6 +36,7 @@ func (cr *CommentRoute) Setup() {
 	rg := cr.r.Group("/comments", cr.authMiddleware.RequireJwt)
 
 	rg.GET("", cr.commentHandler.getComments)
+	rg.GET("/new", cr.commentHandler.getNewComments)
 	rg.POST("", cr.commentHandler.createComment)
 
 	idRg := rg.Group("/:id")

@@ -47,6 +47,7 @@ func (ur *UserRoute) Setup() {
 func (ur *UserRoute) registerAuthRoute(rg *gin.RouterGroup) {
 	rg.DELETE("/logout", ur.authMiddleware.InvalidateJwt, ur.userHandler.logout)
 	rg.GET("/me", ur.userHandler.me)
+	rg.PATCH("/:id", ur.userHandler.updateUserProfile)
 	rg.GET("/me/config", ur.userHandler.getMyConfig)
 	rg.PATCH("/me/config", ur.userHandler.updateMyConfig)
 	rg.GET("/me/followed-comics", ur.userHandler.getFollowedComics)
