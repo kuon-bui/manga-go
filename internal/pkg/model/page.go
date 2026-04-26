@@ -12,7 +12,7 @@ type Page struct {
 	ChapterID  uuid.UUID          `json:"chapterId" gorm:"column:chapter_id"`
 	PageNumber int                `json:"pageNumber" gorm:"column:page_number"`
 	PageType   common.ContentType `json:"pageType" gorm:"column:page_type"`
-	ImageURL   string             `json:"-" gorm:"column:image_url"`
+	ImageURL   string             `json:"imageUrl" gorm:"column:image_url"`
 	Content    string             `json:"content" gorm:"column:content"`
 }
 

@@ -1,15 +1,26 @@
 package fileservice
 
 import (
+	"context"
+	"io"
+
+	objectstorage "manga-go/internal/pkg/object_storage"
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
-	objectstorage "manga-go/internal/pkg/object_storage"
 
 	"go.uber.org/fx"
 )
 
+type fileStorage interface {
+	CreatePresignedURL(ctx context.Context, key string) (string, error)
+	GetFile(ctx context.Context, fileName string) ([]byte, error)
+	UploadFile(ctx context.Context, fileName string, body io.Reader, contentLength int64, contentType string) error
+	DeleteFile(ctx context.Context, fileName string) error
+	IsNotFoundError(err error) bool
+}
+
 type FileService struct {
-	objectStorage *objectstorage.ObjectStorage
+	objectStorage fileStorage
 	comicRepo     *comicrepo.ComicRepo
 	chapterRepo   *chapterrepo.ChapterRepo
 }

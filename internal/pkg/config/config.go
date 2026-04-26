@@ -51,7 +51,8 @@ type smtpConfig struct {
 }
 
 type asynqConfig struct {
-	Concurrency int `mapstructure:"concurrency"`
+	Concurrency                   int `mapstructure:"concurrency"`
+	ImageProcessCleanupDelayHours int `mapstructure:"image_process_cleanup_delay_hours"`
 }
 
 type CookieNameConfig struct {
@@ -107,6 +108,7 @@ func loadConfig(fileName string) *Config {
 	v.SetConfigFile(fileName)
 	v.SetConfigType("yml")
 	v.AutomaticEnv()
+	v.SetDefault("asynq.image_process_cleanup_delay_hours", 24)
 
 	if err := v.ReadInConfig(); err != nil {
 		logger.GetLogger().Fatalf("Error while reading config file: %v", err)

@@ -1,28 +1,36 @@
 package fileroute
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
-	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/fileprocess"
+	queueconstant "manga-go/internal/queue/queue_constant"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 )
 
 const maxUploadImageSize int64 = 10 * 1024 * 1024
+const defaultTemporaryImageCleanupDelayHours = 24
 
 // @Summary      Upload image (chapter or comic cover)
-// @Description  Upload image with automatic folder organization. For chapter type: if chapterId provided -> comics/{comicSlug}/chapters/{chapterSlug}/pages/{uuid}.ext, else -> comics/{comicSlug}/temp-uploads/{uuid}.ext. For cover -> comics/{comicSlug}/cover/{uuid}.ext
+// @Description  Queue image processing to generate WebP variants (small/medium/large/normal). For chapter type: if chapterSlug provided -> comics/{comicSlug}/chapters/{chapterSlug}/pages/page-{pageIdx}.webp. For cover -> comics/{comicSlug}/cover/{uuid}.webp
 // @Tags         File
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        file  formData  file  true  "Image file (max 10MB, image/* only)"
 // @Param        type  formData  string  true  "Image type: 'chapter' or 'cover'"
 // @Param        comicId  formData  string  true  "Comic ID (UUID)"
-// @Param        chapterId  formData  string  false  "Chapter ID (UUID) - optional. If not provided, image saved to temp folder for later assignment"
+// @Param        chapterSlug  formData  string  false  "Chapter slug (required for chapter type)"
+// @Param        pageIdx  formData  string  false  "Page index (required for chapter type)"
 // @Success      200   {object}  response.Response
 // @Failure      400   {object}  response.Response
 // @Failure      401   {object}  response.Response
@@ -32,6 +40,15 @@ const maxUploadImageSize int64 = 10 * 1024 * 1024
 // @Security     AccessToken
 func (h *FileHandler) uploadImage(c *gin.Context) {
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxUploadImageSize)
+
+	if err := normalizeUploadFormValues(c); err != nil {
+		if strings.Contains(err.Error(), "http: request body too large") {
+			response.ResultError("File size exceeds 10MB").ResponseResult(c)
+			return
+		}
+		response.ResultInvalidRequestErr(err).ResponseResult(c)
+		return
+	}
 
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
@@ -79,7 +96,8 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 	// Get parameters from form
 	uploadType := strings.TrimSpace(c.PostForm("type"))
 	comicIdStr := strings.TrimSpace(c.PostForm("comicId"))
-	chapterIdStr := strings.TrimSpace(c.PostForm("chapterId"))
+	chapterSlug := strings.TrimSpace(c.PostForm("chapterSlug"))
+	pageIdx := strings.TrimSpace(c.PostForm("pageIdx"))
 
 	if uploadType == "" {
 		response.ResultError("'type' parameter is required (chapter or cover)").ResponseResult(c)
@@ -96,40 +114,49 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		return
 	}
 
-	// For chapter type: chapterId is optional
-	// - If provided: save to comics/{comicSlug}/chapters/{chapterSlug}/pages/
-	// - If NOT provided: save to comics/{comicSlug}/temp-uploads/ (pending assignment)
-
-	// Generate unique filename with UUID
-	ext := filepath.Ext(fileHeader.Filename)
-	if ext == "" {
-		ext = ".jpg"
-	}
-	uniqueFilename := uuid.New().String() + ext
+	// Generate canonical WebP filename with UUID
+	uniqueFilename := uuid.New().String() + ".webp"
 
 	// Resolve slugs from IDs via fileService
 	var filePath string
-	if uploadType == "chapter" {
-		if chapterIdStr != "" {
-			// Backend resolves: comicId -> comicSlug, chapterId -> chapterSlug
-			path, err := h.fileService.BuildChapterImagePath(c.Request.Context(), comicIdStr, chapterIdStr, uniqueFilename)
-			if err != nil {
-				response.ResultError(err.Error()).ResponseResult(c)
-				return
-			}
-			filePath = path
-		} else {
-			// No chapterId provided: save to temp-uploads folder
-			// Frontend will assign these images to chapter when creating
-			path, err := h.fileService.BuildTempChapterImagePath(c.Request.Context(), comicIdStr, uniqueFilename)
-			if err != nil {
-				response.ResultError(err.Error()).ResponseResult(c)
-				return
-			}
-			filePath = path
+	switch uploadType {
+	case "chapter":
+		// For chapter type: chapterSlug must be provided.
+		//
+		// save to comics/{comicSlug}/chapters/{chapterSlug}/pages/
+
+		if chapterSlug == "" {
+			response.ResultError("'chapterSlug' parameter is required for chapter type").ResponseResult(c)
+			return
 		}
-	} else if uploadType == "cover" {
-		// Build path: comics/{comicSlug}/cover/{uuid}.ext
+
+		if pageIdx == "" {
+			response.ResultError("'pageIdx' parameter is required for chapter type").ResponseResult(c)
+			return
+		}
+
+		if strings.Contains(chapterSlug, "/") || strings.Contains(chapterSlug, "\\") || strings.Contains(chapterSlug, "..") {
+			response.ResultError("'chapterSlug' contains invalid characters").ResponseResult(c)
+			return
+		}
+
+		parsedPageIdx, parseErr := strconv.Atoi(pageIdx)
+		if parseErr != nil || parsedPageIdx < 0 {
+			response.ResultError("'pageIdx' must be a non-negative integer").ResponseResult(c)
+			return
+		}
+
+		uniqueFilename = fmt.Sprintf("page-%d.webp", parsedPageIdx)
+		// Backend resolves: comicId -> comicSlug
+		path, err := h.fileService.BuildChapterImagePath(c.Request.Context(), comicIdStr, chapterSlug, uniqueFilename)
+		if err != nil {
+			response.ResultError(err.Error()).ResponseResult(c)
+			return
+		}
+		filePath = path
+
+	case "cover":
+		// Build path: comics/{comicSlug}/cover/{uuid}.webp
 		path, err := h.fileService.BuildCoverImagePath(c.Request.Context(), comicIdStr, uniqueFilename)
 		if err != nil {
 			response.ResultError(err.Error()).ResponseResult(c)
@@ -138,17 +165,112 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		filePath = path
 	}
 
-	err = h.fileService.UploadFile(c.Request.Context(), filePath, file, fileHeader.Size, contentType)
-	if err != nil {
+	temporaryObjectKey := "tmp/image-process/" + uuid.NewString()
+	if err := h.fileService.UploadFile(c.Request.Context(), temporaryObjectKey, file, fileHeader.Size, contentType); err != nil {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
 
-	response.ResultSuccess("Upload image successfully", map[string]any{
-		"url":          "/files/content/" + filePath,
-		"filename":     uniqueFilename,
-		"path":         filePath,
-		"content_type": contentType,
-		"size":         fileHeader.Size,
+	payloadBytes, err := json.Marshal(fileprocess.ImageProcessPayload{
+		FilePath:           filePath,
+		TemporaryObjectKey: temporaryObjectKey,
+	})
+	if err != nil {
+		_ = h.fileService.DeleteFile(c.Request.Context(), temporaryObjectKey)
+		response.ResultErrInternal(err).ResponseResult(c)
+		return
+	}
+
+	task := asynq.NewTask(
+		queueconstant.IMAGE_PROCESS_TASK,
+		payloadBytes,
+		asynq.MaxRetry(5),
+		asynq.Timeout(3*time.Minute),
+	)
+
+	taskInfo, err := h.asynqClient.Enqueue(task, asynq.Queue(queueconstant.IMAGE_PROCESS_QUEUE))
+	if err != nil {
+		_ = h.fileService.DeleteFile(c.Request.Context(), temporaryObjectKey)
+		response.ResultErrInternal(err).ResponseResult(c)
+		return
+	}
+
+	cleanupTaskScheduled := false
+	cleanupTaskID := ""
+	cleanupPayloadBytes, cleanupPayloadErr := json.Marshal(fileprocess.ImageProcessCleanupPayload{
+		TemporaryObjectKey: temporaryObjectKey,
+	})
+	if cleanupPayloadErr == nil {
+		cleanupDelayHours := h.config.Asynq.ImageProcessCleanupDelayHours
+		if cleanupDelayHours <= 0 {
+			cleanupDelayHours = defaultTemporaryImageCleanupDelayHours
+		}
+
+		cleanupTask := asynq.NewTask(
+			queueconstant.IMAGE_PROCESS_CLEANUP_TASK,
+			cleanupPayloadBytes,
+			asynq.ProcessIn(time.Duration(cleanupDelayHours)*time.Hour),
+			asynq.MaxRetry(3),
+		)
+
+		cleanupTaskInfo, cleanupEnqueueErr := h.asynqClient.Enqueue(cleanupTask, asynq.Queue(queueconstant.IMAGE_PROCESS_QUEUE))
+		if cleanupEnqueueErr == nil {
+			cleanupTaskScheduled = true
+			cleanupTaskID = cleanupTaskInfo.ID
+		}
+	}
+
+	response.ResultSuccess("Upload image queued successfully", map[string]any{
+		"status":                 "queued",
+		"taskId":                 taskInfo.ID,
+		"cleanup_task_scheduled": cleanupTaskScheduled,
+		"cleanup_task_id":        cleanupTaskID,
+		"path":                   filePath,
+		"filename":               uniqueFilename,
+		"url":                    "/files/content/" + filePath,
+		"content_type":           "image/webp",
 	}).ResponseResult(c)
+}
+
+func normalizeUploadFormValues(c *gin.Context) error {
+	if err := c.Request.ParseMultipartForm(maxUploadImageSize); err != nil {
+		return err
+	}
+
+	if c.Request.MultipartForm == nil || c.Request.MultipartForm.Value == nil {
+		return nil
+	}
+
+	normalizedComicID := normalizeUUIDLikeValue(c.Request.MultipartForm.Value["comicId"])
+	if normalizedComicID == "" {
+		return nil
+	}
+
+	c.Request.MultipartForm.Value["comicId"] = []string{normalizedComicID}
+	if c.Request.PostForm != nil {
+		c.Request.PostForm.Set("comicId", normalizedComicID)
+	}
+
+	return nil
+}
+
+func normalizeUUIDLikeValue(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+
+	raw := strings.TrimSpace(values[0])
+	if raw == "" {
+		return ""
+	}
+
+	if strings.HasPrefix(raw, "[") && strings.HasSuffix(raw, "]") {
+		var list []string
+		if err := json.Unmarshal([]byte(raw), &list); err == nil && len(list) > 0 {
+			raw = strings.TrimSpace(list[0])
+		}
+	}
+
+	raw = strings.Trim(raw, "\"")
+	return strings.TrimSpace(raw)
 }
