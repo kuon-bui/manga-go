@@ -15,6 +15,11 @@ type ReactionCountByType struct {
 // CountByCommentIds returns reaction counts grouped by comment_id and type
 // Returns map[commentId]map[reactionType]count
 func (r *ReactionRepo) CountByCommentIds(ctx context.Context, commentIds []uuid.UUID) (map[uuid.UUID]map[string]int64, error) {
+	result := make(map[uuid.UUID]map[string]int64)
+	if len(commentIds) == 0 {
+		return result, nil
+	}
+
 	var counts []struct {
 		CommentId uuid.UUID
 		Type      string
@@ -22,7 +27,7 @@ func (r *ReactionRepo) CountByCommentIds(ctx context.Context, commentIds []uuid.
 	}
 
 	if err := r.DB.WithContext(ctx).
-		Model(&model.Reaction{}).
+		Model(&model.CommentReaction{}).
 		Where("comment_id IN ?", commentIds).
 		Where("deleted_at IS NULL").
 		Group("comment_id, type").
@@ -31,7 +36,6 @@ func (r *ReactionRepo) CountByCommentIds(ctx context.Context, commentIds []uuid.
 		return nil, err
 	}
 
-	result := make(map[uuid.UUID]map[string]int64)
 	for _, c := range counts {
 		if result[c.CommentId] == nil {
 			result[c.CommentId] = make(map[string]int64)
@@ -45,13 +49,18 @@ func (r *ReactionRepo) CountByCommentIds(ctx context.Context, commentIds []uuid.
 // GetUserReactionsByCommentIds returns user's reaction for each comment
 // Returns map[commentId]reactionType (empty string if no reaction)
 func (r *ReactionRepo) GetUserReactionsByCommentIds(ctx context.Context, commentIds []uuid.UUID, userId uuid.UUID) (map[uuid.UUID]string, error) {
+	result := make(map[uuid.UUID]string)
+	if len(commentIds) == 0 {
+		return result, nil
+	}
+
 	var reactions []struct {
 		CommentId uuid.UUID
 		Type      string
 	}
 
 	if err := r.DB.WithContext(ctx).
-		Model(&model.Reaction{}).
+		Model(&model.CommentReaction{}).
 		Where("comment_id IN ?", commentIds).
 		Where("user_id = ?", userId).
 		Where("deleted_at IS NULL").
@@ -61,7 +70,6 @@ func (r *ReactionRepo) GetUserReactionsByCommentIds(ctx context.Context, comment
 		return nil, err
 	}
 
-	result := make(map[uuid.UUID]string)
 	for _, reaction := range reactions {
 		result[reaction.CommentId] = reaction.Type
 	}
