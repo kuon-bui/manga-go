@@ -2,11 +2,15 @@ package gorm
 
 import (
 	"fmt"
+	"log"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/logger"
+	"os"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
 )
 
@@ -21,13 +25,26 @@ func ConnectGORM(cfg *config.Config, logger *logger.Logger) *gorm.DB {
 	)
 
 	// nếu như không phải môi trường Production thì thêm sslmode=disable vào dsn
-	if isProduction := cfg.Production; !isProduction {
+	if cfg.RunMode != config.RunModeProduction {
 		dsn += " sslmode=disable"
 	}
 
 	logger.Info("PostgreSQL dsn: ", dsn)
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	gormLogger := gormlogger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		gormlogger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			IgnoreRecordNotFoundError: cfg.RunMode == config.RunModeSeeder,
+			Colorful:                  true,
+		},
+	)
+
+	gormConfig := &gorm.Config{
+		Logger: gormLogger,
+	}
+
+	db, err := gorm.Open(postgres.Open(dsn), gormConfig)
 	if err != nil {
 		logger.Error("Connect to PostgreSQL error: ", err)
 	}

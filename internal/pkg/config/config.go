@@ -6,6 +6,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+type RunMode string
+
+const (
+	RunModeProduction  RunMode = "production"
+	RunModeDevelopment RunMode = "development"
+	RunModeSeeder      RunMode = "seeder"
+)
+
 type postgresqlConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
@@ -79,7 +87,7 @@ type SeederConfig struct {
 }
 
 type Config struct {
-	Production    bool                `mapstructure:"production"`
+	RunMode       RunMode             `mapstructure:"run_mode"`
 	PostgreSQL    postgresqlConfig    `mapstructure:"db"`
 	Jwt           jwtConfig           `mapstructure:"jwt"`
 	Otlp          OtlpConfig          `mapstructure:"otlp"`
@@ -119,6 +127,18 @@ func loadConfig(fileName string) *Config {
 	if err := v.Unmarshal(&config); err != nil {
 		logger.GetLogger().Fatalf("Error while unmarshaling config file: %v", err)
 		panic(err)
+	}
+
+	switch config.RunMode {
+	case RunModeProduction:
+		logger.GetLogger().Info("Running in production mode")
+	case RunModeDevelopment:
+		logger.GetLogger().Info("Running in development mode")
+	case RunModeSeeder:
+		logger.GetLogger().Info("Running in seeder mode")
+	default:
+		logger.GetLogger().Warnf("Unknown RunMode %s, defaulting to development", config.RunMode)
+		config.RunMode = RunModeDevelopment
 	}
 
 	return &config
