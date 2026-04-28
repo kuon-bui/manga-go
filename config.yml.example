@@ -1,4 +1,5 @@
-production: false
+run_mode: development
+
 service:
   name: manga-go
   domain: localhost

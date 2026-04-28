@@ -16,8 +16,8 @@ type SetCookieParams struct {
 	ExpireRefreshAccessToken time.Time
 }
 
-func SetCookie(config *config.Config, g *gin.Context, p SetCookieParams) {
-	isProduction := config.Production
+func SetCookie(cfg *config.Config, g *gin.Context, p SetCookieParams) {
+	isProduction := cfg.RunMode == config.RunModeProduction
 	domain := ""
 
 	// Detect if the request is cross-origin by checking the Origin header.
@@ -40,11 +40,11 @@ func SetCookie(config *config.Config, g *gin.Context, p SetCookieParams) {
 	}
 
 	if isProduction {
-		domain = config.Service.Domain
+		domain = cfg.Service.Domain
 	}
 
 	g.SetCookieData(&http.Cookie{
-		Name:     config.CookieName.AccessToken,
+		Name:     cfg.CookieName.AccessToken,
 		Value:    p.AccessToken,
 		MaxAge:   int(time.Until(p.ExpireAccessToken).Seconds()),
 		Path:     "/",
@@ -54,7 +54,7 @@ func SetCookie(config *config.Config, g *gin.Context, p SetCookieParams) {
 		SameSite: sameSite,
 	})
 	g.SetCookieData(&http.Cookie{
-		Name:     config.CookieName.RefreshToken,
+		Name:     cfg.CookieName.RefreshToken,
 		Value:    p.RefreshAccessToken,
 		MaxAge:   int(time.Until(p.ExpireRefreshAccessToken).Seconds()),
 		Path:     "/",

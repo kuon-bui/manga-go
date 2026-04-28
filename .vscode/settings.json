@@ -47,6 +47,7 @@
     "gorm",
     "gormadapter",
     "gormdb",
+    "gormlogger",
     "hibiken",
     "ILIKE",
     "imageworker",
