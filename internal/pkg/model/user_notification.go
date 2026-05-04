@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type UserNotification struct {
@@ -25,4 +26,19 @@ type UserNotification struct {
 
 func (UserNotification) TableName() string {
 	return "user_notifications"
+}
+
+func (u *UserNotification) Fake(f faker.Faker) {
+	u.IsSeen = f.Bool()
+	u.IsRead = u.IsSeen && f.Bool()
+
+	if u.IsSeen {
+		seenAt := time.Now().Add(-time.Duration(f.IntBetween(1, 72)) * time.Hour)
+		u.SeenAt = &seenAt
+	}
+
+	if u.IsRead {
+		readAt := time.Now().Add(-time.Duration(f.IntBetween(1, 48)) * time.Hour)
+		u.ReadAt = &readAt
+	}
 }

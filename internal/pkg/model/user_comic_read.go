@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/common"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type UserComicRead struct {
@@ -19,4 +20,12 @@ type UserComicRead struct {
 
 func (UserComicRead) TableName() string {
 	return "user_comic_reads"
+}
+
+func (u *UserComicRead) Fake(f faker.Faker) {
+	readData := bitset.NewReadBitset(f.IntBetween(3, 12))
+	for index := 0; index < f.IntBetween(1, 4); index++ {
+		readData.Mark(index)
+	}
+	u.ReadData = readData
 }

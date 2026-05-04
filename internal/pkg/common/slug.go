@@ -2,8 +2,14 @@ package common
 
 import (
 	"context"
+	"regexp"
+	"strings"
+	"unicode"
 
 	"github.com/google/uuid"
+	"golang.org/x/text/runes"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 const (
@@ -61,4 +67,25 @@ func SetTagIdToContext(ctx context.Context, id uuid.UUID) context.Context {
 
 func GetTagIdFromContext(ctx context.Context) (uuid.UUID, bool) {
 	return getValueFromContext[uuid.UUID](ctx, TagID)
+}
+
+// Slugify converts a title to a URL-friendly slug
+// Handles Vietnamese characters and special symbols
+func Slugify(s string) string {
+	// Normalize unicode (decompose Vietnamese characters)
+	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)))
+	result, _, _ := transform.String(t, s)
+
+	// Convert to lowercase
+	result = strings.ToLower(result)
+
+	// Replace spaces and special chars with hyphens
+	result = regexp.MustCompile(`[^\w\s-]`).ReplaceAllString(result, "")
+	result = regexp.MustCompile(`[\s]+`).ReplaceAllString(result, "-")
+	result = regexp.MustCompile(`[-]+`).ReplaceAllString(result, "-")
+
+	// Trim hyphens from start and end
+	result = strings.Trim(result, "-")
+
+	return result
 }

@@ -13,6 +13,7 @@ import (
 type Seeder interface {
 	Name() string
 	Seed(tx *gorm.DB) error
+	Truncate(tx *gorm.DB) error
 }
 
 // SeederRunner holds an ordered list of seeders and runs them sequentially.
@@ -54,5 +55,34 @@ func (r *SeederRunner) RunAll(ctx context.Context) (err error) {
 		r.logger.Infof("Seeder %s completed", s.Name())
 	}
 	r.logger.Info("All seeders completed successfully")
+	return nil
+}
+
+// TruncateAll clears seeded tables in reverse dependency order.
+func (r *SeederRunner) TruncateAll(ctx context.Context) (err error) {
+	tx := r.db.WithContext(ctx).Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			common.ShowDebugTrace("truncating seeders", debug.Stack())
+			panic(r)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
+	r.logger.Info("Starting seeder truncation...")
+	for index := len(r.seeders) - 1; index >= 0; index-- {
+		current := r.seeders[index]
+		r.logger.Infof("Truncating seeder: %s", current.Name())
+		if err := current.Truncate(tx); err != nil {
+			r.logger.Errorf("Truncate for %s failed: %v", current.Name(), err)
+			return err
+		}
+		r.logger.Infof("Seeder %s truncated", current.Name())
+	}
+	r.logger.Info("All seeder truncations completed successfully")
 	return nil
 }

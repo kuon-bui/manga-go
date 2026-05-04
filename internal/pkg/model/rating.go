@@ -4,6 +4,7 @@ import (
 	"manga-go/internal/pkg/common"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type Rating struct {
@@ -20,4 +21,10 @@ type Rating struct {
 
 func (Rating) TableName() string {
 	return "ratings"
+}
+
+func (r *Rating) Fake(f faker.Faker) {
+	r.Score = f.IntBetween(1, 5)
+	comment := f.Lorem().Sentence(10)
+	r.Comment = &comment
 }

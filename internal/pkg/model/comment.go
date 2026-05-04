@@ -4,6 +4,7 @@ import (
 	"manga-go/internal/pkg/common"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type Comment struct {
@@ -25,4 +26,8 @@ type Comment struct {
 
 func (Comment) TableName() string {
 	return "comments"
+}
+
+func (c *Comment) Fake(f faker.Faker) {
+	c.Content = f.Lorem().Paragraph(1)
 }

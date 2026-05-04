@@ -1,5 +1,7 @@
 package constant
 
+import "math/rand"
+
 type FollowStatus string
 
 const (
@@ -18,4 +20,16 @@ func GetAllowedFollowStatuses() map[FollowStatus]bool {
 		FollowStatusDropped:   true,
 		FollowStatusFavorite:  true,
 	}
+}
+
+func FollowStatusRandom() FollowStatus {
+	statuses := []FollowStatus{
+		FollowStatusReading,
+		FollowStatusPlanned,
+		FollowStatusCompleted,
+		FollowStatusDropped,
+		FollowStatusFavorite,
+	}
+
+	return statuses[rand.Intn(len(statuses))]
 }

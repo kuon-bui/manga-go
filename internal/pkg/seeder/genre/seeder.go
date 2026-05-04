@@ -2,12 +2,17 @@ package genreseeder
 
 import (
 	"errors"
+	"fmt"
 	"manga-go/internal/pkg/model"
 	genrerepo "manga-go/internal/pkg/repo/genre"
+	seederutil "manga-go/internal/pkg/seeder/util"
 
+	"github.com/jaswdr/faker/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+const fakeGenreCount = 10
 
 type genreSeed struct {
 	Name        string
@@ -34,15 +39,20 @@ var genres = []genreSeed{
 }
 
 type GenreSeeder struct {
-	repo *genrerepo.GenreRepo
+	repo  *genrerepo.GenreRepo
+	faker faker.Faker
 }
 
-func NewGenreSeeder(repo *genrerepo.GenreRepo) *GenreSeeder {
-	return &GenreSeeder{repo: repo}
+func NewGenreSeeder(repo *genrerepo.GenreRepo, faker faker.Faker) *GenreSeeder {
+	return &GenreSeeder{repo: repo, faker: faker}
 }
 
 func (s *GenreSeeder) Name() string {
 	return "GenreSeeder"
+}
+
+func (s *GenreSeeder) Truncate(tx *gorm.DB) error {
+	return seederutil.TruncateTables(tx, "comic_genres", "genres")
 }
 
 func (s *GenreSeeder) Seed(tx *gorm.DB) error {
@@ -52,15 +62,33 @@ func (s *GenreSeeder) Seed(tx *gorm.DB) error {
 			return err
 		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			genre := &model.Genre{
-				Name:        g.Name,
-				Slug:        g.Slug,
-				Description: g.Description,
-			}
+			genre := &model.Genre{}
+			genre.Fake(s.faker)
+			genre.Name = g.Name
+			genre.Slug = g.Slug
+			genre.Description = g.Description
 			if err := s.repo.CreateWithTransaction(tx, genre); err != nil {
 				return err
 			}
 		}
 	}
+
+	for index := 1; index <= fakeGenreCount; index++ {
+		genre := &model.Genre{}
+		genre.Fake(s.faker)
+		genre.Name = fmt.Sprintf("%s Seed %02d", genre.Name, index)
+		genre.Slug = fmt.Sprintf("seed-genre-%02d-%s", index, genre.Slug)
+
+		_, err := s.repo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "slug", Value: genre.Slug}}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := s.repo.CreateWithTransaction(tx, genre); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }

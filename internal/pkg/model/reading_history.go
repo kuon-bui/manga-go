@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type ReadingHistory struct {
@@ -22,4 +23,9 @@ type ReadingHistory struct {
 
 func (ReadingHistory) TableName() string {
 	return "reading_histories"
+}
+
+func (r *ReadingHistory) Fake(f faker.Faker) {
+	lastReadAt := time.Now().Add(-time.Duration(f.IntBetween(1, 240)) * time.Hour)
+	r.LastReadAt = &lastReadAt
 }

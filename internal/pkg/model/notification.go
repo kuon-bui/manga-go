@@ -2,8 +2,10 @@ package model
 
 import (
 	"manga-go/internal/pkg/common"
+	pknotification "manga-go/internal/pkg/notification"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type Notification struct {
@@ -23,4 +25,17 @@ type Notification struct {
 
 func (Notification) TableName() string {
 	return "notifications"
+}
+
+func (n *Notification) Fake(f faker.Faker) {
+	entityType := pknotification.EntityTypeChapter
+	n.Type = pknotification.TypeComicNewChapter
+	n.Category = pknotification.CategoryComic
+	n.EntityType = &entityType
+	n.Title = f.Lorem().Sentence(5)
+	n.Body = f.Lorem().Paragraph(2)
+	n.Payload = common.JSONMap{
+		"headline": n.Title,
+		"preview":  f.Lorem().Sentence(8),
+	}
 }

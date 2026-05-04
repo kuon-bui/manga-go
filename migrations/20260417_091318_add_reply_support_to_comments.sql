@@ -21,5 +21,5 @@ ALTER TABLE comments DROP CONSTRAINT IF EXISTS chk_comments_parent_not_self;
 ALTER TABLE comments DROP CONSTRAINT IF EXISTS fk_comments_parent;
 ALTER TABLE comments DROP COLUMN IF EXISTS parent_id;
 
-ALTER TABLE comments
-ADD CONSTRAINT uq_comments_user_chapter UNIQUE(user_id, chapter_id);
+-- ALTER TABLE comments
+-- ADD CONSTRAINT uq_comments_user_chapter UNIQUE(user_id, chapter_id);

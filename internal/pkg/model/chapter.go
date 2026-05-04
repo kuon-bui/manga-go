@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type Chapter struct {
@@ -28,4 +29,9 @@ type Chapter struct {
 
 func (Chapter) TableName() string {
 	return "chapters"
+}
+
+func (c *Chapter) Fake(f faker.Faker) {
+	c.Title = f.Lorem().Sentence(3)
+	c.Slug = common.Slugify(c.Title)
 }

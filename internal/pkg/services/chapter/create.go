@@ -31,7 +31,7 @@ func (s *ChapterService) CreateChapter(ctx context.Context, req *chapterrequest.
 
 	slug := req.Slug
 	if slug == "" {
-		slug = utils.Slugify(req.Title)
+		slug = common.Slugify(req.Title)
 	}
 
 	chapter := model.Chapter{

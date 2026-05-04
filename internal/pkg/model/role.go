@@ -2,6 +2,8 @@ package model
 
 import (
 	"manga-go/internal/pkg/common"
+
+	"github.com/jaswdr/faker/v2"
 )
 
 type Role struct {
@@ -13,4 +15,8 @@ type Role struct {
 
 func (Role) TableName() string {
 	return "roles"
+}
+
+func (r *Role) Fake(f faker.Faker) {
+	r.Name = common.Slugify(f.Lorem().Sentence(2))
 }

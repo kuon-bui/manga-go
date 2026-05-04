@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/common"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type ReactionCounts struct {
@@ -38,4 +39,16 @@ func (p Page) MarshalJSON() ([]byte, error) {
 	temp.ImageURL = common.AddFileContentPrefix(temp.ImageURL)
 
 	return json.Marshal(temp)
+}
+
+func (p *Page) Fake(f faker.Faker) {
+	p.PageType = common.ContentTypeImage
+	p.ImageURL = f.Internet().URL()
+	p.Content = ""
+
+	if f.Bool() {
+		p.PageType = common.ContentTypeText
+		p.ImageURL = ""
+		p.Content = f.Lorem().Paragraph(3)
+	}
 }

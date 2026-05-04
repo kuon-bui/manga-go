@@ -4,6 +4,7 @@ import (
 	"manga-go/internal/pkg/common"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type ReadingProgress struct {
@@ -21,4 +22,8 @@ type ReadingProgress struct {
 
 func (ReadingProgress) TableName() string {
 	return "reading_progresses"
+}
+
+func (r *ReadingProgress) Fake(f faker.Faker) {
+	r.ScrollPercent = f.IntBetween(5, 100)
 }
