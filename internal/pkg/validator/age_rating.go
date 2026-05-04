@@ -13,12 +13,7 @@ var ValidateAgeRating validator.Func = func(fl validator.FieldLevel) bool {
 		return true // Allow empty value, use "required" tag to enforce presence
 	}
 
-	allowedRatings := map[constant.ComicAgeRating]bool{
-		constant.AgeRatingAll:    true,
-		constant.AgeRating13Plus: true,
-		constant.AgeRating16Plus: true,
-		constant.AgeRating18Plus: true,
-	}
+	allowedRatings := constant.GetAllowedComicAgeRatings()
 
 	return allowedRatings[ageRating]
 }

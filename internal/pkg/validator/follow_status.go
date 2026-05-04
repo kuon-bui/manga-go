@@ -13,13 +13,7 @@ var ValidateFollowStatus validator.Func = func(fl validator.FieldLevel) bool {
 		return true // Allow empty value, use "required" tag to enforce presence
 	}
 
-	allowedStatuses := map[constant.FollowStatus]bool{
-		constant.FollowStatusReading:   true,
-		constant.FollowStatusPlanned:   true,
-		constant.FollowStatusCompleted: true,
-		constant.FollowStatusDropped:   true,
-		constant.FollowStatusFavorite:  true,
-	}
+	allowedStatuses := constant.GetAllowedFollowStatuses()
 
 	if allowedStatuses[constant.FollowStatus(followStatus)] {
 		return true
