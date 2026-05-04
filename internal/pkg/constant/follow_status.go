@@ -9,3 +9,13 @@ const (
 	FollowStatusDropped   FollowStatus = "dropped"
 	FollowStatusFavorite  FollowStatus = "favorite"
 )
+
+func GetAllowedFollowStatuses() map[FollowStatus]bool {
+	return map[FollowStatus]bool{
+		FollowStatusReading:   true,
+		FollowStatusPlanned:   true,
+		FollowStatusCompleted: true,
+		FollowStatusDropped:   true,
+		FollowStatusFavorite:  true,
+	}
+}

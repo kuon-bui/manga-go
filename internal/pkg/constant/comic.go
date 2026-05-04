@@ -30,3 +30,31 @@ const (
 	AgeRating16Plus ComicAgeRating = "16+"
 	AgeRating18Plus ComicAgeRating = "18+"
 )
+
+func GetAllowedComicTypes() map[ComicType]bool {
+	return map[ComicType]bool{
+		ComicTypeManga:  true,
+		ComicTypeManhwa: true,
+		ComicTypeManhua: true,
+		ComicTypeComic:  true,
+		ComicTypeNovel:  true,
+	}
+}
+
+func GetAllowedComicStatuses() map[ComicStatus]bool {
+	return map[ComicStatus]bool{
+		ComicStatusOngoing:   true,
+		ComicStatusCompleted: true,
+		ComicStatusHiatus:    true,
+		ComicStatusCancelled: true,
+	}
+}
+
+func GetAllowedComicAgeRatings() map[ComicAgeRating]bool {
+	return map[ComicAgeRating]bool{
+		AgeRatingAll:    true,
+		AgeRating13Plus: true,
+		AgeRating16Plus: true,
+		AgeRating18Plus: true,
+	}
+}

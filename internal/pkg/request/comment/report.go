@@ -1,6 +1,8 @@
 package commentrequest
 
+import "manga-go/internal/pkg/constant"
+
 type ReportCommentRequest struct {
-	Reason  string  `json:"reason" binding:"required,oneof=SPAM OFFENSIVE HARASSMENT ADULT_CONTENT"`
-	Details *string `json:"details" binding:"max=500"`
+	Reason  constant.CommentReportReason `json:"reason" binding:"required,comment_report_reason"`
+	Details *string                      `json:"details" binding:"max=500"`
 }

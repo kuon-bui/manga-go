@@ -13,12 +13,7 @@ var ValidateComicStatus validator.Func = func(fl validator.FieldLevel) bool {
 		return true // Allow empty value, use "required" tag to enforce presence
 	}
 
-	allowedStatuses := map[constant.ComicStatus]bool{
-		constant.ComicStatusOngoing:   true,
-		constant.ComicStatusCompleted: true,
-		constant.ComicStatusHiatus:    true,
-		constant.ComicStatusCancelled: true,
-	}
+	allowedStatuses := constant.GetAllowedComicStatuses()
 
 	return allowedStatuses[status]
 }
