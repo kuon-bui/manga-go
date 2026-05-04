@@ -2,7 +2,6 @@ package comicseeder
 
 import (
 	"errors"
-	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/model"
 	authorrepo "manga-go/internal/pkg/repo/author"
@@ -11,10 +10,16 @@ import (
 	genrerepo "manga-go/internal/pkg/repo/genre"
 	pagerepo "manga-go/internal/pkg/repo/page"
 	tagrepo "manga-go/internal/pkg/repo/tag"
+	translationgrouprepo "manga-go/internal/pkg/repo/translation_group"
+	userrepo "manga-go/internal/pkg/repo/user"
+	seederutil "manga-go/internal/pkg/seeder/util"
 
+	"github.com/jaswdr/faker/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+const fakeComicCount = 8
 
 type pageSeed struct {
 	PageNumber int
@@ -315,12 +320,15 @@ var comics = []comicSeed{
 }
 
 type ComicSeeder struct {
-	comicRepo   *comicrepo.ComicRepo
-	authorRepo  *authorrepo.AuthorRepo
-	genreRepo   *genrerepo.GenreRepo
-	tagRepo     *tagrepo.TagRepo
-	chapterRepo *chapterrepo.ChapterRepo
-	pageRepo    *pagerepo.PageRepo
+	comicRepo            *comicrepo.ComicRepo
+	authorRepo           *authorrepo.AuthorRepo
+	genreRepo            *genrerepo.GenreRepo
+	tagRepo              *tagrepo.TagRepo
+	chapterRepo          *chapterrepo.ChapterRepo
+	pageRepo             *pagerepo.PageRepo
+	userRepo             *userrepo.UserRepository
+	translationGroupRepo *translationgrouprepo.TranslationGroupRepo
+	faker                faker.Faker
 }
 
 func NewComicSeeder(
@@ -330,14 +338,20 @@ func NewComicSeeder(
 	tagRepo *tagrepo.TagRepo,
 	chapterRepo *chapterrepo.ChapterRepo,
 	pageRepo *pagerepo.PageRepo,
+	userRepo *userrepo.UserRepository,
+	translationGroupRepo *translationgrouprepo.TranslationGroupRepo,
+	faker faker.Faker,
 ) *ComicSeeder {
 	return &ComicSeeder{
-		comicRepo:   comicRepo,
-		authorRepo:  authorRepo,
-		genreRepo:   genreRepo,
-		tagRepo:     tagRepo,
-		chapterRepo: chapterRepo,
-		pageRepo:    pageRepo,
+		comicRepo:            comicRepo,
+		authorRepo:           authorRepo,
+		genreRepo:            genreRepo,
+		tagRepo:              tagRepo,
+		chapterRepo:          chapterRepo,
+		pageRepo:             pageRepo,
+		userRepo:             userRepo,
+		translationGroupRepo: translationGroupRepo,
+		faker:                faker,
 	}
 }
 
@@ -345,8 +359,26 @@ func (s *ComicSeeder) Name() string {
 	return "ComicSeeder"
 }
 
+func (s *ComicSeeder) Truncate(tx *gorm.DB) error {
+	return seederutil.TruncateTables(tx, "pages", "chapters", "comic_artists", "comic_authors", "comic_genres", "comic_tags", "comics")
+}
+
 func (s *ComicSeeder) Seed(tx *gorm.DB) error {
+	users, err := s.userRepo.FindAllWithTx(tx, []any{func(db *gorm.DB) *gorm.DB {
+		return db.Order("email ASC")
+	}}, nil)
+	if err != nil {
+		return err
+	}
+	translationGroups, err := s.translationGroupRepo.FindAllWithTx(tx, []any{func(db *gorm.DB) *gorm.DB {
+		return db.Order("slug ASC")
+	}}, nil)
+	if err != nil {
+		return err
+	}
+
 	for _, cs := range comics {
+		createdComic := false
 		// Find or create comic by slug
 		comic, err := s.comicRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "slug", Value: cs.Slug}}, nil)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -365,6 +397,13 @@ func (s *ComicSeeder) Seed(tx *gorm.DB) error {
 				IsHot:       cs.IsHot,
 			}
 			if err := s.comicRepo.CreateWithTransaction(tx, comic); err != nil {
+				return err
+			}
+			createdComic = true
+		}
+
+		if createdComic {
+			if err := s.assignComicOwnership(tx, comic, users, translationGroups); err != nil {
 				return err
 			}
 		}
@@ -388,18 +427,21 @@ func (s *ComicSeeder) Seed(tx *gorm.DB) error {
 			return err
 		}
 
-		// Replace associations (idempotent)
-		if err := s.comicRepo.UpdateComicWithTransaction(tx, comic.ID, map[string]any{}, map[string]any{
-			"Authors": authors,
-			"Artists": artists,
-			"Genres":  genres,
-			"Tags":    tags,
-		}); err != nil {
-			return err
+		if createdComic {
+			if err := s.comicRepo.UpdateComicWithTransaction(tx, comic.ID, map[string]any{}, map[string]any{
+				"Authors": authors,
+				"Artists": artists,
+				"Genres":  genres,
+				"Tags":    tags,
+			}); err != nil {
+				return err
+			}
 		}
 
 		// Seed chapters and their pages
-		for _, ch := range cs.Chapters {
+		for chapterIndex, ch := range cs.Chapters {
+			publishedAt := resolveChapterPublishedAt(comic.Slug, chapterIndex+1)
+			createdChapter := false
 			chapter, err := s.chapterRepo.FindOneWithTransaction(tx, []any{
 				clause.Eq{Column: "comic_id", Value: comic.ID},
 				clause.Eq{Column: "number", Value: ch.Number},
@@ -414,36 +456,43 @@ func (s *ComicSeeder) Seed(tx *gorm.DB) error {
 					Title:       ch.Title,
 					Slug:        comic.Slug + "-ch-" + ch.Number,
 					IsPublished: true,
+					PublishedAt: publishedAt,
 				}
 				if err := s.chapterRepo.CreateWithTransaction(tx, chapter); err != nil {
 					return err
 				}
+				createdChapter = true
 			}
 
 			// Seed pages for this chapter
-			for _, pg := range ch.Pages {
-				_, err := s.pageRepo.FindOneWithTransaction(tx, []any{
-					clause.Eq{Column: "chapter_id", Value: chapter.ID},
-					clause.Eq{Column: "page_number", Value: pg.PageNumber},
-				}, nil)
-				if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			pageCount := resolveChapterPageCount(chapter.Slug)
+			for pageNumber := 1; pageNumber <= pageCount; pageNumber++ {
+				if err := s.upsertSeedPage(tx, comic.Type, chapter, pageNumber, findSeedImageURL(ch.Pages, pageNumber), false, createdChapter); err != nil {
 					return err
-				}
-				if errors.Is(err, gorm.ErrRecordNotFound) {
-					page := &model.Page{
-						ChapterID:  chapter.ID,
-						PageNumber: pg.PageNumber,
-						PageType:   common.ContentTypeImage,
-						ImageURL:   pg.ImageURL,
-					}
-					if err := s.pageRepo.CreateWithTransaction(tx, page); err != nil {
-						return err
-					}
 				}
 			}
 		}
 	}
-	return nil
+
+	return s.seedFakeComics(tx, users, translationGroups)
+}
+
+func (s *ComicSeeder) assignComicOwnership(tx *gorm.DB, comic *model.Comic, users []*model.User, translationGroups []*model.TranslationGroup) error {
+	data := map[string]any{}
+	if len(users) > 0 {
+		uploadedByID := users[len(comic.Slug)%len(users)].ID
+		data["uploaded_by_id"] = uploadedByID
+	}
+	if len(translationGroups) > 0 {
+		translationGroupID := translationGroups[len(comic.Title)%len(translationGroups)].ID
+		data["translation_group_id"] = translationGroupID
+	}
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	return s.comicRepo.UpdateWithTransaction(tx, []any{clause.Eq{Column: "id", Value: comic.ID}}, data)
 }
 
 func (s *ComicSeeder) lookupAuthors(tx *gorm.DB, names []string) ([]*model.Author, error) {

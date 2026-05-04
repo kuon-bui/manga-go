@@ -72,7 +72,6 @@ func (r *UserNotificationRepo) CreateListIgnoreConflictsWithTransaction(tx *gorm
 	}
 
 	return tx.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "notification_id"}, {Name: "user_id"}},
 		DoNothing: true,
 	}).Create(items).Error
 }

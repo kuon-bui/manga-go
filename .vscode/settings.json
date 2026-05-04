@@ -1,5 +1,19 @@
 {
+  "sqltools.connections": [
+    {
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5435,
+      "driver": "PostgreSQL",
+      "name": "manga",
+      "database": "mydb",
+      "username": "admin",
+      "password": "postgres",
+    },
+  ],
   "cSpell.words": [
+    "activityseeder",
     "apikey",
     "asynq",
     "asynqclient",
@@ -53,6 +67,7 @@
     "ILIKE",
     "imageworker",
     "Infof",
+    "jaswdr",
     "jwtprovider",
     "manhua",
     "manhwa",
@@ -63,6 +78,7 @@
     "notificationpkg",
     "notificationrepo",
     "notificationroute",
+    "notificationseeder",
     "notificationservice",
     "notificationworker",
     "objectstorage",
@@ -80,6 +96,7 @@
     "permissionseeder",
     "permissionservice",
     "pkgerrors",
+    "pknotification",
     "presign",
     "qname",
     "queueconstant",
@@ -102,6 +119,7 @@
     "roleservice",
     "rubenv",
     "samber",
+    "seederutil",
     "slugmiddleware",
     "sslmode",
     "swaggerrouter",
@@ -115,6 +133,7 @@
     "translationgrouprepo",
     "translationgrouprequest",
     "translationgrouproute",
+    "translationgroupseeder",
     "translationgroupservice",
     "UPTRACE",
     "usercomicread",
@@ -130,18 +149,5 @@
     "Warnf",
     "webp",
     "wneessen"
-  ],
-  "sqltools.connections": [
-    {
-      "ssh": "Disabled",
-      "previewLimit": 50,
-      "server": "localhost",
-      "port": 5435,
-      "driver": "PostgreSQL",
-      "name": "manga",
-      "database": "mydb",
-      "username": "admin",
-      "password": "postgres",
-    },
   ],
 }

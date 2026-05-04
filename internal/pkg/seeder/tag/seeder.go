@@ -2,12 +2,17 @@ package tagseeder
 
 import (
 	"errors"
+	"fmt"
 	"manga-go/internal/pkg/model"
 	tagrepo "manga-go/internal/pkg/repo/tag"
+	seederutil "manga-go/internal/pkg/seeder/util"
 
+	"github.com/jaswdr/faker/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+const fakeTagCount = 14
 
 type tagSeed struct {
 	Name string
@@ -38,15 +43,20 @@ var tags = []tagSeed{
 }
 
 type TagSeeder struct {
-	repo *tagrepo.TagRepo
+	repo  *tagrepo.TagRepo
+	faker faker.Faker
 }
 
-func NewTagSeeder(repo *tagrepo.TagRepo) *TagSeeder {
-	return &TagSeeder{repo: repo}
+func NewTagSeeder(repo *tagrepo.TagRepo, faker faker.Faker) *TagSeeder {
+	return &TagSeeder{repo: repo, faker: faker}
 }
 
 func (s *TagSeeder) Name() string {
 	return "TagSeeder"
+}
+
+func (s *TagSeeder) Truncate(tx *gorm.DB) error {
+	return seederutil.TruncateTables(tx, "comic_tags", "tags")
 }
 
 func (s *TagSeeder) Seed(tx *gorm.DB) error {
@@ -56,14 +66,32 @@ func (s *TagSeeder) Seed(tx *gorm.DB) error {
 			return err
 		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			tag := &model.Tag{
-				Name: t.Name,
-				Slug: t.Slug,
-			}
+			tag := &model.Tag{}
+			tag.Fake(s.faker)
+			tag.Name = t.Name
+			tag.Slug = t.Slug
 			if err := s.repo.CreateWithTransaction(tx, tag); err != nil {
 				return err
 			}
 		}
 	}
+
+	for index := 1; index <= fakeTagCount; index++ {
+		tag := &model.Tag{}
+		tag.Fake(s.faker)
+		tag.Name = fmt.Sprintf("%s Seed %02d", tag.Name, index)
+		tag.Slug = fmt.Sprintf("seed-tag-%02d-%s", index, tag.Slug)
+
+		_, err := s.repo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "slug", Value: tag.Slug}}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			if err := s.repo.CreateWithTransaction(tx, tag); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }

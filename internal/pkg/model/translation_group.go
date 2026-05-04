@@ -4,6 +4,7 @@ import (
 	"manga-go/internal/pkg/common"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type TranslationGroup struct {
@@ -19,4 +20,9 @@ type TranslationGroup struct {
 
 func (TranslationGroup) TableName() string {
 	return "translation_groups"
+}
+
+func (t *TranslationGroup) Fake(f faker.Faker) {
+	t.Name = f.Company().Name()
+	t.Slug = common.Slugify(t.Name)
 }

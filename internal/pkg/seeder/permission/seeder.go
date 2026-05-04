@@ -4,7 +4,9 @@ import (
 	"errors"
 	"manga-go/internal/pkg/model"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
+	seederutil "manga-go/internal/pkg/seeder/util"
 
+	"github.com/jaswdr/faker/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -32,15 +34,20 @@ var permissions = []string{
 }
 
 type PermissionSeeder struct {
-	repo *permissionrepo.PermissionRepo
+	repo  *permissionrepo.PermissionRepo
+	faker faker.Faker
 }
 
-func NewPermissionSeeder(repo *permissionrepo.PermissionRepo) *PermissionSeeder {
-	return &PermissionSeeder{repo: repo}
+func NewPermissionSeeder(repo *permissionrepo.PermissionRepo, faker faker.Faker) *PermissionSeeder {
+	return &PermissionSeeder{repo: repo, faker: faker}
 }
 
 func (s *PermissionSeeder) Name() string {
 	return "PermissionSeeder"
+}
+
+func (s *PermissionSeeder) Truncate(tx *gorm.DB) error {
+	return seederutil.TruncateTables(tx, "roles_permissions", "permissions")
 }
 
 func (s *PermissionSeeder) Seed(tx *gorm.DB) error {
@@ -50,7 +57,9 @@ func (s *PermissionSeeder) Seed(tx *gorm.DB) error {
 			return err
 		}
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			perm := &model.Permission{Name: name}
+			perm := &model.Permission{}
+			perm.Fake(s.faker)
+			perm.Name = name
 			if err := s.repo.CreateWithTransaction(tx, perm); err != nil {
 				return err
 			}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type Comic struct {
@@ -64,4 +65,24 @@ func (c Comic) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(temp)
+}
+
+func (c *Comic) Fake(f faker.Faker) {
+	c.Title = f.Lorem().Sentence(3)
+	c.Slug = common.Slugify(c.Title)
+	if f.Bool() {
+		for range f.IntBetween(1, 3) {
+			altTitle := f.Lorem().Sentence(3)
+			c.AlternativeTitles = append(c.AlternativeTitles, altTitle)
+		}
+	}
+	description := f.Lorem().Paragraph(1)
+	c.Description = &description
+	c.Type = constant.ComicTypeComic
+	statuses := []constant.ComicStatus{constant.ComicStatusOngoing, constant.ComicStatusCompleted, constant.ComicStatusHiatus, constant.ComicStatusCancelled, constant.ComicStatusCompleted}
+	c.Status = statuses[f.IntBetween(0, len(statuses)-1)]
+	ageRatings := []constant.ComicAgeRating{constant.AgeRatingAll, constant.AgeRating13Plus, constant.AgeRating16Plus, constant.AgeRating18Plus}
+	c.AgeRating = ageRatings[f.IntBetween(0, len(ageRatings)-1)]
+	year := f.IntBetween(2000, 2024)
+	c.PublishedYear = &year
 }

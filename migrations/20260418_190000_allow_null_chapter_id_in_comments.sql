@@ -18,4 +18,3 @@ ALTER TABLE comments DROP CONSTRAINT IF EXISTS uq_comments_user_chapter;
 -- +migrate Down
 DROP INDEX IF EXISTS idx_comments_comic_level;
 DROP INDEX IF EXISTS uq_comments_user_chapter_scoped;
-ALTER TABLE comments ALTER COLUMN chapter_id SET NOT NULL;

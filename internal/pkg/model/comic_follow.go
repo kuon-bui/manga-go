@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/constant"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type ComicFollow struct {
@@ -19,4 +20,15 @@ type ComicFollow struct {
 
 func (ComicFollow) TableName() string {
 	return "comic_follows"
+}
+
+func (c *ComicFollow) Fake(f faker.Faker) {
+	statuses := []constant.FollowStatus{
+		constant.FollowStatusReading,
+		constant.FollowStatusPlanned,
+		constant.FollowStatusCompleted,
+		constant.FollowStatusDropped,
+		constant.FollowStatusFavorite,
+	}
+	c.FollowStatus = statuses[f.IntBetween(0, len(statuses)-1)]
 }

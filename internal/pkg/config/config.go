@@ -101,12 +101,9 @@ type Config struct {
 	Seeder        SeederConfig        `mapstructure:"seeder"`
 }
 
-func LoadConfig(isSeeder bool) func() *Config {
+func LoadConfig(fileName string) func() *Config {
 	return func() *Config {
-		if isSeeder {
-			return loadConfig("config.seeder.yml")
-		}
-		return loadConfig("config.yml")
+		return loadConfig(fileName)
 	}
 }
 

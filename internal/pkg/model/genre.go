@@ -2,6 +2,8 @@ package model
 
 import (
 	"manga-go/internal/pkg/common"
+
+	"github.com/jaswdr/faker/v2"
 )
 
 type Genre struct {
@@ -14,4 +16,10 @@ type Genre struct {
 
 func (Genre) TableName() string {
 	return "genres"
+}
+
+func (g *Genre) Fake(f faker.Faker) {
+	g.Name = f.Lorem().Word()
+	g.Slug = common.Slugify(g.Name)
+	g.Description = f.Lorem().Sentence(10)
 }

@@ -3,9 +3,11 @@ package model
 import (
 	"encoding/json"
 	"manga-go/internal/pkg/common"
+	"manga-go/internal/pkg/hash"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type User struct {
@@ -45,4 +47,11 @@ func (u *User) GetUserId() uuid.UUID {
 
 func (u *User) GetEmail() string {
 	return u.Email
+}
+
+func (u *User) Fake(f faker.Faker) {
+	u.Name = f.Person().Name()
+	u.Email = f.Internet().Email()
+	u.Password = hash.HashPassword("12345678")
+	u.UserConfig = DefaultUserConfig()
 }

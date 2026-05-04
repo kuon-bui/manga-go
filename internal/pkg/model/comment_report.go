@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/constant"
 
 	"github.com/google/uuid"
+	"github.com/jaswdr/faker/v2"
 )
 
 type CommentReport struct {
@@ -20,4 +21,11 @@ type CommentReport struct {
 
 func (CommentReport) TableName() string {
 	return "comment_reports"
+}
+
+func (c *CommentReport) Fake(f faker.Faker) {
+	reasons := []string{"spam", "abuse", "spoiler", "off-topic"}
+	c.Reason = reasons[f.IntBetween(0, len(reasons)-1)]
+	details := f.Lorem().Sentence(12)
+	c.Details = &details
 }
