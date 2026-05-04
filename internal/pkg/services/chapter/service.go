@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/redis"
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
+	pagereactionrepo "manga-go/internal/pkg/repo/page_reaction"
 	readingprogressrepo "manga-go/internal/pkg/repo/reading_progress"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 
@@ -16,6 +17,7 @@ type ChapterService struct {
 	logger              *logger.Logger
 	chapterRepo         *chapterrepo.ChapterRepo
 	comicRepo           *comicrepo.ComicRepo
+	pageReactionRepo    *pagereactionrepo.PageReactionRepo
 	readingProgressRepo *readingprogressrepo.ReadingProgressRepo
 	userComicReadRepo   *usercomicreadrepo.UserComicReadRepo
 	rds                 *redis.Redis
@@ -27,6 +29,7 @@ type ChapterServiceParams struct {
 	Logger              *logger.Logger
 	ChapterRepo         *chapterrepo.ChapterRepo
 	ComicRepo           *comicrepo.ComicRepo
+	PageReactionRepo    *pagereactionrepo.PageReactionRepo
 	ReadingProgressRepo *readingprogressrepo.ReadingProgressRepo
 	UserComicReadRepo   *usercomicreadrepo.UserComicReadRepo
 	Redis               *redis.Redis
@@ -38,6 +41,7 @@ func NewChapterService(params ChapterServiceParams) *ChapterService {
 		logger:              params.Logger,
 		chapterRepo:         params.ChapterRepo,
 		comicRepo:           params.ComicRepo,
+		pageReactionRepo:    params.PageReactionRepo,
 		readingProgressRepo: params.ReadingProgressRepo,
 		rds:                 params.Redis,
 		userComicReadRepo:   params.UserComicReadRepo,

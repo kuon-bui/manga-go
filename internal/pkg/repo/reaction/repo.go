@@ -8,12 +8,12 @@ import (
 )
 
 type ReactionRepo struct {
-	*base.BaseRepository[model.Reaction]
+	*base.BaseRepository[model.CommentReaction]
 }
 
 func NewReactionRepo(db *gorm.DB) *ReactionRepo {
 	return &ReactionRepo{
-		BaseRepository: &base.BaseRepository[model.Reaction]{
+		BaseRepository: &base.BaseRepository[model.CommentReaction]{
 			DB: db,
 		},
 	}

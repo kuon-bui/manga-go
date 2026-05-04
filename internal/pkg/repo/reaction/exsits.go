@@ -9,8 +9,9 @@ import (
 
 func (r *ReactionRepo) ExistsByCommentIdAndUserId(ctx context.Context, commentId, userId uuid.UUID) (bool, error) {
 	var count int64
-	err := r.DB.WithContext(ctx).Model(&model.Reaction{}).
+	err := r.DB.WithContext(ctx).Model(&model.CommentReaction{}).
 		Where("comment_id = ? AND user_id = ?", commentId, userId).
+		Where("deleted_at IS NULL").
 		Count(&count).Error
 	if err != nil {
 		return false, err

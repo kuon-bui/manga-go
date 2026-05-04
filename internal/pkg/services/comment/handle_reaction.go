@@ -3,6 +3,7 @@ package commentservice
 import (
 	"context"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	commentrequest "manga-go/internal/pkg/request/comment"
 
@@ -11,6 +12,11 @@ import (
 )
 
 func (s *CommentService) HandleReaction(ctx context.Context, user *model.User, commendId uuid.UUID, req *commentrequest.AddReactionRequest) response.Result {
+	reactionType := common.NormalizeReactionType(req.Type)
+	if !common.IsValidReactionType(reactionType) {
+		return response.ResultError("Invalid reaction type")
+	}
+
 	comment, err := s.commentRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: commendId},
 	}, nil)
@@ -28,14 +34,16 @@ func (s *CommentService) HandleReaction(ctx context.Context, user *model.User, c
 		return s.removeReaction(ctx, user, comment)
 	}
 
-	return s.addReaction(ctx, user, comment, req)
+	return s.addReaction(ctx, user, comment, reactionType)
 }
 
-func (s *CommentService) addReaction(ctx context.Context, user *model.User, comment *model.Comment, req *commentrequest.AddReactionRequest) response.Result {
-	reaction := &model.Reaction{
+func (s *CommentService) addReaction(ctx context.Context, user *model.User, comment *model.Comment, reactionType string) response.Result {
+	reaction := &model.CommentReaction{
 		CommentId: comment.ID,
-		UserId:    user.ID,
-		Type:      req.Type,
+		Reaction: model.Reaction{
+			UserId: user.ID,
+			Type:   reactionType,
+		},
 	}
 
 	if err := s.reactionRepo.Create(ctx, reaction); err != nil {
