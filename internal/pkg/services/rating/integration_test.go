@@ -4,7 +4,6 @@ package ratingservice
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 
@@ -13,25 +12,16 @@ import (
 	comicrepo "manga-go/internal/pkg/repo/comic"
 	ratingrepo "manga-go/internal/pkg/repo/rating"
 	ratingrequest "manga-go/internal/pkg/request/rating"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newRatingServiceIntegration(t *testing.T) (*RatingService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -40,17 +30,7 @@ func newRatingServiceIntegration(t *testing.T) (*RatingService, *gorm.DB) {
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE ratings (
-		id uuid PRIMARY KEY,
-		user_id uuid,
-		comic_id uuid,
-		score INTEGER,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx, &testutil.Rating{})
 
 	s := &RatingService{
 		logger:     logger.NewLogger(),
@@ -115,10 +95,7 @@ func TestRatingServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("expected average 5, got %v", avgData["average"])
 	}
 
-	var ratingID uuid.UUID
-	if err := db.Raw("SELECT id FROM ratings WHERE user_id = ? AND comic_id = ? AND deleted_at IS NULL", userID, comicID).Scan(&ratingID).Error; err != nil {
-		t.Fatalf("failed to query rating id: %v", err)
-	}
+	ratingID := testutil.MustReadUUID(t, db, "SELECT id FROM ratings WHERE user_id = ? AND comic_id = ? AND deleted_at IS NULL", userID, comicID)
 	if ratingID == uuid.Nil {
 		t.Fatalf("expected persisted rating id")
 	}

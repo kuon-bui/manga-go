@@ -10,8 +10,8 @@ import (
 )
 
 type RatingRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	ratingHandler  *RatingHandler
 	slugMiddleware *slugmiddleware.SlugMiddleware
@@ -30,7 +30,7 @@ type RatingRouteParams struct {
 func NewRatingRoute(params RatingRouteParams) *RatingRoute {
 	return &RatingRoute{
 		logger:         params.Logger,
-		r:              params.R,
+		Engine:         params.R,
 		authMiddleware: params.AuthMiddleware,
 		ratingHandler:  params.RatingHandler,
 		slugMiddleware: params.SlugMiddleware,
@@ -38,7 +38,7 @@ func NewRatingRoute(params RatingRouteParams) *RatingRoute {
 }
 
 func (rr *RatingRoute) Setup() {
-	rg := rr.r.Group("/ratings/comics/:comicSlug", rr.authMiddleware.RequireJwt, rr.slugMiddleware.ResolveComicID)
+	rg := rr.Group("/ratings/comics/:comicSlug", rr.authMiddleware.RequireJwt, rr.slugMiddleware.ResolveComicID)
 
 	rg.GET("", rr.ratingHandler.getRatings)
 	rg.GET("average", rr.ratingHandler.getAverageRating)

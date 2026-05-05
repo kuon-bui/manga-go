@@ -12,6 +12,7 @@ import (
 	rolerepo "manga-go/internal/pkg/repo/role"
 	userrepo "manga-go/internal/pkg/repo/user"
 	userrequest "manga-go/internal/pkg/request/user"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
@@ -21,52 +22,17 @@ import (
 func newUserService(t *testing.T, createTables bool) *UserService {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(testutil.NewSQLiteDSN()), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite db: %v", err)
 	}
 
 	if createTables {
-		err = db.Exec(`
-			CREATE TABLE users (
-				id TEXT PRIMARY KEY,
-				name TEXT,
-				email TEXT,
-				password TEXT,
-				reset_password_token TEXT,
-				reset_password_expiry_at DATETIME,
-				translation_group_id TEXT,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create users table: %v", err)
-		}
-
-		err = db.Exec(`
-			CREATE TABLE roles (
-				id TEXT PRIMARY KEY,
-				name TEXT,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create roles table: %v", err)
-		}
-
-		err = db.Exec(`
-			CREATE TABLE users_roles (
-				user_id TEXT,
-				role_id TEXT
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create users_roles table: %v", err)
-		}
+		testutil.MustSyncSchemas(t, db,
+			&testutil.User{},
+			&testutil.Role{},
+			&testutil.UserRole{},
+		)
 	}
 
 	return &UserService{

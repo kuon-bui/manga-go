@@ -5,7 +5,6 @@ package commentservice
 import (
 	"context"
 	"net/http"
-	"os"
 	"reflect"
 	"testing"
 
@@ -15,25 +14,16 @@ import (
 	commentrepo "manga-go/internal/pkg/repo/comment"
 	reactionrepo "manga-go/internal/pkg/repo/reaction"
 	commentrequest "manga-go/internal/pkg/request/comment"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newCommentServiceIntegration(t *testing.T) (*CommentService, *gorm.DB, uuid.UUID) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -42,46 +32,12 @@ func newCommentServiceIntegration(t *testing.T) (*CommentService, *gorm.DB, uuid
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE chapters (
-		id uuid PRIMARY KEY,
-		comic_id uuid,
-		number TEXT,
-		title TEXT,
-		slug TEXT,
-		chapter_idx BIGINT,
-		is_published BOOLEAN,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup chapters schema: %v", err)
-	}
-
-	if err := tx.Exec(`CREATE TABLE comments (
-		id uuid PRIMARY KEY,
-		user_id uuid,
-		chapter_id uuid,
-		comic_id uuid,
-		page_index BIGINT,
-		content TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup comments schema: %v", err)
-	}
-
-	if err := tx.Exec(`CREATE TABLE reactions (
-		id uuid PRIMARY KEY,
-		user_id uuid,
-		comment_id uuid,
-		type TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup reactions schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx,
+		&testutil.Chapter{},
+		&testutil.User{},
+		&testutil.Comment{},
+		&testutil.CommentReaction{},
+	)
 
 	chapterID := uuid.New()
 	comicID := uuid.New()
@@ -119,7 +75,7 @@ func TestCommentServiceIntegrationFullFlow(t *testing.T) {
 	pageIndex := 3
 
 	createRes := s.CreateComment(ctx, uuid.New(), &commentrequest.CreateCommentRequest{
-		ChapterID: chapterID,
+		ChapterID: &chapterID,
 		Content:   "first comment",
 		PageIndex: &pageIndex,
 	})
@@ -127,7 +83,7 @@ func TestCommentServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("expected create success, got: %s", createRes.Message)
 	}
 
-	listRes := s.ListComments(ctx, &commentrequest.ListCommentsRequest{ChapterId: chapterID})
+	listRes := s.ListComments(ctx, &commentrequest.ListCommentsRequest{ChapterId: chapterID.String()})
 	if !listRes.Success {
 		t.Fatalf("expected list success, got: %s", listRes.Message)
 	}
@@ -135,10 +91,7 @@ func TestCommentServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("expected total 1, got %d", total)
 	}
 
-	var commentID uuid.UUID
-	if err := db.Raw("SELECT id FROM comments WHERE chapter_id = ? AND deleted_at IS NULL", chapterID).Scan(&commentID).Error; err != nil {
-		t.Fatalf("failed to query comment id: %v", err)
-	}
+	commentID := testutil.MustReadUUID(t, db, "SELECT id FROM comments WHERE chapter_id = ? AND deleted_at IS NULL", chapterID)
 	if commentID == uuid.Nil {
 		t.Fatalf("expected persisted comment id")
 	}
@@ -176,8 +129,9 @@ func TestCommentServiceIntegrationCreateCommentChapterNotFound(t *testing.T) {
 	ctx := context.Background()
 	pageIndex := 1
 
+	missingChapterID := uuid.New()
 	res := s.CreateComment(ctx, uuid.New(), &commentrequest.CreateCommentRequest{
-		ChapterID: uuid.New(),
+		ChapterID: &missingChapterID,
 		Content:   "comment for missing chapter",
 		PageIndex: &pageIndex,
 	})
@@ -185,10 +139,10 @@ func TestCommentServiceIntegrationCreateCommentChapterNotFound(t *testing.T) {
 	if res.Success {
 		t.Fatalf("expected create to fail when chapter does not exist")
 	}
-	if res.HttpStatus != http.StatusInternalServerError {
-		t.Fatalf("expected status 500, got %d", res.HttpStatus)
+	if res.HttpStatus != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", res.HttpStatus)
 	}
-	if res.Message != "database error" {
+	if res.Message != "Chapter not found" {
 		t.Fatalf("unexpected message: %s", res.Message)
 	}
 }
@@ -200,7 +154,7 @@ func TestCommentServiceIntegrationHandleReactionToggleFlow(t *testing.T) {
 	pageIndex := 2
 
 	createRes := s.CreateComment(ctx, userID, &commentrequest.CreateCommentRequest{
-		ChapterID: chapterID,
+		ChapterID: &chapterID,
 		Content:   "reaction target",
 		PageIndex: &pageIndex,
 	})
@@ -208,10 +162,7 @@ func TestCommentServiceIntegrationHandleReactionToggleFlow(t *testing.T) {
 		t.Fatalf("expected create comment success, got: %s", createRes.Message)
 	}
 
-	var commentID uuid.UUID
-	if err := db.Raw("SELECT id FROM comments WHERE chapter_id = ? AND deleted_at IS NULL", chapterID).Scan(&commentID).Error; err != nil {
-		t.Fatalf("failed to query comment id: %v", err)
-	}
+	commentID := testutil.MustReadUUID(t, db, "SELECT id FROM comments WHERE chapter_id = ? AND deleted_at IS NULL", chapterID)
 	if commentID == uuid.Nil {
 		t.Fatalf("expected persisted comment id")
 	}
@@ -228,7 +179,7 @@ func TestCommentServiceIntegrationHandleReactionToggleFlow(t *testing.T) {
 	}
 
 	var activeReactions int64
-	if err := db.Raw("SELECT COUNT(*) FROM reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userID).Scan(&activeReactions).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM comment_reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userID).Scan(&activeReactions).Error; err != nil {
 		t.Fatalf("failed to count active reactions: %v", err)
 	}
 	if activeReactions != 1 {
@@ -243,14 +194,14 @@ func TestCommentServiceIntegrationHandleReactionToggleFlow(t *testing.T) {
 		t.Fatalf("unexpected remove message: %s", removeRes.Message)
 	}
 
-	if err := db.Raw("SELECT COUNT(*) FROM reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userID).Scan(&activeReactions).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM comment_reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userID).Scan(&activeReactions).Error; err != nil {
 		t.Fatalf("failed to count active reactions after remove: %v", err)
 	}
 	if activeReactions != 0 {
 		t.Fatalf("expected 0 active reaction after remove, got %d", activeReactions)
 	}
 
-	reAddRes := s.HandleReaction(ctx, user, commentID, &commentrequest.AddReactionRequest{Type: "dislike"})
+	reAddRes := s.HandleReaction(ctx, user, commentID, &commentrequest.AddReactionRequest{Type: "love"})
 	if !reAddRes.Success {
 		t.Fatalf("expected re-add reaction success, got: %s", reAddRes.Message)
 	}
@@ -258,7 +209,7 @@ func TestCommentServiceIntegrationHandleReactionToggleFlow(t *testing.T) {
 		t.Fatalf("unexpected re-add message: %s", reAddRes.Message)
 	}
 
-	if err := db.Raw("SELECT COUNT(*) FROM reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userID).Scan(&activeReactions).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM comment_reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userID).Scan(&activeReactions).Error; err != nil {
 		t.Fatalf("failed to count active reactions after re-add: %v", err)
 	}
 	if activeReactions != 1 {
@@ -295,7 +246,7 @@ func TestCommentServiceIntegrationHandleReactionIsUserScoped(t *testing.T) {
 	userTwoID := uuid.New()
 
 	createRes := s.CreateComment(ctx, authorID, &commentrequest.CreateCommentRequest{
-		ChapterID: chapterID,
+		ChapterID: &chapterID,
 		Content:   "scoped reaction target",
 		PageIndex: &pageIndex,
 	})
@@ -303,10 +254,7 @@ func TestCommentServiceIntegrationHandleReactionIsUserScoped(t *testing.T) {
 		t.Fatalf("expected create comment success, got: %s", createRes.Message)
 	}
 
-	var commentID uuid.UUID
-	if err := db.Raw("SELECT id FROM comments WHERE chapter_id = ? AND deleted_at IS NULL", chapterID).Scan(&commentID).Error; err != nil {
-		t.Fatalf("failed to query comment id: %v", err)
-	}
+	commentID := testutil.MustReadUUID(t, db, "SELECT id FROM comments WHERE chapter_id = ? AND deleted_at IS NULL", chapterID)
 
 	userOne := &model.User{}
 	userOne.ID = userOneID
@@ -324,7 +272,7 @@ func TestCommentServiceIntegrationHandleReactionIsUserScoped(t *testing.T) {
 	}
 
 	var activeTotal int64
-	if err := db.Raw("SELECT COUNT(*) FROM reactions WHERE comment_id = ? AND deleted_at IS NULL", commentID).Scan(&activeTotal).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM comment_reactions WHERE comment_id = ? AND deleted_at IS NULL", commentID).Scan(&activeTotal).Error; err != nil {
 		t.Fatalf("failed to count active reactions: %v", err)
 	}
 	if activeTotal != 2 {
@@ -336,7 +284,7 @@ func TestCommentServiceIntegrationHandleReactionIsUserScoped(t *testing.T) {
 		t.Fatalf("expected user one remove reaction success, got: %s", removeUserOneRes.Message)
 	}
 
-	if err := db.Raw("SELECT COUNT(*) FROM reactions WHERE comment_id = ? AND deleted_at IS NULL", commentID).Scan(&activeTotal).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM comment_reactions WHERE comment_id = ? AND deleted_at IS NULL", commentID).Scan(&activeTotal).Error; err != nil {
 		t.Fatalf("failed to count active reactions after user one remove: %v", err)
 	}
 	if activeTotal != 1 {
@@ -344,7 +292,7 @@ func TestCommentServiceIntegrationHandleReactionIsUserScoped(t *testing.T) {
 	}
 
 	var userTwoActive int64
-	if err := db.Raw("SELECT COUNT(*) FROM reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userTwoID).Scan(&userTwoActive).Error; err != nil {
+	if err := db.Raw("SELECT COUNT(*) FROM comment_reactions WHERE comment_id = ? AND user_id = ? AND deleted_at IS NULL", commentID, userTwoID).Scan(&userTwoActive).Error; err != nil {
 		t.Fatalf("failed to count user two active reactions: %v", err)
 	}
 	if userTwoActive != 1 {

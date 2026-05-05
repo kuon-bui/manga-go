@@ -9,8 +9,8 @@ import (
 )
 
 type PageRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	handler        *PageHandler
 }
@@ -27,14 +27,14 @@ type PageRouteParams struct {
 func NewPageRoute(p PageRouteParams) *PageRoute {
 	return &PageRoute{
 		logger:         p.Logger,
-		r:              p.R,
+		Engine:         p.R,
 		authMiddleware: p.AuthMiddleware,
 		handler:        p.Handler,
 	}
 }
 
 func (pr *PageRoute) Setup() {
-	rg := pr.r.Group("/pages", pr.authMiddleware.RequireJwt)
+	rg := pr.Group("/pages", pr.authMiddleware.RequireJwt)
 
 	rg.POST("/:pageId/reactions", pr.handler.handleReaction)
 }

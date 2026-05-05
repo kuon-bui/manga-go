@@ -9,16 +9,16 @@ import (
 )
 
 type CommentRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	commentHandler *CommentHandler
 }
 
 type CommentRouteParams struct {
 	fx.In
-	Logger         *logger.Logger
 	R              *gin.Engine
+	Logger         *logger.Logger
 	AuthMiddleware *authmiddleware.AuthMiddleware
 	CommentHandler *CommentHandler
 }
@@ -26,14 +26,14 @@ type CommentRouteParams struct {
 func NewCommentRoute(p CommentRouteParams) *CommentRoute {
 	return &CommentRoute{
 		logger:         p.Logger,
-		r:              p.R,
+		Engine:         p.R,
 		authMiddleware: p.AuthMiddleware,
 		commentHandler: p.CommentHandler,
 	}
 }
 
 func (cr *CommentRoute) Setup() {
-	rg := cr.r.Group("/comments", cr.authMiddleware.RequireJwt)
+	rg := cr.Group("/comments", cr.authMiddleware.RequireJwt)
 
 	rg.GET("", cr.commentHandler.getComments)
 	rg.GET("/new", cr.commentHandler.getNewComments)

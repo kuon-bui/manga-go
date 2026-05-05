@@ -19,7 +19,6 @@ func TestTableNameContracts(t *testing.T) {
 		{name: "Page", got: (Page{}).TableName(), want: "pages"},
 		{name: "Permission", got: (Permission{}).TableName(), want: "permissions"},
 		{name: "Rating", got: (Rating{}).TableName(), want: "ratings"},
-		{name: "Reaction", got: (Reaction{}).TableName(), want: "reactions"},
 		{name: "ReadingHistory", got: (ReadingHistory{}).TableName(), want: "reading_histories"},
 		{name: "ReadingProgress", got: (ReadingProgress{}).TableName(), want: "reading_progresses"},
 		{name: "Role", got: (Role{}).TableName(), want: "roles"},
@@ -30,7 +29,6 @@ func TestTableNameContracts(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.got != tt.want {
 				t.Fatalf("expected %s table name = %s, got %s", tt.name, tt.want, tt.got)

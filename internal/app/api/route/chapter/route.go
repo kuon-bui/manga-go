@@ -9,8 +9,8 @@ import (
 )
 
 type ChapterRoute struct {
+	*gin.Engine
 	handler        *ChapterHandler
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	slugMiddleware *slugmiddleware.SlugMiddleware
 }
@@ -26,17 +26,17 @@ type ChapterRouteParams struct {
 
 func NewChapterRoute(p ChapterRouteParams) *ChapterRoute {
 	return &ChapterRoute{
+		Engine:         p.R,
 		handler:        p.Handler,
-		r:              p.R,
 		authMiddleware: p.AuthMiddleware,
 		slugMiddleware: p.SlugMiddleware,
 	}
 }
 
 func (cr *ChapterRoute) Setup() {
-	cr.r.GET("/chapters/recent-updates", cr.authMiddleware.RequireJwt, cr.handler.getRecentUpdates)
+	cr.GET("/chapters/recent-updates", cr.authMiddleware.RequireJwt, cr.handler.getRecentUpdates)
 
-	rg := cr.r.Group("/comics/:comicSlug/chapters", cr.authMiddleware.RequireJwt, cr.slugMiddleware.ResolveComicID)
+	rg := cr.Group("/comics/:comicSlug/chapters", cr.authMiddleware.RequireJwt, cr.slugMiddleware.ResolveComicID)
 
 	rg.GET("", cr.handler.listChapters)
 	rg.POST("", cr.handler.createChapter)

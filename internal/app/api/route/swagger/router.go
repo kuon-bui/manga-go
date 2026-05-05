@@ -11,7 +11,7 @@ import (
 )
 
 type SwaggerRoute struct {
-	r              *gin.Engine
+	*gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 }
 
@@ -24,13 +24,13 @@ type SwaggerRouteParams struct {
 
 func NewSwaggerRoute(params SwaggerRouteParams) *SwaggerRoute {
 	return &SwaggerRoute{
-		r:              params.R,
+		Engine:         params.R,
 		authMiddleware: params.AuthMiddleware,
 	}
 }
 
 func (sr *SwaggerRoute) Setup() {
-	sr.r.GET(
+	sr.GET(
 		"/swagger/*any",
 		ginSwagger.WrapHandler(
 			swaggerFiles.Handler,

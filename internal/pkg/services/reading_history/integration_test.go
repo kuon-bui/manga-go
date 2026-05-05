@@ -4,7 +4,6 @@ package readinghistoryservice
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -13,25 +12,16 @@ import (
 	"manga-go/internal/pkg/logger"
 	readinghistoryrepo "manga-go/internal/pkg/repo/reading_history"
 	readinghistoryrequest "manga-go/internal/pkg/request/reading_history"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newReadingHistoryServiceIntegration(t *testing.T) (*ReadingHistoryService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -40,18 +30,7 @@ func newReadingHistoryServiceIntegration(t *testing.T) (*ReadingHistoryService, 
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE reading_histories (
-		id uuid PRIMARY KEY,
-		user_id uuid,
-		chapter_id uuid,
-		comic_id uuid,
-		last_read_at TIMESTAMPTZ,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx, &testutil.ReadingHistory{})
 
 	s := &ReadingHistoryService{
 		logger:             logger.NewLogger(),
@@ -99,10 +78,7 @@ func TestReadingHistoryServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("expected total 1, got %d", total)
 	}
 
-	var historyID uuid.UUID
-	if err := db.Raw("SELECT id FROM reading_histories WHERE user_id = ? AND comic_id = ? AND deleted_at IS NULL", userID, comicID).Scan(&historyID).Error; err != nil {
-		t.Fatalf("failed to query reading history id: %v", err)
-	}
+	historyID := testutil.MustReadUUID(t, db, "SELECT id FROM reading_histories WHERE user_id = ? AND comic_id = ? AND deleted_at IS NULL", userID, comicID)
 	if historyID == uuid.Nil {
 		t.Fatalf("expected persisted reading history id")
 	}

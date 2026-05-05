@@ -4,7 +4,6 @@ package comicservice
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
@@ -15,25 +14,16 @@ import (
 	tagrepo "manga-go/internal/pkg/repo/tag"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 	comicrequest "manga-go/internal/pkg/request/comic"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newComicServiceIntegration(t *testing.T) (*ComicService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -42,35 +32,13 @@ func newComicServiceIntegration(t *testing.T) (*ComicService, *gorm.DB) {
 		_ = tx.Rollback().Error
 	})
 
-	ddl := []string{
-		`CREATE TABLE comics (
-			id uuid PRIMARY KEY,
-			title TEXT,
-			slug TEXT,
-			alternative_titles jsonb,
-			description TEXT,
-			thumbnail TEXT,
-			banner TEXT,
-			type TEXT,
-			status TEXT,
-			age_rating TEXT,
-			is_published BOOLEAN,
-			is_hot BOOLEAN,
-			is_featured BOOLEAN,
-			published_year INTEGER,
-			last_chapter_at TIMESTAMPTZ,
-			artist_id uuid,
-			created_at TIMESTAMPTZ,
-			updated_at TIMESTAMPTZ,
-			deleted_at TIMESTAMPTZ
-		)`,
-	}
-
-	for _, stmt := range ddl {
-		if err := tx.Exec(stmt).Error; err != nil {
-			t.Fatalf("failed to setup schema: %v", err)
-		}
-	}
+	testutil.MustSyncSchemas(t, tx,
+		&testutil.Comic{},
+		&testutil.Chapter{},
+		&testutil.Rating{},
+		&testutil.ComicFollow{},
+		&testutil.UserComicRead{},
+	)
 
 	s := &ComicService{
 		logger:            logger.NewLogger(),
@@ -78,6 +46,7 @@ func newComicServiceIntegration(t *testing.T) (*ComicService, *gorm.DB) {
 		genreRepo:         genrerepo.NewGenreRepo(tx),
 		tagRepo:           tagrepo.NewTagRepo(tx, nil),
 		userComicReadRepo: usercomicreadrepo.NewUserComicReadRepo(tx),
+		gormDb:            tx,
 	}
 
 	return s, tx

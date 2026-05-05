@@ -4,7 +4,6 @@ package genreservice
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 
@@ -12,25 +11,16 @@ import (
 	"manga-go/internal/pkg/logger"
 	genrerepo "manga-go/internal/pkg/repo/genre"
 	genrerequest "manga-go/internal/pkg/request/genre"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newGenreServiceIntegration(t *testing.T) (*GenreService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -39,18 +29,7 @@ func newGenreServiceIntegration(t *testing.T) (*GenreService, *gorm.DB) {
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE genres (
-		id uuid PRIMARY KEY,
-		name TEXT,
-		slug TEXT,
-		description TEXT,
-		thumbnail TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx, &testutil.Genre{})
 
 	s := &GenreService{
 		logger:    logger.NewLogger(),
@@ -124,10 +103,7 @@ func TestGenreServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("unexpected message: %s", notFoundRes.Message)
 	}
 
-	var genreID uuid.UUID
-	if err := db.Raw("SELECT id FROM genres WHERE slug = ?", "action-plus").Scan(&genreID).Error; err != nil {
-		t.Fatalf("failed to query genre id: %v", err)
-	}
+	genreID := testutil.MustReadUUID(t, db, "SELECT id FROM genres WHERE slug = ?", "action-plus")
 	if genreID == uuid.Nil {
 		t.Fatalf("expected persisted genre id")
 	}

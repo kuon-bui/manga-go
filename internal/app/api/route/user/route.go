@@ -9,8 +9,8 @@ import (
 )
 
 type UserRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	userHandler    *userHandler
 	authMiddleware *authmiddleware.AuthMiddleware
 }
@@ -26,7 +26,7 @@ type UserRouteParams struct {
 
 func NewUserRoute(p UserRouteParams) *UserRoute {
 	return &UserRoute{
-		r:              p.R,
+		Engine:         p.R,
 		logger:         p.Logger,
 		userHandler:    p.UserHandler,
 		authMiddleware: p.AuthMiddleware,
@@ -34,7 +34,7 @@ func NewUserRoute(p UserRouteParams) *UserRoute {
 }
 
 func (ur *UserRoute) Setup() {
-	rg := ur.r.Group("/users")
+	rg := ur.Group("/users")
 	rg.POST("", ur.userHandler.createAccount)
 	rg.POST("sign-in", ur.userHandler.signIn)
 	rg.POST("/request-reset-password", ur.userHandler.requestResetPassword)

@@ -9,8 +9,8 @@ import (
 )
 
 type TagRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	tagHandler     *TagHandler
 }
@@ -26,15 +26,15 @@ type TagRouteParams struct {
 
 func NewTagRoute(params TagRouteParams) *TagRoute {
 	return &TagRoute{
+		Engine:         params.R,
 		logger:         params.Logger,
-		r:              params.R,
 		authMiddleware: params.AuthMiddleware,
 		tagHandler:     params.TagHandler,
 	}
 }
 
 func (tr *TagRoute) Setup() {
-	rg := tr.r.Group("/tags", tr.authMiddleware.RequireJwt)
+	rg := tr.Group("/tags", tr.authMiddleware.RequireJwt)
 
 	rg.GET("", tr.tagHandler.getTags)
 	rg.GET("/all", tr.tagHandler.getAllTags)

@@ -9,8 +9,8 @@ import (
 )
 
 type GenreRoute struct {
-	logger         *logger.Logger
-	r              *gin.Engine
+	logger *logger.Logger
+	*gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	genreHandler   *GenreHandler
 }
@@ -27,14 +27,14 @@ type GenreRouteParams struct {
 func NewGenreRoute(params GenreRouteParams) *GenreRoute {
 	return &GenreRoute{
 		logger:         params.Logger,
-		r:              params.R,
+		Engine:         params.R,
 		authMiddleware: params.AuthMiddleware,
 		genreHandler:   params.GenreHandler,
 	}
 }
 
 func (gr *GenreRoute) Setup() {
-	rg := gr.r.Group("/genres", gr.authMiddleware.RequireJwt)
+	rg := gr.Group("/genres", gr.authMiddleware.RequireJwt)
 
 	rg.GET("", gr.genreHandler.getGenres)
 	rg.GET("/all", gr.genreHandler.getAllGenres)

@@ -4,7 +4,6 @@ package chapterserivce
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -13,28 +12,20 @@ import (
 	"manga-go/internal/pkg/logger"
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
+	pagereactionrepo "manga-go/internal/pkg/repo/page_reaction"
 	readingprogressrepo "manga-go/internal/pkg/repo/reading_progress"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 	chapterrequest "manga-go/internal/pkg/request/chapter"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newChapterServiceIntegration(t *testing.T) (*ChapterService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -43,40 +34,18 @@ func newChapterServiceIntegration(t *testing.T) (*ChapterService, *gorm.DB) {
 		_ = tx.Rollback().Error
 	})
 
-	ddl := []string{
-		`CREATE TABLE chapters (
-			id uuid PRIMARY KEY,
-			comic_id uuid,
-			number TEXT,
-			chapter_idx INTEGER,
-			title TEXT,
-			slug TEXT,
-			is_published BOOLEAN,
-			created_at TIMESTAMPTZ,
-			updated_at TIMESTAMPTZ,
-			deleted_at TIMESTAMPTZ
-		)`,
-		`CREATE TABLE pages (
-			id uuid PRIMARY KEY,
-			chapter_id uuid,
-			page_number INTEGER,
-			image_url TEXT,
-			created_at TIMESTAMPTZ,
-			updated_at TIMESTAMPTZ,
-			deleted_at TIMESTAMPTZ
-		)`,
-	}
-
-	for _, stmt := range ddl {
-		if err := tx.Exec(stmt).Error; err != nil {
-			t.Fatalf("failed to setup schema: %v", err)
-		}
-	}
+	testutil.MustSyncSchemas(t, tx,
+		&testutil.Comic{},
+		&testutil.Chapter{},
+		&testutil.Page{},
+		&testutil.PageReaction{},
+	)
 
 	s := &ChapterService{
 		logger:              logger.NewLogger(),
 		chapterRepo:         chapterrepo.NewChapterRepo(tx, nil),
 		comicRepo:           comicrepo.NewComicRepo(tx),
+		pageReactionRepo:    pagereactionrepo.NewPageReactionRepo(tx),
 		readingProgressRepo: readingprogressrepo.NewReadingProgressRepo(tx),
 		userComicReadRepo:   usercomicreadrepo.NewUserComicReadRepo(tx),
 	}
@@ -98,7 +67,7 @@ func paginationTotalFromResultData(data any) int64 {
 	return field.Int()
 }
 
-func TestChapterServiceIntegrationListGetPublishFlow(t *testing.T) {
+func TestChapterServiceIntegrationListGetTogglePublishStateFlow(t *testing.T) {
 	s, db := newChapterServiceIntegration(t)
 	ctx := context.Background()
 	now := time.Now()
@@ -115,7 +84,7 @@ func TestChapterServiceIntegrationListGetPublishFlow(t *testing.T) {
 		0,
 		"Chapter 1",
 		"chapter-1",
-		false,
+		true,
 		now,
 		now,
 	).Error; err != nil {
@@ -149,7 +118,7 @@ func TestChapterServiceIntegrationListGetPublishFlow(t *testing.T) {
 		t.Fatalf("expected get success, got: %s", getRes.Message)
 	}
 
-	publishRes := s.PublishChapter(comicCtx, "chapter-1", &chapterrequest.PublishChapterRequest{IsPublished: true})
+	publishRes := s.PublishChapter(comicCtx, "chapter-1", &chapterrequest.PublishChapterRequest{IsPublished: false})
 	if !publishRes.Success {
 		t.Fatalf("expected publish success, got: %s", publishRes.Message)
 	}
@@ -158,7 +127,7 @@ func TestChapterServiceIntegrationListGetPublishFlow(t *testing.T) {
 	if err := db.Raw("SELECT is_published FROM chapters WHERE id = ?", chapterID).Scan(&isPublished).Error; err != nil {
 		t.Fatalf("failed to query chapter publish status: %v", err)
 	}
-	if !isPublished {
-		t.Fatalf("expected chapter to be published")
+	if isPublished {
+		t.Fatalf("expected chapter to be unpublished")
 	}
 }

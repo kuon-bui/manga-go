@@ -4,7 +4,6 @@ package authorservice
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 
@@ -12,26 +11,18 @@ import (
 	"manga-go/internal/pkg/logger"
 	authorrepo "manga-go/internal/pkg/repo/author"
 	authorrequest "manga-go/internal/pkg/request/author"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newAuthorServiceIntegration(t *testing.T) (*AuthorService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
+
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
 	}
@@ -39,15 +30,7 @@ func newAuthorServiceIntegration(t *testing.T) (*AuthorService, *gorm.DB) {
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE authors (
-		id uuid PRIMARY KEY,
-		name TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx, &testutil.Author{})
 
 	s := &AuthorService{
 		logger:     logger.NewLogger(),
@@ -88,10 +71,7 @@ func TestAuthorServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("expected total 1, got %d", total)
 	}
 
-	var authorID uuid.UUID
-	if err := db.Raw("SELECT id FROM authors WHERE name = ? AND deleted_at IS NULL", "Eiichiro Oda").Scan(&authorID).Error; err != nil {
-		t.Fatalf("failed to query author id: %v", err)
-	}
+	authorID := testutil.MustReadUUID(t, db, "SELECT id FROM authors WHERE name = ? AND deleted_at IS NULL", "Eiichiro Oda")
 	if authorID == uuid.Nil {
 		t.Fatalf("expected persisted author id")
 	}

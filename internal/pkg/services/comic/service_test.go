@@ -9,51 +9,43 @@ import (
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/model"
 	comicrepo "manga-go/internal/pkg/repo/comic"
 	genrerepo "manga-go/internal/pkg/repo/genre"
 	tagrepo "manga-go/internal/pkg/repo/tag"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 	comicrequest "manga-go/internal/pkg/request/comic"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/glebarez/sqlite"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func newComicService(t *testing.T, createTable bool) *ComicService {
+func syncComicTestSchema(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	testutil.MustSyncSchemas(t, db,
+		&testutil.Comic{},
+		&testutil.Chapter{},
+		&testutil.Rating{},
+		&testutil.ComicFollow{},
+		&testutil.UserComicRead{},
+	)
+}
+
+func newComicService(t *testing.T, syncSchema bool) *ComicService {
+	t.Helper()
+
+	db, err := gorm.Open(sqlite.Open(testutil.NewSQLiteDSN()), &gorm.Config{
+		DisableForeignKeyConstraintWhenMigrating: true,
+	})
 	if err != nil {
 		t.Fatalf("failed to open sqlite db: %v", err)
 	}
 
-	if createTable {
-		err = db.Exec(`
-			CREATE TABLE comics (
-				id TEXT PRIMARY KEY,
-				title TEXT,
-				slug TEXT,
-				alternative_titles TEXT,
-				description TEXT,
-				thumbnail TEXT,
-				banner TEXT,
-				type TEXT,
-				status TEXT,
-				age_rating TEXT,
-				is_published BOOLEAN,
-				is_hot BOOLEAN,
-				is_featured BOOLEAN,
-				published_year INTEGER,
-				last_chapter_at DATETIME,
-				artist_id TEXT,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create comics table: %v", err)
-		}
+	if syncSchema {
+		syncComicTestSchema(t, db)
 	}
 
 	return &ComicService{
@@ -62,6 +54,7 @@ func newComicService(t *testing.T, createTable bool) *ComicService {
 		genreRepo:         genrerepo.NewGenreRepo(db),
 		tagRepo:           tagrepo.NewTagRepo(db, nil),
 		userComicReadRepo: usercomicreadrepo.NewUserComicReadRepo(db),
+		gormDb:            db,
 	}
 }
 
@@ -83,7 +76,9 @@ func TestListComicsReturnsEmptyPagination(t *testing.T) {
 	t.Parallel()
 
 	s := newComicService(t, true)
-	res := s.ListComics(context.Background(), &common.Paging{Page: 1, Limit: 10})
+	res := s.ListComics(context.Background(), &comicrequest.ListComicsRequest{
+		Paging: common.Paging{Page: 1, Limit: 10},
+	})
 
 	if !res.Success {
 		t.Fatalf("expected success result")
@@ -120,10 +115,11 @@ func TestUpdateComicReturnsNotFoundWhenMissing(t *testing.T) {
 	t.Parallel()
 
 	s := newComicService(t, true)
+	comicType := constant.ComicTypeManga
 	res := s.UpdateComic(context.Background(), "missing-comic", &comicrequest.UpdateComicRequest{
 		Title: "Updated title",
 		Slug:  "updated-slug",
-		Type:  constant.ComicTypeManga,
+		Type:  &comicType,
 	})
 
 	if res.Success {
@@ -194,7 +190,10 @@ func TestCreateComicReturnsDbErrorWhenTableMissing(t *testing.T) {
 	t.Parallel()
 
 	s := newComicService(t, false)
-	res := s.CreateComic(context.Background(), &comicrequest.CreateComicRequest{
+	ctx := context.WithValue(context.Background(), common.CurrentUser, &model.User{
+		SqlModel: common.SqlModel{ID: uuid.New()},
+	})
+	res := s.CreateComic(ctx, &comicrequest.CreateComicRequest{
 		Title: "One Piece",
 		Slug:  "one-piece",
 	})

@@ -10,6 +10,7 @@ import (
 	"manga-go/internal/pkg/logger"
 	tagrepo "manga-go/internal/pkg/repo/tag"
 	tagrequest "manga-go/internal/pkg/request/tag"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -18,25 +19,13 @@ import (
 func newTagService(t *testing.T, createTable bool) *TagService {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(testutil.NewSQLiteDSN()), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite db: %v", err)
 	}
 
 	if createTable {
-		err = db.Exec(`
-			CREATE TABLE tags (
-				id TEXT PRIMARY KEY,
-				name TEXT,
-				slug TEXT,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create tags table: %v", err)
-		}
+		testutil.MustSyncSchemas(t, db, &testutil.Tag{})
 	}
 
 	return &TagService{

@@ -13,6 +13,7 @@ import (
 	readingprogressrepo "manga-go/internal/pkg/repo/reading_progress"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 	chapterrequest "manga-go/internal/pkg/request/chapter"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
@@ -22,60 +23,19 @@ import (
 func newChapterService(t *testing.T, createTables bool) *ChapterService {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(testutil.NewSQLiteDSN()), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite db: %v", err)
 	}
 
 	if createTables {
-		err = db.Exec(`
-			CREATE TABLE chapters (
-				id TEXT PRIMARY KEY,
-				comic_id TEXT,
-				number TEXT,
-				chapter_idx INTEGER,
-				title TEXT,
-				slug TEXT,
-				is_published BOOLEAN,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create chapters table: %v", err)
-		}
-
-		err = db.Exec(`
-			CREATE TABLE pages (
-				id TEXT PRIMARY KEY,
-				chapter_id TEXT,
-				page_number INTEGER,
-				image_url TEXT,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create pages table: %v", err)
-		}
-
-		err = db.Exec(`
-			CREATE TABLE reading_progresses (
-				id TEXT PRIMARY KEY,
-				user_id TEXT,
-				comic_id TEXT,
-				chapter_id TEXT,
-				scroll_percent INTEGER,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create reading_progresses table: %v", err)
-		}
+		testutil.MustSyncSchemas(t, db,
+			&testutil.Comic{},
+			&testutil.Chapter{},
+			&testutil.Page{},
+			&testutil.ReadingProgress{},
+			&testutil.UserComicRead{},
+		)
 	}
 
 	return &ChapterService{
@@ -112,7 +72,10 @@ func TestCreateChapterReturnsErrorWithoutComicContext(t *testing.T) {
 		Number: "1",
 		Title:  "Chapter 1",
 		Slug:   "chapter-1",
-		Pages:  []string{"https://example.com/1.jpg"},
+		Pages: []chapterrequest.PageRequest{{
+			PageType: common.ContentTypeImage,
+			ImageURL: "https://example.com/1.jpg",
+		}},
 	})
 
 	if res.Success {
@@ -210,7 +173,10 @@ func TestCreateChapterReturnsDbErrorWhenTableMissing(t *testing.T) {
 		Number: "1",
 		Title:  "Chapter 1",
 		Slug:   "chapter-1",
-		Pages:  []string{"https://example.com/1.jpg"},
+		Pages: []chapterrequest.PageRequest{{
+			PageType: common.ContentTypeImage,
+			ImageURL: "https://example.com/1.jpg",
+		}},
 	})
 
 	if res.Success {

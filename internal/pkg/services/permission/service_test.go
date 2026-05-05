@@ -10,6 +10,7 @@ import (
 	"manga-go/internal/pkg/logger"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
 	permissionrequest "manga-go/internal/pkg/request/permission"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/glebarez/sqlite"
 	"github.com/google/uuid"
@@ -19,24 +20,13 @@ import (
 func newPermissionService(t *testing.T, createTable bool) *PermissionService {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(testutil.NewSQLiteDSN()), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite db: %v", err)
 	}
 
 	if createTable {
-		err = db.Exec(`
-			CREATE TABLE permissions (
-				id TEXT PRIMARY KEY,
-				name TEXT,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create permissions table: %v", err)
-		}
+		testutil.MustSyncSchemas(t, db, &testutil.Permission{})
 	}
 
 	return &PermissionService{

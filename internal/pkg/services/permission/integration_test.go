@@ -4,7 +4,6 @@ package permissionservice
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 
@@ -12,25 +11,16 @@ import (
 	"manga-go/internal/pkg/logger"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
 	permissionrequest "manga-go/internal/pkg/request/permission"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newPermissionServiceIntegration(t *testing.T) (*PermissionService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -39,15 +29,7 @@ func newPermissionServiceIntegration(t *testing.T) (*PermissionService, *gorm.DB
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE permissions (
-		id uuid PRIMARY KEY,
-		name TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx, &testutil.Permission{})
 
 	s := &PermissionService{
 		logger:         logger.NewLogger(),
@@ -88,10 +70,7 @@ func TestPermissionServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("expected total 1, got %d", total)
 	}
 
-	var permissionID uuid.UUID
-	if err := db.Raw("SELECT id FROM permissions WHERE name = ? AND deleted_at IS NULL", "manage_users").Scan(&permissionID).Error; err != nil {
-		t.Fatalf("failed to query permission id: %v", err)
-	}
+	permissionID := testutil.MustReadUUID(t, db, "SELECT id FROM permissions WHERE name = ? AND deleted_at IS NULL", "manage_users")
 	if permissionID == uuid.Nil {
 		t.Fatalf("expected persisted permission id")
 	}
