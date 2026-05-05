@@ -3,14 +3,14 @@ package notificationservice
 import (
 	"context"
 	"manga-go/internal/app/api/common/response"
-	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
+	notificationrequest "manga-go/internal/pkg/request/notification"
 
 	"github.com/google/uuid"
 )
 
-func (s *NotificationService) ListNotifications(ctx context.Context, userID uuid.UUID, paging *common.Paging, unreadOnly bool, notificationType string) response.Result {
-	items, total, err := s.userNotificationRepo.FindPaginatedByUserID(ctx, userID, paging, unreadOnly, notificationType)
+func (s *NotificationService) ListNotifications(ctx context.Context, userID uuid.UUID, req *notificationrequest.ListNotificationsRequest) response.Result {
+	items, total, err := s.userNotificationRepo.FindPaginatedByUserID(ctx, userID, &req.Paging, req.UnreadOnly, req.Type)
 	if err != nil {
 		s.logger.Error("Failed to list notifications", "error", err)
 		return response.ResultErrDb(err)

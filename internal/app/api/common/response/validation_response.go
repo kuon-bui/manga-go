@@ -3,6 +3,7 @@ package response
 import (
 	"fmt"
 	"manga-go/internal/pkg/constant"
+	notificationpkg "manga-go/internal/pkg/notification"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -30,6 +31,17 @@ func parseValidationErrors(err error) []ValidationFieldError {
 
 func buildValidationMessage(validationErr validator.FieldError) string {
 	switch validationErr.Tag() {
+	case "order_check":
+		return fmt.Sprintf(
+			"%s must be a valid order direction (ASC or DESC)",
+			validationErr.Field(),
+		)
+	case "comic_sort_by":
+		return fmt.Sprintf(
+			"%s must be a valid sort by field (lastChapterAt, createdAt, rating, followCount)",
+			validationErr.Field(),
+		)
+
 	case "required":
 		return fmt.Sprintf("%s is required", validationErr.Field())
 	case "email":
@@ -45,53 +57,19 @@ func buildValidationMessage(validationErr validator.FieldError) string {
 	case "uuid", "uuid4":
 		return fmt.Sprintf("%s must be a valid UUID", validationErr.Field())
 	case "age_rating":
-		return fmt.Sprintf(
-			"%s must be a valid age rating (%s, %s,%s, %s)",
-			validationErr.Field(),
-			constant.AgeRatingAll,
-			constant.AgeRating13Plus,
-			constant.AgeRating16Plus,
-			constant.AgeRating18Plus,
-		)
+		return constant.ComicAgeRatingValidationMessage(validationErr.Field())
 	case "comic_type":
-		return fmt.Sprintf(
-			"%s must be a valid comic type (%s, %s, %s, %s, %s)",
-			validationErr.Field(),
-			constant.ComicTypeManga,
-			constant.ComicTypeManhwa,
-			constant.ComicTypeManhua,
-			constant.ComicTypeComic,
-			constant.ComicTypeNovel,
-		)
+		return constant.ComicTypeValidationMessage(validationErr.Field())
 	case "comic_status":
-		return fmt.Sprintf(
-			"%s must be a valid comic status (%s, %s, %s, %s)",
-			validationErr.Field(),
-			constant.ComicStatusOngoing,
-			constant.ComicStatusCompleted,
-			constant.ComicStatusHiatus,
-			constant.ComicStatusCancelled,
-		)
+		return constant.ComicStatusValidationMessage(validationErr.Field())
 	case "follow_status":
-		return fmt.Sprintf(
-			"%s must be a valid follow status (%s, %s, %s, %s, %s)",
-			validationErr.Field(),
-			constant.FollowStatusReading,
-			constant.FollowStatusPlanned,
-			constant.FollowStatusCompleted,
-			constant.FollowStatusDropped,
-			constant.FollowStatusFavorite,
-		)
-	case "order_check":
-		return fmt.Sprintf(
-			"%s must be a valid order direction (ASC or DESC)",
-			validationErr.Field(),
-		)
-	case "comic_sort_by":
-		return fmt.Sprintf(
-			"%s must be a valid sort by field (lastChapterAt, createdAt, rating, followCount)",
-			validationErr.Field(),
-		)
+		return constant.FollowStatusValidationMessage(validationErr.Field())
+	case "notification_category":
+		return notificationpkg.CategoryValidationMessage(validationErr.Field())
+	case "notification_type":
+		return notificationpkg.TypeValidationMessage(validationErr.Field())
+	case "notification_entity_type":
+		return notificationpkg.EntityTypeValidationMessage(validationErr.Field())
 	default:
 		return fmt.Sprintf("%s is invalid (%s)", validationErr.Field(), validationErr.Tag())
 	}

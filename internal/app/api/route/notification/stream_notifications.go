@@ -1,10 +1,9 @@
 package notificationroute
 
 import (
-	"fmt"
+	apicommon "manga-go/internal/app/api/common"
 	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/utils"
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,20 +27,10 @@ func (h *NotificationHandler) streamNotifications(c *gin.Context) {
 	pubsub := h.notificationService.SubscribeUserChannel(c.Request.Context(), user.ID)
 	defer pubsub.Close()
 
-	c.Writer.Header().Set("Content-Type", "text/event-stream")
-	c.Writer.Header().Set("Cache-Control", "no-cache")
-	c.Writer.Header().Set("Connection", "keep-alive")
-	c.Writer.Header().Set("X-Accel-Buffering", "no")
-	c.Status(http.StatusOK)
-
-	flusher, ok := c.Writer.(http.Flusher)
-	if !ok {
-		response.ResultErrInternal(fmt.Errorf("streaming unsupported")).ResponseResult(c)
+	stream := apicommon.NewSSEStream(c)
+	if err := stream.SendComment("connected"); err != nil {
 		return
 	}
-
-	_, _ = c.Writer.Write([]byte(": connected\n\n"))
-	flusher.Flush()
 
 	heartbeat := time.NewTicker(25 * time.Second)
 	defer heartbeat.Stop()
@@ -52,16 +41,17 @@ func (h *NotificationHandler) streamNotifications(c *gin.Context) {
 		case <-c.Request.Context().Done():
 			return
 		case <-heartbeat.C:
-			_, _ = c.Writer.Write([]byte("event: heartbeat\ndata: {}\n\n"))
-			flusher.Flush()
+			if err := stream.SendHeartbeat(); err != nil {
+				return
+			}
 		case msg, ok := <-channel:
 			if !ok {
 				return
 			}
 
-			_, _ = c.Writer.Write([]byte("event: notification.created\n"))
-			_, _ = c.Writer.Write([]byte("data: " + msg.Payload + "\n\n"))
-			flusher.Flush()
+			if err := stream.SendEvent("notification.created", msg.Payload); err != nil {
+				return
+			}
 		}
 	}
 }

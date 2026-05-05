@@ -36,6 +36,6 @@ func (h *NotificationHandler) getNotifications(c *gin.Context) {
 		return
 	}
 
-	result := h.notificationService.ListNotifications(c.Request.Context(), user.ID, &req.Paging, req.UnreadOnly, req.Type)
+	result := h.notificationService.ListNotifications(c.Request.Context(), user.ID, &req)
 	result.ResponseResult(c)
 }
