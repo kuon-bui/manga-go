@@ -4,7 +4,9 @@ import (
 	"context"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
+	pknotification "manga-go/internal/pkg/notification"
 	"manga-go/internal/pkg/repo/base"
+
 	"time"
 
 	"github.com/google/uuid"
@@ -33,7 +35,7 @@ func (r *UserNotificationRepo) FindByIDAndUserID(ctx context.Context, id, userID
 	})
 }
 
-func (r *UserNotificationRepo) FindPaginatedByUserID(ctx context.Context, userID uuid.UUID, paging *common.Paging, unreadOnly bool, notificationType string) ([]*model.UserNotification, int64, error) {
+func (r *UserNotificationRepo) FindPaginatedByUserID(ctx context.Context, userID uuid.UUID, paging *common.Paging, unreadOnly bool, notificationType pknotification.Type) ([]*model.UserNotification, int64, error) {
 	var items []*model.UserNotification
 	var total int64
 

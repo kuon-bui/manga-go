@@ -1,5 +1,10 @@
 package constant
 
+import (
+	"fmt"
+	"strings"
+)
+
 // ComicType represents the type of comic.
 type ComicType string
 
@@ -31,6 +36,30 @@ const (
 	AgeRating18Plus ComicAgeRating = "18+"
 )
 
+func GetAllComicTypes() []ComicType {
+	return []ComicType{
+		ComicTypeManga,
+		ComicTypeManhwa,
+		ComicTypeManhua,
+		ComicTypeComic,
+		ComicTypeNovel,
+	}
+}
+
+func ComicTypeValidationMessage(field string) string {
+	types := GetAllComicTypes()
+	var res strings.Builder
+	res.WriteString(string(types[0]))
+	for _, t := range types[1:] {
+		res.WriteString(", " + string(t))
+	}
+	return fmt.Sprintf(
+		"%s must be a valid comic type (%s)",
+		field,
+		res.String(),
+	)
+}
+
 func GetAllowedComicTypes() map[ComicType]bool {
 	return map[ComicType]bool{
 		ComicTypeManga:  true,
@@ -41,6 +70,29 @@ func GetAllowedComicTypes() map[ComicType]bool {
 	}
 }
 
+func GetAllComicStatuses() []ComicStatus {
+	return []ComicStatus{
+		ComicStatusOngoing,
+		ComicStatusCompleted,
+		ComicStatusHiatus,
+		ComicStatusCancelled,
+	}
+}
+
+func ComicStatusValidationMessage(field string) string {
+	statuses := GetAllComicStatuses()
+	var res strings.Builder
+	res.WriteString(string(statuses[0]))
+	for _, s := range statuses[1:] {
+		res.WriteString(", " + string(s))
+	}
+	return fmt.Sprintf(
+		"%s must be a valid comic status (%s)",
+		field,
+		res.String(),
+	)
+}
+
 func GetAllowedComicStatuses() map[ComicStatus]bool {
 	return map[ComicStatus]bool{
 		ComicStatusOngoing:   true,
@@ -48,6 +100,30 @@ func GetAllowedComicStatuses() map[ComicStatus]bool {
 		ComicStatusHiatus:    true,
 		ComicStatusCancelled: true,
 	}
+}
+
+func GetAllComicAgeRatings() []ComicAgeRating {
+	return []ComicAgeRating{
+		AgeRatingAll,
+		AgeRating13Plus,
+		AgeRating16Plus,
+		AgeRating18Plus,
+	}
+}
+
+func ComicAgeRatingValidationMessage(field string) string {
+	ratings := GetAllComicAgeRatings()
+	var res strings.Builder
+	res.WriteString(string(ratings[0]))
+	for _, r := range ratings[1:] {
+		res.WriteString(", " + string(r))
+	}
+
+	return fmt.Sprintf(
+		"%s must be a valid age rating (%s)",
+		field,
+		res.String(),
+	)
 }
 
 func GetAllowedComicAgeRatings() map[ComicAgeRating]bool {

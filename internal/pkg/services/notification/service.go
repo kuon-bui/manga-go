@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/logger"
 	"manga-go/internal/pkg/mail"
 	notificationpkg "manga-go/internal/pkg/notification"
+	pknotification "manga-go/internal/pkg/notification"
 	"manga-go/internal/pkg/redis"
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
@@ -21,15 +22,15 @@ import (
 )
 
 type NotificationItem struct {
-	ID        string `json:"id"`
-	Type      string `json:"type"`
-	Category  string `json:"category"`
-	Title     string `json:"title"`
-	Body      string `json:"body"`
-	IsSeen    bool   `json:"isSeen"`
-	IsRead    bool   `json:"isRead"`
-	CreatedAt any    `json:"createdAt"`
-	Payload   any    `json:"payload"`
+	ID        string                  `json:"id"`
+	Type      pknotification.Type     `json:"type"`
+	Category  pknotification.Category `json:"category"`
+	Title     string                  `json:"title"`
+	Body      string                  `json:"body"`
+	IsSeen    bool                    `json:"isSeen"`
+	IsRead    bool                    `json:"isRead"`
+	CreatedAt any                     `json:"createdAt"`
+	Payload   any                     `json:"payload"`
 }
 
 type NotificationService struct {

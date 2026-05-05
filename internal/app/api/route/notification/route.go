@@ -35,6 +35,7 @@ func NewNotificationRoute(p NotificationRouteParams) *NotificationRoute {
 func (r *NotificationRoute) Setup() {
 	rg := r.Group("/notifications", r.authMiddleware.RequireJwt)
 	rg.GET("", r.handler.getNotifications)
+	rg.POST("/test", r.handler.createTestNotification)
 	rg.GET("/stream", r.handler.streamNotifications)
 	rg.PATCH("/:id/seen", r.handler.markNotificationSeen)
 	rg.PATCH("/:id/read", r.handler.markNotificationRead)

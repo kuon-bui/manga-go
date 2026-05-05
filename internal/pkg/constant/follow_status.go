@@ -1,6 +1,10 @@
 package constant
 
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+	"strings"
+)
 
 type FollowStatus string
 
@@ -11,6 +15,31 @@ const (
 	FollowStatusDropped   FollowStatus = "dropped"
 	FollowStatusFavorite  FollowStatus = "favorite"
 )
+
+func GetAllFollowStatuses() []FollowStatus {
+	return []FollowStatus{
+		FollowStatusReading,
+		FollowStatusPlanned,
+		FollowStatusCompleted,
+		FollowStatusDropped,
+		FollowStatusFavorite,
+	}
+}
+
+func FollowStatusValidationMessage(field string) string {
+	flowStatuses := GetAllFollowStatuses()
+	var res strings.Builder
+	res.WriteString(string(flowStatuses[0]))
+	for _, status := range flowStatuses[1:] {
+		res.WriteString(", " + string(status))
+	}
+
+	return fmt.Sprintf(
+		"%s must be a valid follow status (%s)",
+		field,
+		res.String(),
+	)
+}
 
 func GetAllowedFollowStatuses() map[FollowStatus]bool {
 	return map[FollowStatus]bool{
