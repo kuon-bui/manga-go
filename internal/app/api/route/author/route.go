@@ -9,8 +9,8 @@ import (
 )
 
 type AuthorRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	authorHandler  *AuthorHandler
 }
@@ -26,15 +26,15 @@ type AuthorRouteParams struct {
 
 func NewAuthorRoute(params AuthorRouteParams) *AuthorRoute {
 	return &AuthorRoute{
+		Engine:         params.R,
 		logger:         params.Logger,
-		r:              params.R,
 		authMiddleware: params.AuthMiddleware,
 		authorHandler:  params.AuthorHandler,
 	}
 }
 
 func (ar *AuthorRoute) Setup() {
-	rg := ar.r.Group("/authors", ar.authMiddleware.RequireJwt)
+	rg := ar.Group("/authors", ar.authMiddleware.RequireJwt)
 
 	rg.GET("", ar.authorHandler.getAuthors)
 	rg.GET("/all", ar.authorHandler.getAllAuthors)

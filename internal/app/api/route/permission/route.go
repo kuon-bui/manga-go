@@ -9,8 +9,8 @@ import (
 )
 
 type PermissionRoute struct {
+	*gin.Engine
 	logger            *logger.Logger
-	r                 *gin.Engine
 	authMiddleware    *authmiddleware.AuthMiddleware
 	permissionHandler *PermissionHandler
 }
@@ -27,14 +27,14 @@ type PermissionRouteParams struct {
 func NewPermissionRoute(params PermissionRouteParams) *PermissionRoute {
 	return &PermissionRoute{
 		logger:            params.Logger,
-		r:                 params.R,
+		Engine:            params.R,
 		authMiddleware:    params.AuthMiddleware,
 		permissionHandler: params.PermissionHandler,
 	}
 }
 
 func (pr *PermissionRoute) Setup() {
-	rg := pr.r.Group("/permissions", pr.authMiddleware.RequireJwt)
+	rg := pr.Group("/permissions", pr.authMiddleware.RequireJwt)
 
 	rg.GET("", pr.permissionHandler.getPermissions)
 	rg.GET("/all", pr.permissionHandler.getAllPermissions)

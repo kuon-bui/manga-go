@@ -4,7 +4,6 @@ package tagservice
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 
@@ -12,24 +11,15 @@ import (
 	"manga-go/internal/pkg/logger"
 	tagrepo "manga-go/internal/pkg/repo/tag"
 	tagrequest "manga-go/internal/pkg/request/tag"
+	"manga-go/internal/pkg/testutil"
 
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newTagServiceIntegration(t *testing.T) (*TagService, *gorm.DB) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -38,16 +28,7 @@ func newTagServiceIntegration(t *testing.T) (*TagService, *gorm.DB) {
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE tags (
-		id uuid PRIMARY KEY,
-		name TEXT,
-		slug TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx, &testutil.Tag{})
 
 	s := &TagService{
 		logger:  logger.NewLogger(),

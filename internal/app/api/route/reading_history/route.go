@@ -9,8 +9,8 @@ import (
 )
 
 type ReadingHistoryRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	handler        *ReadingHistoryHandler
 }
@@ -27,14 +27,14 @@ type ReadingHistoryRouteParams struct {
 func NewReadingHistoryRoute(p ReadingHistoryRouteParams) *ReadingHistoryRoute {
 	return &ReadingHistoryRoute{
 		logger:         p.Logger,
-		r:              p.R,
+		Engine:         p.R,
 		authMiddleware: p.AuthMiddleware,
 		handler:        p.Handler,
 	}
 }
 
 func (rhr *ReadingHistoryRoute) Setup() {
-	rg := rhr.r.Group("/reading-histories", rhr.authMiddleware.RequireJwt)
+	rg := rhr.Group("/reading-histories", rhr.authMiddleware.RequireJwt)
 
 	rg.GET("", rhr.handler.getReadingHistories)
 	rg.GET("/:id", rhr.handler.getReadingHistory)

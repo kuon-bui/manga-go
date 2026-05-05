@@ -4,32 +4,21 @@ package userservice
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"manga-go/internal/pkg/logger"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	userrepo "manga-go/internal/pkg/repo/user"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func newUserServiceIntegration(t *testing.T) *UserService {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -38,35 +27,11 @@ func newUserServiceIntegration(t *testing.T) *UserService {
 		_ = tx.Rollback().Error
 	})
 
-	ddl := []string{
-		`CREATE TABLE users (
-			id uuid PRIMARY KEY,
-			name TEXT,
-			email TEXT,
-			password TEXT,
-			created_at TIMESTAMPTZ,
-			updated_at TIMESTAMPTZ,
-			deleted_at TIMESTAMPTZ
-		)`,
-		`CREATE TABLE roles (
-			id uuid PRIMARY KEY,
-			name TEXT,
-			created_at TIMESTAMPTZ,
-			updated_at TIMESTAMPTZ,
-			deleted_at TIMESTAMPTZ
-		)`,
-		`CREATE TABLE users_roles (
-			user_id uuid,
-			role_id uuid,
-			PRIMARY KEY (user_id, role_id)
-		)`,
-	}
-
-	for _, stmt := range ddl {
-		if err := tx.Exec(stmt).Error; err != nil {
-			t.Fatalf("failed to setup schema: %v", err)
-		}
-	}
+	testutil.MustSyncSchemas(t, tx,
+		&testutil.User{},
+		&testutil.Role{},
+		&testutil.UserRole{},
+	)
 
 	return &UserService{
 		logger:   logger.NewLogger(),

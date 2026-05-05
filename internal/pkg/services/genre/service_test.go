@@ -10,6 +10,7 @@ import (
 	"manga-go/internal/pkg/logger"
 	genrerepo "manga-go/internal/pkg/repo/genre"
 	genrerequest "manga-go/internal/pkg/request/genre"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
@@ -18,27 +19,13 @@ import (
 func newGenreService(t *testing.T, createTable bool) *GenreService {
 	t.Helper()
 
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(testutil.NewSQLiteDSN()), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite db: %v", err)
 	}
 
 	if createTable {
-		err = db.Exec(`
-			CREATE TABLE genres (
-				id TEXT PRIMARY KEY,
-				name TEXT,
-				slug TEXT,
-				description TEXT,
-				thumbnail TEXT,
-				created_at DATETIME,
-				updated_at DATETIME,
-				deleted_at DATETIME
-			)
-		`).Error
-		if err != nil {
-			t.Fatalf("failed to create genres table: %v", err)
-		}
+		testutil.MustSyncSchemas(t, db, &testutil.Genre{})
 	}
 
 	return &GenreService{

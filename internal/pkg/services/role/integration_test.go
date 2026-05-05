@@ -4,32 +4,21 @@ package roleservice
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"manga-go/internal/pkg/logger"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
 	rolerepo "manga-go/internal/pkg/repo/role"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func newRoleServiceIntegration(t *testing.T) *RoleService {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -38,33 +27,11 @@ func newRoleServiceIntegration(t *testing.T) *RoleService {
 		_ = tx.Rollback().Error
 	})
 
-	ddl := []string{
-		`CREATE TABLE roles (
-			id uuid PRIMARY KEY,
-			name TEXT,
-			created_at TIMESTAMPTZ,
-			updated_at TIMESTAMPTZ,
-			deleted_at TIMESTAMPTZ
-		)`,
-		`CREATE TABLE permissions (
-			id uuid PRIMARY KEY,
-			name TEXT,
-			created_at TIMESTAMPTZ,
-			updated_at TIMESTAMPTZ,
-			deleted_at TIMESTAMPTZ
-		)`,
-		`CREATE TABLE roles_permissions (
-			role_id uuid,
-			permission_id uuid,
-			PRIMARY KEY (role_id, permission_id)
-		)`,
-	}
-
-	for _, stmt := range ddl {
-		if err := tx.Exec(stmt).Error; err != nil {
-			t.Fatalf("failed to setup schema: %v", err)
-		}
-	}
+	testutil.MustSyncSchemas(t, tx,
+		&testutil.Role{},
+		&testutil.Permission{},
+		&testutil.RolePermission{},
+	)
 
 	return &RoleService{
 		logger:         logger.NewLogger(),

@@ -10,8 +10,8 @@ import (
 )
 
 type ComicRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	comicHandler   *ComicHandler
 	slugMiddleware *slugmiddleware.SlugMiddleware
@@ -29,8 +29,8 @@ type ComicRouteParams struct {
 
 func NewComicRoute(params ComicRouteParams) *ComicRoute {
 	return &ComicRoute{
+		Engine:         params.R,
 		logger:         params.Logger,
-		r:              params.R,
 		authMiddleware: params.AuthMiddleware,
 		comicHandler:   params.ComicHandler,
 		slugMiddleware: params.SlugMiddleware,
@@ -38,7 +38,7 @@ func NewComicRoute(params ComicRouteParams) *ComicRoute {
 }
 
 func (cr *ComicRoute) Setup() {
-	rg := cr.r.Group("/comics", cr.authMiddleware.RequireJwt)
+	rg := cr.Group("/comics", cr.authMiddleware.RequireJwt)
 
 	rg.GET("", cr.comicHandler.getComics)
 	rg.GET("/trending", cr.comicHandler.getTrendingComics)

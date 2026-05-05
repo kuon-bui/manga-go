@@ -9,8 +9,8 @@ import (
 )
 
 type RoleRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	roleHandler    *RoleHandler
 }
@@ -27,14 +27,14 @@ type RoleRouteParams struct {
 func NewRoleRoute(params RoleRouteParams) *RoleRoute {
 	return &RoleRoute{
 		logger:         params.Logger,
-		r:              params.R,
+		Engine:         params.R,
 		authMiddleware: params.AuthMiddleware,
 		roleHandler:    params.RoleHandler,
 	}
 }
 
 func (rr *RoleRoute) Setup() {
-	rg := rr.r.Group("/roles", rr.authMiddleware.RequireJwt)
+	rg := rr.Group("/roles", rr.authMiddleware.RequireJwt)
 
 	rg.GET("", rr.roleHandler.getRoles)
 	rg.GET("/all", rr.roleHandler.getAllRoles)

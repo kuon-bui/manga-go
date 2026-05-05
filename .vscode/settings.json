@@ -1,4 +1,7 @@
 {
+  "gopls": {
+    "buildFlags": ["-tags=integration"]
+  },
   "sqltools.connections": [
     {
       "ssh": "Disabled",
@@ -58,6 +61,7 @@
     "genreroute",
     "genreseeder",
     "genreservice",
+    "glebarez",
     "gonic",
     "gorm",
     "gormadapter",
@@ -130,6 +134,7 @@
     "tagroute",
     "tagseeder",
     "tagservice",
+    "testutil",
     "translationgrouprepo",
     "translationgrouprequest",
     "translationgrouproute",

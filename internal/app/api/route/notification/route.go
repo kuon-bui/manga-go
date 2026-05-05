@@ -9,8 +9,8 @@ import (
 )
 
 type NotificationRoute struct {
+	*gin.Engine
 	logger         *logger.Logger
-	r              *gin.Engine
 	authMiddleware *authmiddleware.AuthMiddleware
 	handler        *NotificationHandler
 }
@@ -26,14 +26,14 @@ type NotificationRouteParams struct {
 func NewNotificationRoute(p NotificationRouteParams) *NotificationRoute {
 	return &NotificationRoute{
 		logger:         p.Logger,
-		r:              p.R,
+		Engine:         p.R,
 		authMiddleware: p.AuthMiddleware,
 		handler:        p.Handler,
 	}
 }
 
 func (r *NotificationRoute) Setup() {
-	rg := r.r.Group("/notifications", r.authMiddleware.RequireJwt)
+	rg := r.Group("/notifications", r.authMiddleware.RequireJwt)
 	rg.GET("", r.handler.getNotifications)
 	rg.GET("/stream", r.handler.streamNotifications)
 	rg.PATCH("/:id/seen", r.handler.markNotificationSeen)

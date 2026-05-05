@@ -4,7 +4,6 @@ package translationgroupservice
 
 import (
 	"context"
-	"os"
 	"reflect"
 	"testing"
 
@@ -14,25 +13,16 @@ import (
 	translationgrouprepo "manga-go/internal/pkg/repo/translation_group"
 	userrepo "manga-go/internal/pkg/repo/user"
 	translationgrouprequest "manga-go/internal/pkg/request/translation_group"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 func newTranslationGroupServiceIntegration(t *testing.T) (*TranslationGroupService, *gorm.DB, uuid.UUID) {
 	t.Helper()
 
-	dsn := os.Getenv("INTEGRATION_TEST_DATABASE_DSN")
-	if dsn == "" {
-		t.Skip("INTEGRATION_TEST_DATABASE_DSN is not set")
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("failed to connect to postgres: %v", err)
-	}
-
+	db := testutil.NewSQLiteDB(t)
 	tx := db.Begin()
 	if tx.Error != nil {
 		t.Fatalf("failed to begin transaction: %v", tx.Error)
@@ -41,30 +31,10 @@ func newTranslationGroupServiceIntegration(t *testing.T) (*TranslationGroupServi
 		_ = tx.Rollback().Error
 	})
 
-	if err := tx.Exec(`CREATE TABLE translation_groups (
-		id uuid PRIMARY KEY,
-		name TEXT,
-		slug TEXT,
-		owner_id uuid,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup translation_groups schema: %v", err)
-	}
-
-	if err := tx.Exec(`CREATE TABLE users (
-		id uuid PRIMARY KEY,
-		name TEXT,
-		email TEXT,
-		password TEXT,
-		translation_group_id uuid,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		deleted_at TIMESTAMPTZ
-	)`).Error; err != nil {
-		t.Fatalf("failed to setup users schema: %v", err)
-	}
+	testutil.MustSyncSchemas(t, tx,
+		&testutil.TranslationGroup{},
+		&testutil.User{},
+	)
 
 	ownerID := uuid.New()
 	if err := tx.Exec(`INSERT INTO users (id, name, email, password) VALUES (?, ?, ?, ?)`, ownerID, "owner", "owner@example.com", "secret").Error; err != nil {
@@ -127,18 +97,12 @@ func TestTranslationGroupServiceIntegrationFullFlow(t *testing.T) {
 		t.Fatalf("expected update success, got: %s", updateRes.Message)
 	}
 
-	var updatedGroupID uuid.UUID
-	if err := db.Raw("SELECT id FROM translation_groups WHERE slug = ? AND deleted_at IS NULL", "akatsuki-team-updated").Scan(&updatedGroupID).Error; err != nil {
-		t.Fatalf("failed to query updated translation group id: %v", err)
-	}
+	updatedGroupID := testutil.MustReadUUID(t, db, "SELECT id FROM translation_groups WHERE slug = ? AND deleted_at IS NULL", "akatsuki-team-updated")
 	if updatedGroupID == uuid.Nil {
 		t.Fatalf("expected persisted translation group id")
 	}
 
-	var ownerTranslationGroupID uuid.UUID
-	if err := db.Raw("SELECT translation_group_id FROM users WHERE id = ?", ownerID).Scan(&ownerTranslationGroupID).Error; err != nil {
-		t.Fatalf("failed to query owner translation_group_id: %v", err)
-	}
+	ownerTranslationGroupID := testutil.MustReadUUID(t, db, "SELECT translation_group_id FROM users WHERE id = ?", ownerID)
 	if ownerTranslationGroupID != updatedGroupID {
 		t.Fatalf("expected owner translation_group_id to be %s, got %s", updatedGroupID, ownerTranslationGroupID)
 	}
@@ -169,10 +133,7 @@ func TestTranslationGroupServiceIntegrationGetTranslationGroupPreloadsRelations(
 		t.Fatalf("expected create success, got: %s", createRes.Message)
 	}
 
-	var groupID uuid.UUID
-	if err := db.Raw("SELECT id FROM translation_groups WHERE slug = ? AND deleted_at IS NULL", "naruto-team").Scan(&groupID).Error; err != nil {
-		t.Fatalf("failed to query translation group id: %v", err)
-	}
+	groupID := testutil.MustReadUUID(t, db, "SELECT id FROM translation_groups WHERE slug = ? AND deleted_at IS NULL", "naruto-team")
 	if groupID == uuid.Nil {
 		t.Fatalf("expected persisted translation group id")
 	}
@@ -235,10 +196,7 @@ func TestTranslationGroupServiceIntegrationTransferOwnership(t *testing.T) {
 		t.Fatalf("expected create success, got: %s", createRes.Message)
 	}
 
-	var groupID uuid.UUID
-	if err := db.Raw("SELECT id FROM translation_groups WHERE slug = ? AND deleted_at IS NULL", "one-piece-team").Scan(&groupID).Error; err != nil {
-		t.Fatalf("failed to query translation group id: %v", err)
-	}
+	groupID := testutil.MustReadUUID(t, db, "SELECT id FROM translation_groups WHERE slug = ? AND deleted_at IS NULL", "one-piece-team")
 	if groupID == uuid.Nil {
 		t.Fatalf("expected persisted translation group id")
 	}
@@ -283,10 +241,7 @@ func TestTranslationGroupServiceIntegrationTransferOwnership(t *testing.T) {
 		t.Fatalf("expected transfer ownership success, got: %s", transferRes.Message)
 	}
 
-	var newOwnerID uuid.UUID
-	if err := db.Raw("SELECT owner_id FROM translation_groups WHERE id = ?", groupID).Scan(&newOwnerID).Error; err != nil {
-		t.Fatalf("failed to query translation group owner_id: %v", err)
-	}
+	newOwnerID := testutil.MustReadUUID(t, db, "SELECT owner_id FROM translation_groups WHERE id = ?", groupID)
 	if newOwnerID != memberID {
 		t.Fatalf("expected owner_id to be %s, got %s", memberID, newOwnerID)
 	}

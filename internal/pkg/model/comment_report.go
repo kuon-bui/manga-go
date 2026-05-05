@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jaswdr/faker/v2"
+	"github.com/samber/lo"
 )
 
 type CommentReport struct {
@@ -24,7 +25,7 @@ func (CommentReport) TableName() string {
 }
 
 func (c *CommentReport) Fake(f faker.Faker) {
-	reasons := []string{"spam", "abuse", "spoiler", "off-topic"}
+	reasons := lo.Keys(constant.GetAllowedCommentReportReasons())
 	c.Reason = reasons[f.IntBetween(0, len(reasons)-1)]
 	details := f.Lorem().Sentence(12)
 	c.Details = &details

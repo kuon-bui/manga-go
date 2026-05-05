@@ -8,7 +8,7 @@ import (
 )
 
 type FileRoute struct {
-	r              *gin.Engine
+	*gin.Engine
 	fileHandler    *FileHandler
 	authmiddleware *authmiddleware.AuthMiddleware
 }
@@ -22,14 +22,14 @@ type FileRouteParams struct {
 
 func NewFileRoute(params FileRouteParams) *FileRoute {
 	return &FileRoute{
-		r:              params.R,
+		Engine:         params.R,
 		fileHandler:    params.FileHandler,
 		authmiddleware: params.AuthMiddleware,
 	}
 }
 
 func (fr *FileRoute) Setup() {
-	rg := fr.r.Group("/files")
+	rg := fr.Group("/files")
 	privateRg := rg.Group("", fr.authmiddleware.RequireJwt)
 
 	privateRg.POST("/upload", fr.fileHandler.uploadImage)
