@@ -20,9 +20,9 @@ func (r *ChapterRepo) FindRecentUpdates(ctx context.Context, paging *common.Pagi
 		return nil, 0, err
 	}
 
-	latestChapterIDs := baseQuery.
-		Select("DISTINCT ON (comic_id) id").
-		Order("comic_id, published_at DESC NULLS LAST, created_at DESC, id DESC")
+	latestChapterIDs := r.DB.WithContext(ctx).
+		Table("(SELECT DISTINCT ON (comic_id) id FROM chapters WHERE is_published = true ORDER BY comic_id, published_at DESC NULLS LAST, created_at DESC, id DESC) AS latest").
+		Select("id")
 
 	query := r.DB.WithContext(ctx).
 		Model(&model.Chapter{}).
