@@ -10,6 +10,7 @@ import (
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
 	comicfollowrepo "manga-go/internal/pkg/repo/comic_follow"
+	commentrepo "manga-go/internal/pkg/repo/comment"
 	notificationrepo "manga-go/internal/pkg/repo/notification"
 	userrepo "manga-go/internal/pkg/repo/user"
 	usernotificationrepo "manga-go/internal/pkg/repo/user_notification"
@@ -43,6 +44,7 @@ type NotificationService struct {
 	userNotificationRepo *usernotificationrepo.UserNotificationRepo
 	comicFollowRepo      *comicfollowrepo.ComicFollowRepo
 	chapterRepo          *chapterrepo.ChapterRepo
+	commentRepo          *commentrepo.CommentRepo
 	comicRepo            *comicrepo.ComicRepo
 	userRepo             *userrepo.UserRepository
 }
@@ -58,6 +60,7 @@ type NotificationServiceParams struct {
 	UserNotificationRepo *usernotificationrepo.UserNotificationRepo
 	ComicFollowRepo      *comicfollowrepo.ComicFollowRepo
 	ChapterRepo          *chapterrepo.ChapterRepo
+	CommentRepo          *commentrepo.CommentRepo
 	ComicRepo            *comicrepo.ComicRepo
 	UserRepo             *userrepo.UserRepository
 }
@@ -73,6 +76,7 @@ func NewNotificationService(p NotificationServiceParams) *NotificationService {
 		userNotificationRepo: p.UserNotificationRepo,
 		comicFollowRepo:      p.ComicFollowRepo,
 		chapterRepo:          p.ChapterRepo,
+		commentRepo:          p.CommentRepo,
 		comicRepo:            p.ComicRepo,
 		userRepo:             p.UserRepo,
 	}

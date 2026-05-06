@@ -2,12 +2,16 @@ package commentservice
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/model"
+	notificationpkg "manga-go/internal/pkg/notification"
 	commentrequest "manga-go/internal/pkg/request/comment"
+	queueconstant "manga-go/internal/queue/queue_constant"
 
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -64,6 +68,24 @@ func (s *CommentService) CreateComment(ctx context.Context, userID uuid.UUID, re
 	if err := s.commentRepo.Create(ctx, &comment); err != nil {
 		s.logger.Error("Failed to create comment", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if req.ParentId != nil && s.asynqClient != nil {
+		payload, err := json.Marshal(notificationpkg.FanoutPayload{
+			Type:        notificationpkg.TypeCommentNew,
+			EntityType:  notificationpkg.EntityTypeComment,
+			EntityID:    comment.ID,
+			DedupeKey:   "comment-reply:" + comment.ID.String(),
+			TriggeredBy: &userID,
+		})
+		if err != nil {
+			s.logger.Error("Failed to marshal comment reply notification fanout payload", "error", err)
+		} else {
+			task := asynq.NewTask(queueconstant.NOTIFICATION_FANOUT_TASK, payload, asynq.MaxRetry(5))
+			if _, err := s.asynqClient.Enqueue(task, asynq.Queue(queueconstant.NOTIFICATION_QUEUE)); err != nil {
+				s.logger.Error("Failed to enqueue comment reply notification fanout task", "error", err)
+			}
+		}
 	}
 
 	return response.ResultSuccess("Comment created successfully", comment)
