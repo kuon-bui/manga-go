@@ -7,6 +7,7 @@ import (
 	commentreportrepo "manga-go/internal/pkg/repo/comment_report"
 	reactionrepo "manga-go/internal/pkg/repo/reaction"
 
+	"github.com/hibiken/asynq"
 	"go.uber.org/fx"
 )
 
@@ -16,6 +17,7 @@ type CommentService struct {
 	chapterRepo       *chapterrepo.ChapterRepo
 	reactionRepo      *reactionrepo.ReactionRepo
 	commentReportRepo *commentreportrepo.CommentReportRepo
+	asynqClient       *asynq.Client
 }
 
 type CommentServiceParams struct {
@@ -25,6 +27,7 @@ type CommentServiceParams struct {
 	ChapterRepo       *chapterrepo.ChapterRepo
 	ReactionRepo      *reactionrepo.ReactionRepo
 	CommentReportRepo *commentreportrepo.CommentReportRepo
+	AsynqClient       *asynq.Client
 }
 
 func NewCommentService(p CommentServiceParams) *CommentService {
@@ -34,5 +37,6 @@ func NewCommentService(p CommentServiceParams) *CommentService {
 		chapterRepo:       p.ChapterRepo,
 		reactionRepo:      p.ReactionRepo,
 		commentReportRepo: p.CommentReportRepo,
+		asynqClient:       p.AsynqClient,
 	}
 }

@@ -14,13 +14,16 @@ type Type string
 type EntityType string
 
 const (
-	CategoryComic  Category = "comic"
-	CategorySystem Category = "system"
+	CategoryComic   Category = "comic"
+	CategoryComment Category = "comment"
+	CategorySystem  Category = "system"
 
 	TypeComicNewChapter Type = "comic.new_chapter"
+	TypeCommentNew      Type = "comment.reply"
 	TypeSystemTest      Type = "system.test"
 
 	EntityTypeChapter EntityType = "chapter"
+	EntityTypeComment EntityType = "comment"
 
 	ChannelStateSSEQueued int64 = 1 << iota
 	ChannelStateSSEDelivered
@@ -46,6 +49,7 @@ func UserChannel(userID uuid.UUID) string {
 func GetAllCategories() []Category {
 	return []Category{
 		CategoryComic,
+		CategoryComment,
 		CategorySystem,
 	}
 }
@@ -53,6 +57,7 @@ func GetAllCategories() []Category {
 func GetAllTypes() []Type {
 	return []Type{
 		TypeComicNewChapter,
+		TypeCommentNew,
 		TypeSystemTest,
 	}
 }
@@ -60,6 +65,7 @@ func GetAllTypes() []Type {
 func GetAllEntityTypes() []EntityType {
 	return []EntityType{
 		EntityTypeChapter,
+		EntityTypeComment,
 	}
 }
 
@@ -113,14 +119,16 @@ func EntityTypeValidationMessage(field string) string {
 
 func GetAllowedCategories() map[Category]bool {
 	return map[Category]bool{
-		CategoryComic:  true,
-		CategorySystem: true,
+		CategoryComic:   true,
+		CategoryComment: true,
+		CategorySystem:  true,
 	}
 }
 
 func GetAllowedTypes() map[Type]bool {
 	return map[Type]bool{
 		TypeComicNewChapter: true,
+		TypeCommentNew:      true,
 		TypeSystemTest:      true,
 	}
 }
@@ -128,5 +136,6 @@ func GetAllowedTypes() map[Type]bool {
 func GetAllowedEntityTypes() map[EntityType]bool {
 	return map[EntityType]bool{
 		EntityTypeChapter: true,
+		EntityTypeComment: true,
 	}
 }
