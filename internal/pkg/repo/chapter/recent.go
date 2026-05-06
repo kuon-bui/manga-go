@@ -10,20 +10,24 @@ func (r *ChapterRepo) FindRecentUpdates(ctx context.Context, paging *common.Pagi
 	var chapters []*model.Chapter
 	var total int64
 
-	db := r.DB.WithContext(ctx).
+	baseQuery := r.DB.WithContext(ctx).
 		Model(&model.Chapter{}).
 		Where("is_published = ?", true)
 
-	if err := db.
-		Distinct("chapters.id").
+	if err := baseQuery.
+		Distinct("comic_id").
 		Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
+	latestChapterIDs := baseQuery.
+		Select("DISTINCT ON (comic_id) id").
+		Order("comic_id, published_at DESC NULLS LAST, created_at DESC, id DESC")
+
 	query := r.DB.WithContext(ctx).
 		Model(&model.Chapter{}).
-		Where("is_published = ?", true).
-		Order("chapters.created_at DESC").
+		Where("chapters.id IN (?)", latestChapterIDs).
+		Order("chapters.published_at DESC NULLS LAST, chapters.created_at DESC").
 		Preload("Comic")
 
 	query = query.Scopes(r.WithPaginate(paging))
