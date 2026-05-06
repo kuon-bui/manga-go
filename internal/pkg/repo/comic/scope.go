@@ -34,18 +34,18 @@ func applyComicFilters(filters *comicrequest.ListComicsRequest) func(*gorm.DB) *
 			)
 		}
 
-		if len(filters.GenreSlugs) > 0 {
+		if len(filters.Genre) > 0 {
 			db = db.
 				Joins("JOIN comic_genres ON comic_genres.comic_id = comics.id").
 				Joins("JOIN genres ON genres.id = comic_genres.genre_id").
-				Where("genres.slug IN ?", filters.GenreSlugs)
+				Where("genres.slug IN ?", filters.Genre)
 		}
 
-		if len(filters.TagSlugs) > 0 {
+		if len(filters.Tag) > 0 {
 			db = db.
 				Joins("JOIN comic_tags ON comic_tags.comic_id = comics.id").
 				Joins("JOIN tags ON tags.id = comic_tags.tag_id").
-				Where("tags.slug IN ?", filters.TagSlugs)
+				Where("tags.slug IN ?", filters.Tag)
 		}
 
 		return db
