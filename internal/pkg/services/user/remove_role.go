@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -36,6 +37,13 @@ func (s *UserService) RemoveRole(ctx context.Context, userID, roleID uuid.UUID) 
 	if err := s.userRepo.RemoveRole(ctx, userID, role); err != nil {
 		s.logger.Error("Failed to remove role from user", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.policyManager != nil {
+		if err := s.policyManager.RemoveRoleForUser(userID.String(), role.Name, authorization.OrgPlatform); err != nil {
+			s.logger.Error("Failed to remove authorization policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
 	}
 
 	return response.ResultSuccess("Role removed successfully", nil)

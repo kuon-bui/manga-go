@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ import (
 )
 
 func (s *RoleService) RemovePermission(ctx context.Context, roleID, permissionID uuid.UUID) response.Result {
-	_, err := s.roleRepo.FindOne(ctx, []any{
+	role, err := s.roleRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: roleID},
 	}, nil)
 	if err != nil {
@@ -36,6 +37,13 @@ func (s *RoleService) RemovePermission(ctx context.Context, roleID, permissionID
 	if err := s.roleRepo.RemovePermission(ctx, roleID, perm); err != nil {
 		s.logger.Error("Failed to remove permission from role", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.policyManager != nil {
+		if err := s.policyManager.RemovePermissionForRole(role.Name, perm.Name, authorization.OrgPlatform); err != nil {
+			s.logger.Error("Failed to remove authorization policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
 	}
 
 	return response.ResultSuccess("Permission removed successfully", nil)

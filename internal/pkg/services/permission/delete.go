@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -11,7 +12,7 @@ import (
 )
 
 func (s *PermissionService) DeletePermission(ctx context.Context, id uuid.UUID) response.Result {
-	_, err := s.permissionRepo.FindOne(ctx, []any{
+	permission, err := s.permissionRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: id},
 	}, nil)
 	if err != nil {
@@ -27,6 +28,13 @@ func (s *PermissionService) DeletePermission(ctx context.Context, id uuid.UUID) 
 	}); err != nil {
 		s.logger.Error("Failed to delete permission", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.policyManager != nil {
+		if err := s.policyManager.RemovePermissionName(permission.Name, authorization.OrgPlatform); err != nil {
+			s.logger.Error("Failed to remove authorization policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
 	}
 
 	return response.ResultSuccess("Permission deleted successfully", nil)

@@ -71,7 +71,7 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		if len(routes) != 6 {
 			t.Fatalf("expected 6 routes, got %d", len(routes))
 		}
-		assertRouteExists(t, routes, "GET", "/authors/")
+		assertRouteExists(t, routes, "GET", "/authors")
 	})
 
 	t.Run("genre", func(t *testing.T) {
@@ -104,8 +104,8 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 7 {
-			t.Fatalf("expected 7 routes, got %d", len(routes))
+		if len(routes) != 12 {
+			t.Fatalf("expected 12 routes, got %d", len(routes))
 		}
 		assertRouteExists(t, routes, "GET", "/comics")
 	})
@@ -116,8 +116,8 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 9 {
-			t.Fatalf("expected 9 routes, got %d", len(routes))
+		if len(routes) != 10 {
+			t.Fatalf("expected 10 routes, got %d", len(routes))
 		}
 		assertRouteExists(t, routes, "GET", "/comics/:comicSlug/chapters")
 	})
@@ -128,10 +128,10 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 6 {
-			t.Fatalf("expected 6 routes, got %d", len(routes))
+		if len(routes) != 8 {
+			t.Fatalf("expected 8 routes, got %d", len(routes))
 		}
-		assertRouteExists(t, routes, "GET", "/translation-groups/")
+		assertRouteExists(t, routes, "GET", "/translation-groups")
 	})
 
 	t.Run("role", func(t *testing.T) {
@@ -143,7 +143,7 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		if len(routes) != 8 {
 			t.Fatalf("expected 8 routes, got %d", len(routes))
 		}
-		assertRouteExists(t, routes, "GET", "/roles/")
+		assertRouteExists(t, routes, "GET", "/roles")
 	})
 
 	t.Run("permission", func(t *testing.T) {
@@ -155,7 +155,7 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		if len(routes) != 5 {
 			t.Fatalf("expected 5 routes, got %d", len(routes))
 		}
-		assertRouteExists(t, routes, "GET", "/permissions/")
+		assertRouteExists(t, routes, "GET", "/permissions")
 	})
 
 	t.Run("rating", func(t *testing.T) {
@@ -188,8 +188,8 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 6 {
-			t.Fatalf("expected 6 routes, got %d", len(routes))
+		if len(routes) != 9 {
+			t.Fatalf("expected 9 routes, got %d", len(routes))
 		}
 		assertRouteExists(t, routes, "GET", "/comments")
 	})
@@ -212,10 +212,10 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 10 {
-			t.Fatalf("expected 10 routes, got %d", len(routes))
+		if len(routes) != 14 {
+			t.Fatalf("expected 14 routes, got %d", len(routes))
 		}
-		assertRouteExists(t, routes, "POST", "/users/")
+		assertRouteExists(t, routes, "POST", "/users")
 	})
 
 	t.Run("swagger", func(t *testing.T) {

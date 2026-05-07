@@ -1,6 +1,7 @@
 package userservice
 
 import (
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/config"
 	jwtprovider "manga-go/internal/pkg/jwt_provider"
 	"manga-go/internal/pkg/logger"
@@ -12,32 +13,35 @@ import (
 )
 
 type UserService struct {
-	logger      *logger.Logger
-	userRepo    *userrepo.UserRepository
-	jwtProvider *jwtprovider.JwtProvider
-	config      *config.Config
-	asynqClient *asynq.Client
-	roleRepo    *rolerepo.RoleRepo
+	logger        *logger.Logger
+	userRepo      *userrepo.UserRepository
+	jwtProvider   *jwtprovider.JwtProvider
+	config        *config.Config
+	asynqClient   *asynq.Client
+	roleRepo      *rolerepo.RoleRepo
+	policyManager *authorization.PolicyManager
 }
 
 type UserServiceParams struct {
 	fx.In
 
-	Config      *config.Config
-	Logger      *logger.Logger
-	JwtProvider *jwtprovider.JwtProvider
-	UserRepo    *userrepo.UserRepository
-	AsynqClient *asynq.Client
-	RoleRepo    *rolerepo.RoleRepo
+	Config        *config.Config
+	Logger        *logger.Logger
+	JwtProvider   *jwtprovider.JwtProvider
+	UserRepo      *userrepo.UserRepository
+	AsynqClient   *asynq.Client
+	RoleRepo      *rolerepo.RoleRepo
+	PolicyManager *authorization.PolicyManager
 }
 
 func NewUserService(p UserServiceParams) *UserService {
 	return &UserService{
-		logger:      p.Logger,
-		userRepo:    p.UserRepo,
-		jwtProvider: p.JwtProvider,
-		config:      p.Config,
-		asynqClient: p.AsynqClient,
-		roleRepo:    p.RoleRepo,
+		logger:        p.Logger,
+		userRepo:      p.UserRepo,
+		jwtProvider:   p.JwtProvider,
+		config:        p.Config,
+		asynqClient:   p.AsynqClient,
+		roleRepo:      p.RoleRepo,
+		policyManager: p.PolicyManager,
 	}
 }

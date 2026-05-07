@@ -24,40 +24,53 @@ type Enforcer struct {
 	*casbin.Enforcer
 }
 
-func NewEnforcer(cfg *config.Config, db *gorm.DB, logger *logger.Logger) *Enforcer {
+func NewEnforcer(cfg *config.Config, db *gorm.DB, log *logger.Logger) *Enforcer {
 	adapter, err := gormadapter.NewAdapterByDB(db)
 	if err != nil {
-		logger.Error("Failed to create Casbin adapter: %v", err)
+		log.Error("Failed to create Casbin adapter: %v", err)
 		panic(err)
 	}
 
-	m, _ := model.NewModelFromString(modelStr)
+	m, err := model.NewModelFromString(modelStr)
+	if err != nil {
+		log.Error("Failed to create Casbin model: %v", err)
+		panic(err)
+	}
+
 	enforcer, err := casbin.NewEnforcer(m, adapter)
 	if err != nil {
-		logger.Error("Failed to create Casbin enforcer: %v", err)
+		log.Error("Failed to create Casbin enforcer: %v", err)
 		panic(err)
 	}
 
 	err = enforcer.LoadPolicy()
 	if err != nil {
-		logger.Error("Failed to load Casbin policy: %v", err)
+		log.Error("Failed to load Casbin policy: %v", err)
 		panic(err)
 	}
 
-	address := cfg.Redis.Host + ":" + strconv.Itoa(cfg.Redis.Port)
-	w, _ := rediswatcher.NewWatcher(address, rediswatcher.WatcherOptions{
-		Options: redis.Options{
-			Network: "tcp",
-			// Password: os.Getenv("REDIS_PASSWORD"),
-		},
-		Channel:    "/casbin",
-		IgnoreSelf: true,
-	})
-	enforcer.SetWatcher(w)
-	w.SetUpdateCallback(func(s string) {
-		logger.Info("Received Casbin policy update notification: %s", s)
-		enforcer.LoadPolicy()
-	})
+	if cfg != nil {
+		address := cfg.Redis.Host + ":" + strconv.Itoa(cfg.Redis.Port)
+		w, err := rediswatcher.NewWatcher(address, rediswatcher.WatcherOptions{
+			Options: redis.Options{
+				Network: "tcp",
+				// Password: os.Getenv("REDIS_PASSWORD"),
+			},
+			Channel:    "/casbin",
+			IgnoreSelf: true,
+		})
+		if err != nil {
+			log.Warnf("Failed to create Casbin Redis watcher: %v", err)
+		} else {
+			enforcer.SetWatcher(w)
+			w.SetUpdateCallback(func(s string) {
+				log.Infof("Received Casbin policy update notification: %s", s)
+				if err := enforcer.LoadPolicy(); err != nil {
+					log.Errorf("Failed to reload Casbin policy: %v", err)
+				}
+			})
+		}
+	}
 
 	return &Enforcer{enforcer}
 }

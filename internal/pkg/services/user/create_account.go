@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/hash"
 	"manga-go/internal/pkg/model"
 	userrequest "manga-go/internal/pkg/request/user"
@@ -41,6 +42,28 @@ func (s *UserService) CreateAccount(ctx context.Context, req *userrequest.Create
 	if err != nil {
 		s.logger.Error("Failed to create user account", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.roleRepo != nil {
+		readerRole, err := s.roleRepo.FindOne(ctx, []any{
+			clause.Eq{Column: "name", Value: "reader"},
+		}, nil)
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			s.logger.Error("Failed to find default reader role", "error", err)
+			return response.ResultErrDb(err)
+		}
+		if readerRole != nil {
+			if err := s.userRepo.AssignRoles(ctx, user.ID, []*model.Role{readerRole}); err != nil {
+				s.logger.Error("Failed to assign default reader role", "error", err)
+				return response.ResultErrDb(err)
+			}
+			if s.policyManager != nil {
+				if err := s.policyManager.AddRoleForUser(user.ID.String(), readerRole.Name, authorization.OrgPlatform); err != nil {
+					s.logger.Error("Failed to update authorization policy", "error", err)
+					return response.ResultErrInternal(err)
+				}
+			}
+		}
 	}
 
 	return response.ResultSuccess("User account created successfully", user)
