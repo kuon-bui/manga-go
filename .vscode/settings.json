@@ -33,6 +33,7 @@
     "chapterhandler",
     "chapterrepo",
     "chapterrequest",
+    "chapterresponse",
     "chapterroute",
     "chapterserivce",
     "chapterservice",
