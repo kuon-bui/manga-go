@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/model"
 
 	"github.com/google/uuid"
@@ -12,7 +13,7 @@ import (
 )
 
 func (s *RoleService) AssignPermissions(ctx context.Context, roleID uuid.UUID, permissionIDs []uuid.UUID) response.Result {
-	_, err := s.roleRepo.FindOne(ctx, []any{
+	role, err := s.roleRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: roleID},
 	}, nil)
 	if err != nil {
@@ -41,6 +42,20 @@ func (s *RoleService) AssignPermissions(ctx context.Context, roleID uuid.UUID, p
 	if err := s.roleRepo.AssignPermissions(ctx, roleID, perms); err != nil {
 		s.logger.Error("Failed to assign permissions to role", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.policyManager != nil {
+		permissions := make([]authorization.PermissionRule, 0, len(perms))
+		for _, perm := range perms {
+			permissions = append(permissions, authorization.PermissionRule{
+				ID:   perm.ID.String(),
+				Name: perm.Name,
+			})
+		}
+		if err := s.policyManager.ReplacePermissionsForRole(role.ID.String(), permissions, authorization.OrgPlatform); err != nil {
+			s.logger.Error("Failed to update authorization policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
 	}
 
 	return response.ResultSuccess("Permissions assigned successfully", nil)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	permissionrequest "manga-go/internal/pkg/request/permission"
 
 	"github.com/google/uuid"
@@ -30,6 +31,13 @@ func (s *PermissionService) UpdatePermission(ctx context.Context, id uuid.UUID, 
 	}); err != nil {
 		s.logger.Error("Failed to update permission", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.policyManager != nil {
+		if err := s.policyManager.ReplacePermission(permission.ID.String(), req.Name, authorization.OrgPlatform); err != nil {
+			s.logger.Error("Failed to update authorization policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
 	}
 
 	permission.Name = req.Name

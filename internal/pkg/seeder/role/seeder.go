@@ -30,10 +30,6 @@ var rolePermissions = map[string][]string{
 		"comic:read",
 		"chapter:read", "chapter:write",
 	},
-	"reader": {
-		"comic:read",
-		"chapter:read",
-	},
 }
 
 type RoleSeeder struct {

@@ -37,7 +37,7 @@ func (s *TranslationGroupService) UploadLogo(ctx context.Context, groupID uuid.U
 	// Update DB record
 	// To construct public URL, usually it requires endpoint/bucket. We assume frontend prepends generic path,
 	// or we can store just the object key and let FE use presigned URL logic.
-	// But according to missing-api.md, it's just `logoUrl`. 
+	// But according to missing-api.md, it's just `logoUrl`.
 	// For simplicity, we store the objectKey. FE might format it, or we format it if we have config.
 	// To be safe, we'll store the objectKey because missing-api.md says "redirected to file upload API", so usually the path is returned.
 	// Wait! AWS S3 has a public domain format.
@@ -52,7 +52,7 @@ func (s *TranslationGroupService) UploadLogo(ctx context.Context, groupID uuid.U
 		s.logger.Error("Failed to update logo url in db", "error", err)
 		return response.ResultErrDb(err)
 	}
-	
+
 	group.LogoUrl = &publicURL
 
 	return response.ResultSuccess("Logo uploaded successfully", map[string]string{
