@@ -134,7 +134,7 @@ func TestPolicyManagerKeepsTextForTranslationGroupRoles(t *testing.T) {
 		t.Fatalf("expected group member to create chapter through text policies, got: %v", err)
 	}
 
-	if roles := pm.enforcer.GetRolesForUserInDomain(userID, string(TranslationGroupOrgString(groupID))); len(roles) != 1 || roles[0] != roleGroupMember {
+	if roles := pm.enforcer.GetRolesForUserInDomain(userID, string(groupID)); len(roles) != 1 || roles[0] != roleGroupMember {
 		t.Fatalf("expected group member role text, got %#v", roles)
 	}
 }
