@@ -18,7 +18,7 @@ migrate-rollback-all:
 	sql-migrate down -config=configs/dbconfig.yml -limit=0
 
 swagger:
-	swag init -g cmd/dev/main.go -o docs/ --parseDependency --parseInternal
+	swag init -g cmd/dev/main.go -o swagger-docs/ --parseDependency --parseInternal
 seed-data:
 	go run cmd/seed/main.go
 
