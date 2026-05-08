@@ -33,6 +33,10 @@ func (s *RatingService) CreateRating(ctx context.Context, userID, comicId uuid.U
 
 		existingRating.Score = req.Score
 		existingRating.Comment = req.Comment
+
+		// Enqueue comic stats update asynchronously
+		s.enqueueStatsUpdate(comicId)
+
 		return response.ResultSuccess("Rating updated successfully", existingRating)
 	}
 
@@ -47,6 +51,9 @@ func (s *RatingService) CreateRating(ctx context.Context, userID, comicId uuid.U
 		s.logger.Error("Failed to create rating", "error", err)
 		return response.ResultErrDb(err)
 	}
+
+	// Enqueue comic stats update asynchronously
+	s.enqueueStatsUpdate(comicId)
 
 	return response.ResultSuccess("Rating created successfully", rating)
 }

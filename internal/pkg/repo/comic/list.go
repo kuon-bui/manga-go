@@ -11,15 +11,17 @@ import (
 var allowedSortFields = map[string]string{
 	"lastChapterAt": "comics.last_chapter_at",
 	"createdAt":     "comics.created_at",
-	"rating":        "(SELECT COALESCE(AVG(r.score), 0) FROM ratings r WHERE r.comic_id = comics.id AND r.deleted_at IS NULL)",
-	"followCount":   "(SELECT COUNT(*) FROM comic_follows cf WHERE cf.comic_id = comics.id AND cf.deleted_at IS NULL)",
+	"rating":        "COALESCE(cs.avg_rating, 0)",
+	"followCount":   "COALESCE(cs.follow_count, 0)",
 }
 
+const statsJoin = "LEFT JOIN comic_stats cs ON cs.comic_id = comics.id"
+
 const statsSelect = `comics.*,
-	(SELECT COUNT(*) FROM comic_follows cf WHERE cf.comic_id = comics.id AND cf.deleted_at IS NULL) AS follow_count,
-	(SELECT COUNT(*) FROM ratings r WHERE r.comic_id = comics.id AND r.deleted_at IS NULL) AS rating_count,
-	(SELECT COUNT(*) FROM chapters ch WHERE ch.comic_id = comics.id AND ch.deleted_at IS NULL) AS chapter_count,
-	(SELECT AVG(r.score) FROM ratings r WHERE r.comic_id = comics.id AND r.deleted_at IS NULL) AS avg_rating`
+	COALESCE(cs.follow_count, 0) AS follow_count,
+	COALESCE(cs.rating_count, 0) AS rating_count,
+	COALESCE(cs.chapter_count, 0) AS chapter_count,
+	cs.avg_rating AS avg_rating`
 
 func buildComicSortOrder(sortBy, order string) string {
 	sortExpr, ok := allowedSortFields[sortBy]
@@ -44,6 +46,7 @@ func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comic
 	query := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
 		Scopes(applyComicFilters(filters)).
+		Joins(statsJoin).
 		Select(statsSelect).
 		Distinct()
 
@@ -63,6 +66,7 @@ func (r *ComicRepo) FindOneWithStats(ctx context.Context, conditions []any, more
 	var comic model.Comic
 	db := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
+		Joins(statsJoin).
 		Select(statsSelect)
 
 	db = r.ApplyWhereConditions(db, conditions)

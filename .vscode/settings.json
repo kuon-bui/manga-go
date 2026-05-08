@@ -30,6 +30,7 @@
     "authorservice",
     "bytea",
     "casbin",
+    "Catmull",
     "chapterhandler",
     "chapterrepo",
     "chapterrequest",
@@ -45,6 +46,8 @@
     "comicroute",
     "comicseeder",
     "comicservice",
+    "comicstatrepo",
+    "comicstatsworker",
     "commentrepo",
     "commentreportrepo",
     "commentrequest",
@@ -81,6 +84,7 @@
     "mapstructure",
     "multierr",
     "mydb",
+    "nativewebp",
     "nosuchkey",
     "notificationpkg",
     "notificationrepo",
@@ -129,6 +133,7 @@
     "samber",
     "seederutil",
     "slugmiddleware",
+    "Smits",
     "sslmode",
     "swaggerrouter",
     "swaggo",
@@ -157,6 +162,7 @@
     "validatorpkg",
     "Warnf",
     "webp",
-    "wneessen"
+    "wneessen",
+    "xdraw"
   ],
 }

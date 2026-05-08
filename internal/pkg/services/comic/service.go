@@ -11,6 +11,7 @@ import (
 	translationgrouprepo "manga-go/internal/pkg/repo/translation_group"
 	usercomicreadrepo "manga-go/internal/pkg/repo/user_comic_read"
 
+	"github.com/hibiken/asynq"
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 )
@@ -26,6 +27,7 @@ type ComicService struct {
 	userComicReadRepo    *usercomicreadrepo.UserComicReadRepo
 	rds                  *redis.Redis
 	gormDb               *gorm.DB
+	asynqClient          *asynq.Client
 }
 
 type ComicServiceParams struct {
@@ -40,6 +42,7 @@ type ComicServiceParams struct {
 	UserComicReadRepo    *usercomicreadrepo.UserComicReadRepo
 	Redis                *redis.Redis
 	GormDb               *gorm.DB
+	AsynqClient          *asynq.Client
 }
 
 func NewComicService(params ComicServiceParams) *ComicService {
@@ -54,5 +57,6 @@ func NewComicService(params ComicServiceParams) *ComicService {
 		userComicReadRepo:    params.UserComicReadRepo,
 		rds:                  params.Redis,
 		gormDb:               params.GormDb,
+		asynqClient:          params.AsynqClient,
 	}
 }
