@@ -40,7 +40,7 @@ func (s *UserService) RemoveRole(ctx context.Context, userID, roleID uuid.UUID) 
 	}
 
 	if s.policyManager != nil {
-		if err := s.policyManager.RemoveRoleForUser(userID.String(), role.Name, authorization.OrgPlatform); err != nil {
+		if err := s.policyManager.RemoveRoleForUser(userID.String(), role.ID.String(), authorization.OrgPlatform); err != nil {
 			s.logger.Error("Failed to remove authorization policy", "error", err)
 			return response.ResultErrInternal(err)
 		}

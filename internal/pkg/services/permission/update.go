@@ -24,7 +24,6 @@ func (s *PermissionService) UpdatePermission(ctx context.Context, id uuid.UUID, 
 		return response.ResultErrDb(err)
 	}
 
-	oldName := permission.Name
 	if err := s.permissionRepo.Update(ctx, []any{
 		clause.Eq{Column: "id", Value: permission.ID},
 	}, map[string]any{
@@ -35,7 +34,7 @@ func (s *PermissionService) UpdatePermission(ctx context.Context, id uuid.UUID, 
 	}
 
 	if s.policyManager != nil {
-		if err := s.policyManager.ReplacePermissionName(oldName, req.Name, authorization.OrgPlatform); err != nil {
+		if err := s.policyManager.ReplacePermission(permission.ID.String(), req.Name, authorization.OrgPlatform); err != nil {
 			s.logger.Error("Failed to update authorization policy", "error", err)
 			return response.ResultErrInternal(err)
 		}

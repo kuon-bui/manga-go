@@ -45,11 +45,11 @@ func (s *UserService) AssignRoles(ctx context.Context, userID uuid.UUID, roleIDs
 	}
 
 	if s.policyManager != nil {
-		roleNames := make([]string, 0, len(roles))
+		roleIDs := make([]string, 0, len(roles))
 		for _, role := range roles {
-			roleNames = append(roleNames, role.Name)
+			roleIDs = append(roleIDs, role.ID.String())
 		}
-		if err := s.policyManager.ReplaceRolesForUser(userID.String(), roleNames, authorization.OrgPlatform); err != nil {
+		if err := s.policyManager.ReplaceRolesForUser(userID.String(), roleIDs, authorization.OrgPlatform); err != nil {
 			s.logger.Error("Failed to update authorization policy", "error", err)
 			return response.ResultErrInternal(err)
 		}

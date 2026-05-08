@@ -48,15 +48,15 @@ type AuthzMiddlewareParams struct {
 }
 
 type ResourceContext struct {
-	Org      string
-	Contexts []string
+	Org      authorization.Org
+	Contexts []authorization.Context
 }
 
 type ResourceResolver func(*gin.Context, *model.User) (ResourceContext, error)
 
 type authzContext struct {
-	org      string
-	contexts []string
+	org      authorization.Org
+	contexts []authorization.Context
 }
 
 func NewAuthzMiddleware(p AuthzMiddlewareParams) *AuthzMiddleware {
@@ -72,14 +72,14 @@ func NewAuthzMiddleware(p AuthzMiddlewareParams) *AuthzMiddleware {
 	}
 }
 
-func Require(m *AuthzMiddleware, action, resource string, resolvers ...ResourceResolver) gin.HandlerFunc {
+func Require(m *AuthzMiddleware, action authorization.Action, resource authorization.Object, resolvers ...ResourceResolver) gin.HandlerFunc {
 	if m == nil {
 		return func(c *gin.Context) { c.Next() }
 	}
 	return m.Require(action, resource, resolvers...)
 }
 
-func (m *AuthzMiddleware) Require(action, resource string, resolvers ...ResourceResolver) gin.HandlerFunc {
+func (m *AuthzMiddleware) Require(action authorization.Action, resource authorization.Object, resolvers ...ResourceResolver) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if m == nil || m.authorizer == nil {
 			c.Next()
@@ -160,7 +160,7 @@ func (m *AuthzMiddleware) Comic() ResourceResolver {
 			return ResourceContext{}, err
 		}
 
-		contexts := make([]string, 0, 4)
+		contexts := make([]authorization.Context, 0, 4)
 		org := authorization.PlatformOrg()
 		if comic.UploadedByID != nil && *comic.UploadedByID == user.ID {
 			contexts = append(contexts, authorization.CtxOwner)
@@ -194,7 +194,7 @@ func (m *AuthzMiddleware) Chapter() ResourceResolver {
 			return ResourceContext{}, err
 		}
 
-		contexts := make([]string, 0, 4)
+		contexts := make([]authorization.Context, 0, 4)
 		org := authorization.PlatformOrg()
 		if chapter.UploadedByID != nil && *chapter.UploadedByID == user.ID {
 			contexts = append(contexts, authorization.CtxOwner)
@@ -225,13 +225,26 @@ func (m *AuthzMiddleware) ComicGroupFromContext() ResourceResolver {
 			return ResourceContext{}, err
 		}
 
-		contexts := make([]string, 0, 2)
+		contexts := make([]authorization.Context, 0, 2)
 		org := authorization.PlatformOrg()
 		if comic.TranslationGroupID != nil && user.TranslationGroupID != nil && *comic.TranslationGroupID == *user.TranslationGroupID {
 			org = authorization.TranslationGroupOrg(*comic.TranslationGroupID)
 			contexts = append(contexts, authorization.CtxGroupMember)
 		}
 		return ResourceContext{Org: org, Contexts: contexts}, nil
+	}
+}
+
+func (m *AuthzMiddleware) CurrentUserTranslationGroup() ResourceResolver {
+	return func(c *gin.Context, user *model.User) (ResourceContext, error) {
+		if user.TranslationGroupID == nil {
+			return ResourceContext{}, nil
+		}
+
+		return ResourceContext{
+			Org:      authorization.TranslationGroupOrg(*user.TranslationGroupID),
+			Contexts: []authorization.Context{authorization.CtxGroupMember},
+		}, nil
 	}
 }
 
@@ -253,7 +266,7 @@ func (m *AuthzMiddleware) TranslationGroup() ResourceResolver {
 			return ResourceContext{}, err
 		}
 
-		contexts := make([]string, 0, 2)
+		contexts := make([]authorization.Context, 0, 2)
 		if group.OwnerID == user.ID {
 			contexts = append(contexts, authorization.CtxGroupOwner)
 		}
@@ -282,7 +295,7 @@ func (m *AuthzMiddleware) CommentParam(param string) ResourceResolver {
 			return ResourceContext{}, err
 		}
 
-		contexts := []string{}
+		contexts := []authorization.Context{}
 		if comment.UserId == user.ID {
 			contexts = append(contexts, authorization.CtxOwner)
 		}
@@ -308,7 +321,7 @@ func (m *AuthzMiddleware) RatingParam(param string) ResourceResolver {
 			return ResourceContext{}, err
 		}
 
-		contexts := []string{}
+		contexts := []authorization.Context{}
 		if rating.UserId == user.ID {
 			contexts = append(contexts, authorization.CtxOwner)
 		}
@@ -334,7 +347,7 @@ func (m *AuthzMiddleware) ReadingHistoryParam(param string) ResourceResolver {
 			return ResourceContext{}, err
 		}
 
-		contexts := []string{}
+		contexts := []authorization.Context{}
 		if readingHistory.UserID == user.ID {
 			contexts = append(contexts, authorization.CtxOwner)
 		}
@@ -349,7 +362,7 @@ func UserParam(param string) ResourceResolver {
 			return ResourceContext{}, errInvalidResourceID
 		}
 
-		contexts := []string{}
+		contexts := []authorization.Context{}
 		if id == user.ID {
 			contexts = append(contexts, authorization.CtxSelf)
 		}
@@ -370,7 +383,7 @@ func normalizeResourceContext(resolved ResourceContext) []authzContext {
 	}
 	contexts := resolved.Contexts
 	if len(contexts) == 0 {
-		contexts = []string{authorization.CtxAny}
+		contexts = []authorization.Context{authorization.CtxAny}
 	}
 
 	items := make([]authzContext, 0, len(contexts))
@@ -380,7 +393,7 @@ func normalizeResourceContext(resolved ResourceContext) []authzContext {
 		}
 		items = append(items, authzContext{
 			org:      org,
-			contexts: []string{ctx},
+			contexts: []authorization.Context{ctx},
 		})
 	}
 	return items

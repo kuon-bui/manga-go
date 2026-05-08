@@ -31,7 +31,7 @@ func (s *PermissionService) DeletePermission(ctx context.Context, id uuid.UUID) 
 	}
 
 	if s.policyManager != nil {
-		if err := s.policyManager.RemovePermissionName(permission.Name, authorization.OrgPlatform); err != nil {
+		if err := s.policyManager.RemovePermission(permission.ID.String(), authorization.OrgPlatform); err != nil {
 			s.logger.Error("Failed to remove authorization policy", "error", err)
 			return response.ResultErrInternal(err)
 		}

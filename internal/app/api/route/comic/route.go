@@ -44,7 +44,7 @@ func NewComicRoute(params ComicRouteParams) *ComicRoute {
 
 func (cr *ComicRoute) Setup() {
 	rg := cr.Group("/comics", cr.authMiddleware.RequireJwt)
-	requireComicCreate := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionCreate, authorization.ObjectComic)
+	requireComicCreate := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionCreate, authorization.ObjectComic, cr.authzMiddleware.CurrentUserTranslationGroup())
 	requireComicUpdate := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionUpdate, authorization.ObjectComic, cr.authzMiddleware.Comic())
 	requireComicDelete := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionDelete, authorization.ObjectComic, cr.authzMiddleware.Comic())
 	requireComicPublish := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionPublish, authorization.ObjectComic, cr.authzMiddleware.Comic())

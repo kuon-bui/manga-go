@@ -40,7 +40,7 @@ func (s *RoleService) RemovePermission(ctx context.Context, roleID, permissionID
 	}
 
 	if s.policyManager != nil {
-		if err := s.policyManager.RemovePermissionForRole(role.Name, perm.Name, authorization.OrgPlatform); err != nil {
+		if err := s.policyManager.RemovePermissionForRole(role.ID.String(), perm.ID.String(), authorization.OrgPlatform); err != nil {
 			s.logger.Error("Failed to remove authorization policy", "error", err)
 			return response.ResultErrInternal(err)
 		}

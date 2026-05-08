@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
-	"manga-go/internal/pkg/authorization"
 	rolerequest "manga-go/internal/pkg/request/role"
 
 	"github.com/google/uuid"
@@ -24,7 +23,6 @@ func (s *RoleService) UpdateRole(ctx context.Context, id uuid.UUID, req *rolereq
 		return response.ResultErrDb(err)
 	}
 
-	oldName := role.Name
 	if err := s.roleRepo.Update(ctx, []any{
 		clause.Eq{Column: "id", Value: role.ID},
 	}, map[string]any{
@@ -32,13 +30,6 @@ func (s *RoleService) UpdateRole(ctx context.Context, id uuid.UUID, req *rolereq
 	}); err != nil {
 		s.logger.Error("Failed to update role", "error", err)
 		return response.ResultErrDb(err)
-	}
-
-	if s.policyManager != nil {
-		if err := s.policyManager.RenameRole(oldName, req.Name, authorization.OrgPlatform); err != nil {
-			s.logger.Error("Failed to update authorization policy", "error", err)
-			return response.ResultErrInternal(err)
-		}
 	}
 
 	role.Name = req.Name

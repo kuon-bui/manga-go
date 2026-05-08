@@ -11,10 +11,10 @@ var ErrForbidden = errors.New("forbidden")
 
 type Request struct {
 	Subject string
-	Org     string
-	Action  string
-	Object  string
-	Context string
+	Org     Org
+	Action  Action
+	Object  Object
+	Context Context
 }
 
 type Authorizer struct {
@@ -37,7 +37,17 @@ func (a *Authorizer) Enforce(ctx context.Context, req Request) error {
 		req.Context = CtxAny
 	}
 
-	ok, err := a.enforcer.Enforce(req.Subject, req.Org, req.Action, req.Object, req.Context)
+	if isImplicitReaderAllowed(req) {
+		return nil
+	}
+
+	ok, err := a.enforcer.Enforce(
+		req.Subject,
+		string(req.Org),
+		string(req.Action),
+		string(req.Object),
+		string(req.Context),
+	)
 	if err != nil {
 		return err
 	}
@@ -47,13 +57,13 @@ func (a *Authorizer) Enforce(ctx context.Context, req Request) error {
 	return nil
 }
 
-func (a *Authorizer) EnforceAny(ctx context.Context, req Request, contexts []string) error {
+func (a *Authorizer) EnforceAny(ctx context.Context, req Request, contexts []Context) error {
 	if a == nil || a.enforcer == nil {
 		return nil
 	}
 
 	if len(contexts) == 0 {
-		contexts = []string{req.Context}
+		contexts = []Context{req.Context}
 	}
 
 	var lastErr error
@@ -70,4 +80,34 @@ func (a *Authorizer) EnforceAny(ctx context.Context, req Request, contexts []str
 		return lastErr
 	}
 	return ErrForbidden
+}
+
+func isImplicitReaderAllowed(req Request) bool {
+	if req.Subject == "" {
+		return false
+	}
+
+	switch req.Object {
+	case ObjectComic, ObjectChapter:
+		return req.Action == ActionRead && req.Context == CtxPublished
+	case ObjectComment, ObjectRating:
+		if req.Org != OrgPlatform {
+			return false
+		}
+		return req.Action == ActionCreate && req.Context == CtxAny ||
+			(req.Action == ActionUpdate || req.Action == ActionDelete) && req.Context == CtxOwner
+	case ObjectReadingHistory:
+		if req.Org != OrgPlatform {
+			return false
+		}
+		return req.Action == ActionCreate && req.Context == CtxAny ||
+			(req.Action == ActionRead || req.Action == ActionUpdate || req.Action == ActionDelete) && req.Context == CtxOwner
+	case ObjectUser:
+		if req.Org != OrgPlatform {
+			return false
+		}
+		return req.Action == ActionUpdate && req.Context == CtxSelf
+	default:
+		return false
+	}
 }

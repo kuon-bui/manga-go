@@ -7,7 +7,7 @@ import (
 	"manga-go/internal/app/api/common/response"
 )
 
-func EnforceAnyResult(ctx context.Context, authorizer *Authorizer, req Request, contexts []string) *response.Result {
+func EnforceAnyResult(ctx context.Context, authorizer *Authorizer, req Request, contexts []Context) *response.Result {
 	if authorizer == nil {
 		return nil
 	}

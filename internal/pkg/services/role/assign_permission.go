@@ -45,11 +45,14 @@ func (s *RoleService) AssignPermissions(ctx context.Context, roleID uuid.UUID, p
 	}
 
 	if s.policyManager != nil {
-		permissionNames := make([]string, 0, len(perms))
+		permissions := make([]authorization.PermissionRule, 0, len(perms))
 		for _, perm := range perms {
-			permissionNames = append(permissionNames, perm.Name)
+			permissions = append(permissions, authorization.PermissionRule{
+				ID:   perm.ID.String(),
+				Name: perm.Name,
+			})
 		}
-		if err := s.policyManager.ReplacePermissionsForRole(role.Name, permissionNames, authorization.OrgPlatform); err != nil {
+		if err := s.policyManager.ReplacePermissionsForRole(role.ID.String(), permissions, authorization.OrgPlatform); err != nil {
 			s.logger.Error("Failed to update authorization policy", "error", err)
 			return response.ResultErrInternal(err)
 		}

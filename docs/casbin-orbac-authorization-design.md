@@ -24,7 +24,7 @@ Casbin policies are persisted in `casbin_rule` by the GORM Adapter. Runtime poli
 Use Casbin as the decision engine and express authorization in an OrBAC-style model:
 
 - Organization: the authorization scope, usually `platform` or a translation group.
-- Role: `admin`, `reader`, `translator`, `group_owner`, `group_member`, `moderator`.
+- Role: `admin`, `translator`, `group_owner`, `group_member`, `moderator`.
 - Activity: business action such as `read`, `create`, `update`, `delete`, `publish`, `manage`.
 - View: resource class such as `comic`, `chapter`, `translation_group`, `comment`, `rating`.
 - Context: condition such as `any`, `owner`, `group_member`, `group_owner`, `published`.
@@ -103,19 +103,9 @@ Global platform roles:
 
 ```csv
 g, <admin-user-id>, admin, platform
-g, <reader-user-id>, reader, platform
 g, <translator-user-id>, translator, platform
 
 p, platform, admin, manage, *, any, allow
-p, platform, reader, read, comic, published, allow
-p, platform, reader, read, chapter, published, allow
-p, platform, reader, create, comment, any, allow
-p, platform, reader, update, comment, owner, allow
-p, platform, reader, delete, comment, owner, allow
-p, platform, reader, create, rating, any, allow
-p, platform, reader, update, rating, owner, allow
-p, platform, reader, delete, rating, owner, allow
-
 p, platform, translator, create, comic, any, allow
 p, platform, translator, update, comic, owner, allow
 p, platform, translator, update, comic, group_member, allow
@@ -124,6 +114,8 @@ p, platform, translator, update, chapter, owner, allow
 p, platform, translator, update, chapter, group_member, allow
 p, platform, translator, publish, chapter, group_member, allow
 ```
+
+Reader permissions are not represented by a `reader` role assignment. Every authenticated user has the reader baseline implicitly in application code.
 
 Translation group roles:
 
@@ -294,8 +286,8 @@ Suggested initial mapping:
 
 The migration creates `casbin_rule`, inserts built-in policies, and backfills once from existing tables:
 
-- `users_roles` -> `g, <user_id>, <role.name>, platform`
-- `roles_permissions` -> `p, platform, <role.name>, <action>, <resource>, any, allow`
+- `users_roles` -> `g, <user_id>, <role.id>, platform`
+- `roles_permissions` -> `g, <role.id>, <permission.id>, platform` and `p, platform, <permission.id>, <action>, <resource>, any, allow`
 - `users.translation_group_id` -> `g, <user_id>, group_member, tg:<translation_group_id>`
 - `translation_groups.owner_id` -> `g, <owner_id>, group_owner, tg:<translation_group_id>`
 
@@ -305,13 +297,14 @@ Current permission names are `resource:action`, for example `comic:read`. Conver
 
 ```text
 permission.name = "<resource>:<action>"
-Casbin p = platform, <role.name>, <action>, <resource>, any, allow
+Casbin p = platform, <permission.id>, <action>, <resource>, any, allow
 ```
 
 For user roles:
 
 ```text
-users_roles row -> g, <user_id>, <role.name>, platform
+users_roles row -> g, <user_id>, <role.id>, platform
+roles_permissions row -> g, <role.id>, <permission.id>, platform
 ```
 
 For translation group membership:
@@ -364,7 +357,7 @@ While adding authorization, also tighten these existing flows:
 Start with a conservative policy:
 
 - `admin` can manage everything.
-- `reader` can read published comics/chapters and manage own comments, ratings, histories, and notifications.
+- Every authenticated user has the reader baseline: read published comics/chapters and manage own comments, ratings, histories, and notifications.
 - `translator` can create comics and chapters, and update/publish resources belonging to their translation group.
 - `group_owner` can manage its own translation group, comics, and chapters.
 

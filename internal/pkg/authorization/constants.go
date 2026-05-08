@@ -6,55 +6,67 @@ import (
 	"github.com/google/uuid"
 )
 
+type Org string
+type Action string
+type Object string
+type Context string
+
 const (
-	OrgPlatform = "platform"
+	OrgPlatform Org = "platform"
 
-	CtxAny         = "any"
-	CtxOwner       = "owner"
-	CtxGroupMember = "group_member"
-	CtxGroupOwner  = "group_owner"
-	CtxPublished   = "published"
-	CtxSelf        = "self"
+	// Contexts
+	CtxAny         Context = "any"
+	CtxOwner       Context = "owner"
+	CtxGroupMember Context = "group_member"
+	CtxGroupOwner  Context = "group_owner"
+	CtxPublished   Context = "published"
+	CtxSelf        Context = "self"
 
-	ActionRead    = "read"
-	ActionCreate  = "create"
-	ActionUpdate  = "update"
-	ActionDelete  = "delete"
-	ActionPublish = "publish"
-	ActionManage  = "manage"
+	// Actions
+	ActionRead    Action = "read"
+	ActionCreate  Action = "create"
+	ActionUpdate  Action = "update"
+	ActionDelete  Action = "delete"
+	ActionPublish Action = "publish"
+	ActionManage  Action = "manage"
 
-	ObjectAny              = "*"
-	ObjectAuthor           = "author"
-	ObjectChapter          = "chapter"
-	ObjectComic            = "comic"
-	ObjectComment          = "comment"
-	ObjectFile             = "file"
-	ObjectGenre            = "genre"
-	ObjectNotification     = "notification"
-	ObjectPage             = "page"
-	ObjectPermission       = "permission"
-	ObjectRating           = "rating"
-	ObjectReadingHistory   = "reading_history"
-	ObjectRole             = "role"
-	ObjectTag              = "tag"
-	ObjectTranslationGroup = "translation_group"
-	ObjectUser             = "user"
+	// Objects
+	ObjectAny              Object = "*"
+	ObjectAuthor           Object = "author"
+	ObjectChapter          Object = "chapter"
+	ObjectComic            Object = "comic"
+	ObjectComment          Object = "comment"
+	ObjectFile             Object = "file"
+	ObjectGenre            Object = "genre"
+	ObjectNotification     Object = "notification"
+	ObjectPage             Object = "page"
+	ObjectPermission       Object = "permission"
+	ObjectRating           Object = "rating"
+	ObjectReadingHistory   Object = "reading_history"
+	ObjectRole             Object = "role"
+	ObjectTag              Object = "tag"
+	ObjectTranslationGroup Object = "translation_group"
+	ObjectUser             Object = "user"
 )
 
 func Subject(id uuid.UUID) string {
 	return id.String()
 }
 
-func PlatformOrg() string {
+func PlatformOrg() Org {
 	return OrgPlatform
 }
 
-func TranslationGroupOrg(id uuid.UUID) string {
-	return fmt.Sprintf("tg:%s", id.String())
+func TranslationGroupOrg(id uuid.UUID) Org {
+	return Org(fmt.Sprintf("tg:%s", id.String()))
 }
 
-func DefaultContexts() []string {
-	return []string{
+func TranslationGroupOrgString(id string) Org {
+	return Org(fmt.Sprintf("tg:%s", id))
+}
+
+func DefaultContexts() []Context {
+	return []Context{
 		CtxOwner,
 		CtxGroupOwner,
 		CtxGroupMember,
