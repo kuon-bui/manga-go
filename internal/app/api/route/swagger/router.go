@@ -1,8 +1,8 @@
 package swaggerrouter
 
 import (
-	_ "manga-go/docs"
 	authmiddleware "manga-go/internal/app/middleware/auth"
+	_ "manga-go/swagger-docs"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
