@@ -1,4 +1,4 @@
--- +migrate Up
+-- +migrate Up notransaction
 CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_comic_follows_comic_deleted_at
 ON comic_follows(comic_id, deleted_at);
 
