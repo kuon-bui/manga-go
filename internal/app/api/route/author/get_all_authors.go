@@ -1,6 +1,8 @@
 package authorroute
 
 import (
+	_ "manga-go/internal/app/api/common/response"
+
 	"github.com/gin-gonic/gin"
 )
 
