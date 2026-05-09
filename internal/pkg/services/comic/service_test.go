@@ -27,6 +27,7 @@ func syncComicTestSchema(t *testing.T, db *gorm.DB) {
 
 	testutil.MustSyncSchemas(t, db,
 		&testutil.Comic{},
+		&model.ComicStat{},
 		&testutil.Chapter{},
 		&testutil.Rating{},
 		&testutil.ComicFollow{},
