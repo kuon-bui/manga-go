@@ -53,11 +53,19 @@ func NewEnforcer(cfg *config.Config, db *gorm.DB, logger *logger.Logger) *Enforc
 		Channel:    "/casbin",
 		IgnoreSelf: true,
 	})
-	enforcer.SetWatcher(w)
-	w.SetUpdateCallback(func(s string) {
+	if err := enforcer.SetWatcher(w); err != nil {
+		logger.Error("Failed to set Casbin watcher: %v", err)
+		panic(err)
+	}
+	if err := w.SetUpdateCallback(func(s string) {
 		logger.Info("Received Casbin policy update notification: %s", s)
-		enforcer.LoadPolicy()
-	})
+		if err := enforcer.LoadPolicy(); err != nil {
+			logger.Error("Failed to reload Casbin policy: %v", err)
+		}
+	}); err != nil {
+		logger.Error("Failed to set Casbin watcher callback: %v", err)
+		panic(err)
+	}
 
 	return &Enforcer{enforcer}
 }

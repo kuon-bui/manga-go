@@ -59,7 +59,7 @@ func MustReadUUID(t testing.TB, db *gorm.DB, query string, args ...any) uuid.UUI
 }
 
 func NewSQLiteDSN() string {
-	return ":memory:"
+	return "file:" + uuid.NewString() + "?mode=memory&cache=shared"
 }
 
 func assignUUIDPrimaryKey(tx *gorm.DB) {

@@ -22,9 +22,6 @@ func main() {
 	flag.Parse()
 
 	var runner *seeder.SeederRunner
-	newFaker := func() faker.Faker {
-		return faker.New()
-	}
 
 	app := fx.New(
 		fx.Provide(
@@ -33,7 +30,7 @@ func main() {
 			gormdb.ConnectGORM,
 			redis.ConnectRedis,
 			redis.NewRedis,
-			newFaker,
+			faker.New,
 		),
 		repo.Module,
 		seeder.Module,
@@ -42,18 +39,20 @@ func main() {
 	)
 
 	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		log.Fatalf("Failed to start app: %v", err)
+		cancel()
+		log.Errorf("Failed to start app: %v", err)
+		os.Exit(1)
 	}
+	cancel()
 	if *truncateBeforeSeed {
 		if err := runner.TruncateAll(context.Background()); err != nil {
 			log.Errorf("Seeder truncate failed: %v", err)
 
 			stopCtx, stopCancel := context.WithTimeout(context.Background(), 15*time.Second)
-			defer stopCancel()
 			_ = app.Stop(stopCtx)
+			stopCancel()
 			os.Exit(1)
 		}
 	}
@@ -62,8 +61,8 @@ func main() {
 		log.Errorf("Seeder failed: %v", err)
 
 		stopCtx, stopCancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer stopCancel()
 		_ = app.Stop(stopCtx)
+		stopCancel()
 		os.Exit(1)
 	}
 

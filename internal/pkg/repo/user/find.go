@@ -37,7 +37,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string, moreKeys
 		return nil, err
 	}
 
-	r.redis.Client().Set(ctx, userCacheKeyPrefix+email, string(userBytes), 0).Err()
+	_ = r.redis.Client().Set(ctx, userCacheKeyPrefix+email, string(userBytes), 0).Err()
 
 	return user, nil
 }

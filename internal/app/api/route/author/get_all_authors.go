@@ -1,7 +1,7 @@
 package authorroute
 
 import (
-	"manga-go/internal/app/api/common/response"
+	_ "manga-go/internal/app/api/common/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,7 +16,6 @@ import (
 // @Router       /authors/all [get]
 // @Security     AccessToken
 func (h *AuthorHandler) getAllAuthors(c *gin.Context) {
-	var result response.Result
-	result = h.authorService.ListAllAuthors(c.Request.Context())
+	result := h.authorService.ListAllAuthors(c.Request.Context())
 	result.ResponseResult(c)
 }

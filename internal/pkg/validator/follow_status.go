@@ -14,10 +14,5 @@ var ValidateFollowStatus validator.Func = func(fl validator.FieldLevel) bool {
 	}
 
 	allowedStatuses := constant.GetAllowedFollowStatuses()
-
-	if allowedStatuses[constant.FollowStatus(followStatus)] {
-		return true
-	}
-
-	return false
+	return allowedStatuses[constant.FollowStatus(followStatus)]
 }

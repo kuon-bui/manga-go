@@ -1,7 +1,7 @@
 package ratingroute
 
 import (
-	"manga-go/internal/app/api/common/response"
+	_ "manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
@@ -22,7 +22,6 @@ import (
 func (h *RatingHandler) getAverageRating(c *gin.Context) {
 	comicId, _ := common.GetComicIdFromContext(c.Request.Context())
 
-	var result response.Result
-	result = h.ratingService.GetAverageRating(c.Request.Context(), comicId)
+	result := h.ratingService.GetAverageRating(c.Request.Context(), comicId)
 	result.ResponseResult(c)
 }

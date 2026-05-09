@@ -45,13 +45,16 @@ func (s *UserService) RequestResetPassword(ctx context.Context, email string) re
 		return response.ResultErrDb(err)
 	}
 
-	mailable.NewResetPasswordMail(mailable.ResetPasswordMailParams{
+	if err := mailable.NewResetPasswordMail(mailable.ResetPasswordMailParams{
 		UserName:         user.Name,
 		ResetPasswordURL: fmt.Sprintf(s.config.ResetPassword.ResetPasswordURL, token),
 		ExpiryMinutes:    s.config.ResetPassword.TokenExpiryMinutes,
 		CurrentYear:      time.Now().Year(),
 	}).AddTo(user.Email).
-		Dispatch(s.asynqClient)
+		Dispatch(s.asynqClient); err != nil {
+		s.logger.Error("Failed to dispatch reset password email: ", err)
+		return response.ResultErrInternal(err)
+	}
 
 	return response.ResultSuccess("request reset password success", nil)
 }

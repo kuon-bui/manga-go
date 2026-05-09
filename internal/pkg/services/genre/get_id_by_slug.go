@@ -13,8 +13,7 @@ const slugToIdCacheKey = "slug:genre"
 func (s *GenreService) GetGenreIDBySlug(ctx context.Context, slug string) (uuid.UUID, error) {
 	// get from cache
 	idStr := ""
-	s.rds.Client().HGet(ctx, slugToIdCacheKey, slug).Scan(&idStr)
-	if idStr != "" {
+	if err := s.rds.Client().HGet(ctx, slugToIdCacheKey, slug).Scan(&idStr); err == nil && idStr != "" {
 		id, err := uuid.Parse(idStr)
 		if err == nil {
 			return id, nil

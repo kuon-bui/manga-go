@@ -1,7 +1,7 @@
 package comicroute
 
 import (
-	"manga-go/internal/app/api/common/response"
+	_ "manga-go/internal/app/api/common/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +20,6 @@ import (
 // @Security     AccessToken
 func (h *ComicHandler) deleteComic(c *gin.Context) {
 	slug := c.Param("comicSlug")
-	var result response.Result
-	result = h.comicService.DeleteComic(c.Request.Context(), slug)
+	result := h.comicService.DeleteComic(c.Request.Context(), slug)
 	result.ResponseResult(c)
 }

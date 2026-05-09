@@ -31,10 +31,10 @@ type mailDialerParams struct {
 func NewMailDialer(p mailDialerParams) *MailDialer {
 	utils.LoadMailTemplate(p.Logger)
 	var (
-		tlsPolicy mail.TLSPolicy    = mail.NoTLS
-		mailAuth  mail.SMTPAuthType = mail.SMTPAuthNoAuth
-		username                    = p.Config.SMTP.Username
-		password                    = p.Config.SMTP.Password
+		tlsPolicy = mail.NoTLS
+		mailAuth  = mail.SMTPAuthNoAuth
+		username  = p.Config.SMTP.Username
+		password  = p.Config.SMTP.Password
 	)
 
 	if len(username)+len(password) > 0 {
@@ -66,10 +66,11 @@ func NewMailDialer(p mailDialerParams) *MailDialer {
 }
 
 func (m *MailDialer) Send(msgs ...*mail.Msg) error {
-	msgs = lo.Map(msgs, func(ms *mail.Msg, _ int) *mail.Msg {
-		ms.FromFormat(m.config.SMTP.FromName, m.config.SMTP.FromMail)
-		return ms
-	})
+	for _, ms := range msgs {
+		if err := ms.FromFormat(m.config.SMTP.FromName, m.config.SMTP.FromMail); err != nil {
+			return err
+		}
+	}
 
 	err := m.client.DialAndSend(msgs...)
 	if err != nil {
@@ -102,10 +103,11 @@ func (m *MailDialer) Dispatch(asynqClient *asynq.Client, mails ...mailable.Maila
 }
 
 func (m *MailDialer) SendWithContext(ctx context.Context, msgs ...*mail.Msg) error {
-	msgs = lo.Map(msgs, func(ms *mail.Msg, _ int) *mail.Msg {
-		ms.FromFormat(m.config.SMTP.FromName, m.config.SMTP.FromMail)
-		return ms
-	})
+	for _, ms := range msgs {
+		if err := ms.FromFormat(m.config.SMTP.FromName, m.config.SMTP.FromMail); err != nil {
+			return err
+		}
+	}
 
 	err := m.client.DialAndSendWithContext(ctx, msgs...)
 	if err != nil {
