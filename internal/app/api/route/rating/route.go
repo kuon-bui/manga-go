@@ -38,9 +38,11 @@ func NewRatingRoute(params RatingRouteParams) *RatingRoute {
 }
 
 func (rr *RatingRoute) Setup() {
+	myRg := rr.Group("/ratings", rr.authMiddleware.RequireJwt)
+	myRg.GET("", rr.ratingHandler.getRatings)
+
 	rg := rr.Group("/ratings/comics/:comicSlug", rr.authMiddleware.RequireJwt, rr.slugMiddleware.ResolveComicID)
 
-	rg.GET("", rr.ratingHandler.getRatings)
 	rg.GET("average", rr.ratingHandler.getAverageRating)
 	rg.POST("", rr.ratingHandler.createRating)
 	rg.PUT("/:id", rr.ratingHandler.updateRating)
