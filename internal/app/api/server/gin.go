@@ -87,7 +87,9 @@ func NewGinEngine(config *config.Config) *gin.Engine {
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		for tag, fn := range validatorFuncs {
-			v.RegisterValidation(tag, fn)
+			if err := v.RegisterValidation(tag, fn); err != nil {
+				panic(err)
+			}
 		}
 	}
 

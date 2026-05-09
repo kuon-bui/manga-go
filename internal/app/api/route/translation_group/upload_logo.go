@@ -32,7 +32,9 @@ func (h *TranslationGroupHandler) updateLogo(c *gin.Context) {
 		response.ResultInvalidRequestErr(err).ResponseResult(c)
 		return
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	contentType := header.Header.Get("Content-Type")
 

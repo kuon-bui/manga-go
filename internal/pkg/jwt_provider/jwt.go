@@ -74,9 +74,9 @@ func (p *JwtProvider) generate(userPayload UserPayload, oldTokenId string) (*Tok
 		return nil, nil, err
 	}
 
-	claims.RegisteredClaims.ExpiresAt = jwt.NewNumericDate(refreshTokenExpire)
+	claims.ExpiresAt = jwt.NewNumericDate(refreshTokenExpire)
 
-	claims.UserPayload.IsRefresh = true
+	claims.IsRefresh = true
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	refreshTokenString, err := refreshToken.SignedString(p.jwtRefreshSecret)
 	if err != nil {
@@ -134,7 +134,7 @@ func (p *JwtProvider) validate(ctx context.Context, tokenString string, isRefres
 		return nil, "", tokenInvalid
 	}
 
-	if isRefresh != claims.UserPayload.IsRefresh {
+	if isRefresh != claims.IsRefresh {
 		return nil, "", tokenInvalid
 	}
 

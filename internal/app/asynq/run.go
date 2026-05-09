@@ -44,7 +44,9 @@ func RunServer(p RunAsynqParams) {
 		},
 		OnStop: func(ctx context.Context) error {
 			if cleanupTracer != nil {
-				cleanupTracer(ctx)
+				if err := cleanupTracer(ctx); err != nil {
+					p.Logger.Errorf("Failed to cleanup tracer: %v", err)
+				}
 			}
 
 			p.Server.Shutdown()

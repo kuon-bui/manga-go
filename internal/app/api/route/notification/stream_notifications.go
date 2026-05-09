@@ -25,7 +25,11 @@ func (h *NotificationHandler) streamNotifications(c *gin.Context) {
 	}
 
 	pubsub := h.notificationService.SubscribeUserChannel(c.Request.Context(), user.ID)
-	defer pubsub.Close()
+	defer func() {
+		if err := pubsub.Close(); err != nil {
+			h.logger.Error("Failed to close pubsub", "error", err)
+		}
+	}()
 
 	stream := apicommon.NewSSEStream(c)
 	if err := stream.SendComment("connected"); err != nil {

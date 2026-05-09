@@ -89,11 +89,14 @@ func (o *ObjectStorage) GetFile(ctx context.Context, fileName string) ([]byte, e
 	if err != nil {
 		return nil, pkgerrors.WithMessage(err, "get file from object storage")
 	}
-	defer resp.Body.Close()
 
 	buf, err := io.ReadAll(resp.Body)
+	closeErr := resp.Body.Close()
 	if err != nil {
 		return nil, pkgerrors.WithMessage(err, "read file content")
+	}
+	if closeErr != nil {
+		return nil, pkgerrors.WithMessage(closeErr, "close object storage response body")
 	}
 
 	return buf, nil

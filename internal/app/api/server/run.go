@@ -47,7 +47,9 @@ func RunServer(p RunServerParams) {
 			// Waiting for the goroutines to have a chance to complete
 			// time.Sleep(3 * time.Second)
 			if cleanupTracer != nil {
-				cleanupTracer(ctx)
+				if err := cleanupTracer(ctx); err != nil {
+					p.Logger.Errorf("Failed to cleanup tracer: %v", err)
+				}
 			}
 
 			return nil

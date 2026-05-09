@@ -148,7 +148,9 @@ func (m *mailable) AddAttachmentFile(file string) MailableInterface {
 
 func (m *mailable) AddAttachmentReader(name string, data io.Reader) MailableInterface {
 	var bytes bytes.Buffer
-	io.Copy(&bytes, data)
+	if _, err := io.Copy(&bytes, data); err != nil {
+		return m
+	}
 	m.attachmentReaders = append(m.attachmentReaders, attachmentReader{Name: name, Data: bytes.Bytes()})
 	return m
 }
@@ -177,25 +179,37 @@ func (m *mailable) Build() (*mail.Msg, error) {
 	msg.Subject(m.subject)
 	for _, to := range m.to {
 		if len(to.Name) > 0 {
-			msg.AddToFormat(to.Name, to.Address)
+			if err := msg.AddToFormat(to.Name, to.Address); err != nil {
+				return nil, err
+			}
 		} else {
-			msg.AddTo(to.Address)
+			if err := msg.AddTo(to.Address); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	for _, bcc := range m.bcc {
 		if len(bcc.Name) > 0 {
-			msg.AddBccFormat(bcc.Name, bcc.Address)
+			if err := msg.AddBccFormat(bcc.Name, bcc.Address); err != nil {
+				return nil, err
+			}
 		} else {
-			msg.AddBcc(bcc.Address)
+			if err := msg.AddBcc(bcc.Address); err != nil {
+				return nil, err
+			}
 		}
 	}
 
 	for _, cc := range m.cc {
 		if len(cc.Name) > 0 {
-			msg.AddCcFormat(cc.Name, cc.Address)
+			if err := msg.AddCcFormat(cc.Name, cc.Address); err != nil {
+				return nil, err
+			}
 		} else {
-			msg.AddCc(cc.Address)
+			if err := msg.AddCc(cc.Address); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -204,7 +218,9 @@ func (m *mailable) Build() (*mail.Msg, error) {
 	}
 
 	for _, attachReader := range m.attachmentReaders {
-		msg.AttachReader(attachReader.Name, bytes.NewReader(attachReader.Data))
+		if err := msg.AttachReader(attachReader.Name, bytes.NewReader(attachReader.Data)); err != nil {
+			return nil, err
+		}
 	}
 
 	if m.templateName != "" {
@@ -213,7 +229,9 @@ func (m *mailable) Build() (*mail.Msg, error) {
 			return nil, fmt.Errorf("mail template %s not found", m.templateName)
 		}
 
-		msg.AddAlternativeHTMLTemplate(template, m.data)
+		if err := msg.AddAlternativeHTMLTemplate(template, m.data); err != nil {
+			return nil, err
+		}
 	} else {
 		msg.SetBodyString(mail.TypeTextPlain, m.content)
 	}
