@@ -11,7 +11,7 @@ import (
 )
 
 func (s *RatingService) DeleteRating(ctx context.Context, userID, id uuid.UUID) response.Result {
-	_, err := s.ratingRepo.FindOne(ctx, []any{
+	rating, err := s.ratingRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: id},
 		clause.Eq{Column: "user_id", Value: userID},
 	}, nil)
@@ -23,6 +23,8 @@ func (s *RatingService) DeleteRating(ctx context.Context, userID, id uuid.UUID) 
 		return response.ResultErrDb(err)
 	}
 
+	comicID := rating.ComicId
+
 	if err := s.ratingRepo.DeleteSoft(ctx, []any{
 		clause.Eq{Column: "id", Value: id},
 		clause.Eq{Column: "user_id", Value: userID},
@@ -30,6 +32,9 @@ func (s *RatingService) DeleteRating(ctx context.Context, userID, id uuid.UUID) 
 		s.logger.Error("Failed to delete rating", "error", err)
 		return response.ResultErrDb(err)
 	}
+
+	// Enqueue comic stats update asynchronously
+	s.enqueueStatsUpdate(comicID)
 
 	return response.ResultSuccess("Rating deleted successfully", nil)
 }

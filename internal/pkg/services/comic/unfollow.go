@@ -29,5 +29,8 @@ func (s *ComicService) UnfollowComic(ctx context.Context, userID, comicID uuid.U
 		return response.ResultErrDb(err)
 	}
 
+	// Enqueue comic stats update asynchronously
+	s.enqueueStatsUpdate(comicID)
+
 	return response.ResultSuccess("Comic unfollowed successfully", nil)
 }
