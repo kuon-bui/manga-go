@@ -1,5 +1,11 @@
 package queueconstant
 
+import (
+	"time"
+
+	"github.com/hibiken/asynq"
+)
+
 // queue
 const (
 	MAIL_DELIVER_QUEUE       = "mail_queue"
@@ -17,3 +23,11 @@ const (
 	IMAGE_PROCESS_CLEANUP_TASK = "image_process_cleanup"
 	COMIC_STATS_UPDATE_TASK    = "comic:stats:update"
 )
+
+func UniqQueue() []asynq.Option {
+	duration := 10 * time.Second
+	return []asynq.Option{
+		asynq.Unique(duration),
+		asynq.ProcessIn(duration),
+	}
+}
