@@ -2,15 +2,11 @@ package gorm
 
 import (
 	"fmt"
-	"log"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/logger"
-	"os"
-	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/plugin/opentelemetry/tracing"
 )
 
@@ -31,18 +27,7 @@ func ConnectGORM(cfg *config.Config, logger *logger.Logger) *gorm.DB {
 
 	logger.Info("PostgreSQL dsn: ", dsn)
 
-	gormLogger := gormlogger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		gormlogger.Config{
-			SlowThreshold:             200 * time.Millisecond,
-			IgnoreRecordNotFoundError: cfg.RunMode == config.RunModeSeeder,
-			Colorful:                  true,
-		},
-	)
-
-	gormConfig := &gorm.Config{
-		Logger: gormLogger,
-	}
+	gormConfig := &gorm.Config{}
 
 	db, err := gorm.Open(postgres.Open(dsn), gormConfig)
 	if err != nil {

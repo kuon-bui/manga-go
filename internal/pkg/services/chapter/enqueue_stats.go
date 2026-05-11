@@ -1,8 +1,6 @@
 package chapterserivce
 
 import (
-	"time"
-
 	asynqclient "manga-go/internal/pkg/asynq"
 	queueconstant "manga-go/internal/queue/queue_constant"
 
@@ -21,10 +19,10 @@ func (s *ChapterService) enqueueStatsUpdate(comicID uuid.UUID) {
 		return
 	}
 
-	if _, err := s.asynqClient.Enqueue(task,
-		asynq.Queue(queueconstant.COMIC_STATS_UPDATE_QUEUE),
-		asynq.Unique(30*time.Second),
-	); err != nil {
+	opts := queueconstant.UniqQueue()
+	opts = append(opts, asynq.Queue(queueconstant.COMIC_STATS_UPDATE_QUEUE))
+
+	if _, err := s.asynqClient.Enqueue(task, opts...); err != nil {
 		s.logger.Error("Failed to enqueue comic stats update", "comicID", comicID, "error", err)
 	}
 }

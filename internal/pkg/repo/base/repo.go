@@ -349,7 +349,7 @@ func (r *BaseRepository[T]) UpsertManyWithTransaction(tx *gorm.DB, entities []*T
 func toClauseColumns(cols []string) []clause.Column {
 	result := make([]clause.Column, len(cols))
 	for i, c := range cols {
-		result[i] = clause.Column{Name: c, Table: clause.CurrentTable}
+		result[i] = clause.Column{Name: c}
 	}
 	return result
 }
