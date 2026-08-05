@@ -1,0 +1,8 @@
+.git
+.github
+.vscode
+docker-data
+tmp
+*.log
+config.yml
+config.seeder.yml
