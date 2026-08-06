@@ -17,7 +17,6 @@ func TestTableNameContracts(t *testing.T) {
 		{name: "Comment", got: (Comment{}).TableName(), want: "comments"},
 		{name: "Genre", got: (Genre{}).TableName(), want: "genres"},
 		{name: "Page", got: (Page{}).TableName(), want: "pages"},
-		{name: "Permission", got: (Permission{}).TableName(), want: "permissions"},
 		{name: "Rating", got: (Rating{}).TableName(), want: "ratings"},
 		{name: "ReadingHistory", got: (ReadingHistory{}).TableName(), want: "reading_histories"},
 		{name: "ReadingProgress", got: (ReadingProgress{}).TableName(), want: "reading_progresses"},

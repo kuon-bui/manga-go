@@ -9,43 +9,33 @@ import (
 func TestPolicyManagerRejectsInvalidPermissionName(t *testing.T) {
 	pm, _ := newTestPolicyManager(t)
 
-	err := pm.AddPermissionForRole(uuid.New().String(), PermissionRule{
-		ID:   uuid.New().String(),
-		Name: "comics.read", // dot instead of colon: not a permission this system understands
-	}, OrgPlatform)
-
-	if err == nil {
-		t.Fatal("expected an unparsable permission name to be rejected, got silent success")
+	// A dot instead of a colon, and an action the catalog does not define.
+	for _, name := range []string{"comics.read", "comic:frobnicate"} {
+		if err := pm.GrantPermissionToRole(uuid.NewString(), name, OrgPlatform); err == nil {
+			t.Errorf("expected %q to be rejected, got silent success", name)
+		}
 	}
 }
 
 func TestPolicyManagerLeavesNoPolicyBehindForInvalidPermissionName(t *testing.T) {
 	pm, _ := newTestPolicyManager(t)
-	roleID := uuid.New().String()
+	roleID := uuid.NewString()
 
-	_ = pm.AddPermissionForRole(roleID, PermissionRule{
-		ID:   uuid.New().String(),
-		Name: "comics.read",
-	}, OrgPlatform)
+	_ = pm.GrantPermissionToRole(roleID, "comics.read", OrgPlatform)
 
-	if roles := pm.enforcer.GetRolesForUserInDomain(roleID, string(OrgPlatform)); len(roles) != 0 {
-		t.Fatalf("expected no grouping policy for a rejected permission, got %#v", roles)
+	names, err := pm.PermissionNamesForRole(roleID, OrgPlatform)
+	if err != nil {
+		t.Fatalf("failed to read the role's permissions: %v", err)
 	}
-}
-
-func TestPolicyManagerRejectsInvalidPermissionNameOnReplace(t *testing.T) {
-	pm, _ := newTestPolicyManager(t)
-
-	err := pm.ReplacePermission(uuid.New().String(), "manage-everything", OrgPlatform)
-	if err == nil {
-		t.Fatal("expected an unparsable permission name to be rejected, got silent success")
+	if len(names) != 0 {
+		t.Fatalf("expected no policy for a rejected permission, got %#v", names)
 	}
 }
 
 func TestPolicyManagerErrorsWhenEnforcerIsMissing(t *testing.T) {
 	pm := &PolicyManager{}
-	roleID := uuid.New().String()
-	userID := uuid.New().String()
+	roleID := uuid.NewString()
+	userID := uuid.NewString()
 
 	if err := pm.AddRoleForUser(userID, roleID, OrgPlatform); err == nil {
 		t.Error("AddRoleForUser: expected an error when the enforcer is missing, got nil")
@@ -56,37 +46,36 @@ func TestPolicyManagerErrorsWhenEnforcerIsMissing(t *testing.T) {
 	if err := pm.ReplacePermissionsForRole(roleID, nil, OrgPlatform); err == nil {
 		t.Error("ReplacePermissionsForRole: expected an error when the enforcer is missing, got nil")
 	}
-	if err := pm.AddTranslationGroupOwner(userID, uuid.New().String()); err == nil {
+	if err := pm.AddTranslationGroupOwner(userID, uuid.NewString()); err == nil {
 		t.Error("AddTranslationGroupOwner: expected an error when the enforcer is missing, got nil")
+	}
+	if err := pm.ReplaceBaselinePolicies(); err == nil {
+		t.Error("ReplaceBaselinePolicies: expected an error when the enforcer is missing, got nil")
+	}
+	if _, err := pm.RolesForUser(userID, OrgPlatform); err == nil {
+		t.Error("RolesForUser: expected an error when the enforcer is missing, got nil")
+	}
+	if _, err := pm.PermissionNamesForRole(roleID, OrgPlatform); err == nil {
+		t.Error("PermissionNamesForRole: expected an error when the enforcer is missing, got nil")
 	}
 }
 
 func TestPolicyManagerRejectsEmptyIdentifiers(t *testing.T) {
 	pm, _ := newTestPolicyManager(t)
 
-	if err := pm.AddRoleForUser("", uuid.New().String(), OrgPlatform); err == nil {
+	if err := pm.AddRoleForUser("", uuid.NewString(), OrgPlatform); err == nil {
 		t.Error("AddRoleForUser: expected an error for an empty user id, got nil")
 	}
-	if err := pm.AddRoleForUser(uuid.New().String(), "", OrgPlatform); err == nil {
+	if err := pm.AddRoleForUser(uuid.NewString(), "", OrgPlatform); err == nil {
 		t.Error("AddRoleForUser: expected an error for an empty role id, got nil")
 	}
-	if err := pm.ReplaceRolesForUser(uuid.New().String(), []string{uuid.New().String()}, ""); err == nil {
+	if err := pm.ReplaceRolesForUser(uuid.NewString(), []string{uuid.NewString()}, ""); err == nil {
 		t.Error("ReplaceRolesForUser: expected an error for an empty org, got nil")
 	}
-}
-
-func TestValidatePermissionNameAcceptsSeededNames(t *testing.T) {
-	for _, name := range []string{"comic:read", "comic:write", "role:manage", "translation_group:delete"} {
-		if err := ValidatePermissionName(name); err != nil {
-			t.Errorf("expected %q to be a valid permission name, got: %v", name, err)
-		}
+	if err := pm.ReplacePermissionsForRole("", []string{"comic:read"}, OrgPlatform); err == nil {
+		t.Error("ReplacePermissionsForRole: expected an error for an empty role id, got nil")
 	}
-}
-
-func TestValidatePermissionNameRejectsMalformedNames(t *testing.T) {
-	for _, name := range []string{"", "comic", "comic:", ":read", "comic:read:extra", "comics.read"} {
-		if err := ValidatePermissionName(name); err == nil {
-			t.Errorf("expected %q to be rejected as a permission name, got nil", name)
-		}
+	if err := pm.AddTranslationGroupMember(uuid.NewString(), ""); err == nil {
+		t.Error("AddTranslationGroupMember: expected an error for an empty group id, got nil")
 	}
 }

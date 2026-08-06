@@ -1,7 +1,7 @@
 package rolerequest
 
-import "github.com/google/uuid"
-
+// AssignPermissionRequest replaces the role's grants with exactly Permissions.
+// Names come from the catalog served by GET /permissions, e.g. "comic:write".
 type AssignPermissionRequest struct {
-	PermissionIDs []uuid.UUID `json:"permissionIds" binding:"required,min=1,dive,required"`
+	Permissions []string `json:"permissions" binding:"required,min=1,dive,required"`
 }

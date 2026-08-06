@@ -32,22 +32,18 @@ func newTestPolicyManager(t *testing.T) (*PolicyManager, *Authorizer) {
 	return NewPolicyManager(PolicyManagerParams{Enforcer: enforcer}), NewAuthorizer(enforcer)
 }
 
-func TestPolicyManagerUsesRoleIDAndPermissionID(t *testing.T) {
+func TestPolicyManagerGrantsReachTheUserThroughTheRole(t *testing.T) {
 	pm, authorizer := newTestPolicyManager(t)
 	ctx := context.Background()
 
 	userID := uuid.New().String()
 	roleID := uuid.New().String()
-	permissionID := uuid.New().String()
 
 	if err := pm.AddRoleForUser(userID, roleID, OrgPlatform); err != nil {
 		t.Fatalf("failed to add role for user: %v", err)
 	}
-	if err := pm.AddPermissionForRole(roleID, PermissionRule{
-		ID:   permissionID,
-		Name: "comic:read",
-	}, OrgPlatform); err != nil {
-		t.Fatalf("failed to add permission for role: %v", err)
+	if err := pm.ReplacePermissionsForRole(roleID, []string{"comic:read"}, OrgPlatform); err != nil {
+		t.Fatalf("failed to grant permission to role: %v", err)
 	}
 
 	err := authorizer.Enforce(ctx, Request{
@@ -73,9 +69,15 @@ func TestPolicyManagerUsesRoleIDAndPermissionID(t *testing.T) {
 	}
 }
 
-func TestAuthorizerAllowsImplicitReaderPermissions(t *testing.T) {
-	_, authorizer := newTestPolicyManager(t)
+// The baseline is what a signed-in user gets with no role at all. It used to be
+// a switch statement in Go; it is now policy, so it has to be written first.
+func TestBaselinePoliciesGiveSignedInUsersTheBasics(t *testing.T) {
+	pm, authorizer := newTestPolicyManager(t)
 	ctx := context.Background()
+
+	if err := pm.ReplaceBaselinePolicies(); err != nil {
+		t.Fatalf("failed to write the baseline policies: %v", err)
+	}
 
 	userID := uuid.New().String()
 	err := authorizer.Enforce(ctx, Request{
@@ -86,7 +88,7 @@ func TestAuthorizerAllowsImplicitReaderPermissions(t *testing.T) {
 		Context: CtxAny,
 	})
 	if err != nil {
-		t.Fatalf("expected authenticated user to create comment as implicit reader, got: %v", err)
+		t.Fatalf("expected a signed-in user to create a comment from the baseline, got: %v", err)
 	}
 
 	err = authorizer.Enforce(ctx, Request{

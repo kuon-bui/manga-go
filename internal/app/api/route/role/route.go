@@ -49,5 +49,5 @@ func (rr *RoleRoute) Setup() {
 	rg.PUT("/:id", requireRoleManage, rr.roleHandler.updateRole)
 	rg.DELETE("/:id", requireRoleManage, rr.roleHandler.deleteRole)
 	rg.POST("/:id/permissions", requireRoleManage, rr.roleHandler.assignRolePermission)
-	rg.DELETE("/:id/permissions/:permissionId", requireRoleManage, rr.roleHandler.removeRolePermission)
+	rg.DELETE("/:id/permissions/:permissionName", requireRoleManage, rr.roleHandler.removeRolePermission)
 }

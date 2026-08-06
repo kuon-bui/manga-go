@@ -22,7 +22,6 @@ type User struct {
 	UserConfig            UserConfig `json:"-" gorm:"column:user_config;type:bytea"`
 
 	TranslationGroup *TranslationGroup `json:"translationGroup,omitempty" gorm:"foreignKey:TranslationGroupID"`
-	Roles            []*Role           `json:"roles,omitempty" gorm:"many2many:users_roles;"`
 }
 
 func (User) TableName() string {

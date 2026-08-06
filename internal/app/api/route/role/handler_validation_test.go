@@ -133,15 +133,3 @@ func TestRemoveRolePermissionInvalidRoleID(t *testing.T) {
 	}
 }
 
-func TestRemoveRolePermissionInvalidPermissionID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	h := &RoleHandler{}
-	c, w := newRoleCtx(http.MethodDelete, "/roles/id/permissions/invalid", "")
-	c.Params = gin.Params{{Key: "id", Value: "550e8400-e29b-41d4-a716-446655440000"}, {Key: "permissionId", Value: "invalid"}}
-
-	h.removeRolePermission(c)
-
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", w.Code)
-	}
-}

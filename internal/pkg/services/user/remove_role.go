@@ -34,16 +34,9 @@ func (s *UserService) RemoveRole(ctx context.Context, userID, roleID uuid.UUID) 
 		return response.ResultErrDb(err)
 	}
 
-	if err := s.userRepo.RemoveRole(ctx, userID, role); err != nil {
-		s.logger.Error("Failed to remove role from user", "error", err)
-		return response.ResultErrDb(err)
-	}
-
-	if s.policyManager != nil {
-		if err := s.policyManager.RemoveRoleForUser(userID.String(), role.ID.String(), authorization.OrgPlatform); err != nil {
-			s.logger.Error("Failed to remove authorization policy", "error", err)
-			return response.ResultErrInternal(err)
-		}
+	if err := s.policyManager.RemoveRoleForUser(userID.String(), role.ID.String(), authorization.OrgPlatform); err != nil {
+		s.logger.Error("Failed to update authorization policy", "error", err)
+		return response.ResultErrInternal(err)
 	}
 
 	return response.ResultSuccess("Role removed successfully", nil)

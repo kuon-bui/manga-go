@@ -5,13 +5,15 @@ import (
 	"errors"
 	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/authorization"
-	"manga-go/internal/pkg/model"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
+// AssignRoles replaces the user's platform roles with exactly roleIDs. Each id
+// is checked against the roles table so the policy engine only ever references
+// roles that exist.
 func (s *UserService) AssignRoles(ctx context.Context, userID uuid.UUID, roleIDs []uuid.UUID) response.Result {
 	_, err := s.userRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: userID},
@@ -24,7 +26,7 @@ func (s *UserService) AssignRoles(ctx context.Context, userID uuid.UUID, roleIDs
 		return response.ResultErrDb(err)
 	}
 
-	roles := make([]*model.Role, 0, len(roleIDs))
+	ids := make([]string, 0, len(roleIDs))
 	for _, id := range roleIDs {
 		role, err := s.roleRepo.FindOne(ctx, []any{
 			clause.Eq{Column: "id", Value: id},
@@ -36,23 +38,12 @@ func (s *UserService) AssignRoles(ctx context.Context, userID uuid.UUID, roleIDs
 			s.logger.Error("Failed to find role", "error", err)
 			return response.ResultErrDb(err)
 		}
-		roles = append(roles, role)
+		ids = append(ids, role.ID.String())
 	}
 
-	if err := s.userRepo.AssignRoles(ctx, userID, roles); err != nil {
-		s.logger.Error("Failed to assign roles to user", "error", err)
-		return response.ResultErrDb(err)
-	}
-
-	if s.policyManager != nil {
-		roleIDs := make([]string, 0, len(roles))
-		for _, role := range roles {
-			roleIDs = append(roleIDs, role.ID.String())
-		}
-		if err := s.policyManager.ReplaceRolesForUser(userID.String(), roleIDs, authorization.OrgPlatform); err != nil {
-			s.logger.Error("Failed to update authorization policy", "error", err)
-			return response.ResultErrInternal(err)
-		}
+	if err := s.policyManager.ReplaceRolesForUser(userID.String(), ids, authorization.OrgPlatform); err != nil {
+		s.logger.Error("Failed to update authorization policy", "error", err)
+		return response.ResultErrInternal(err)
 	}
 
 	return response.ResultSuccess("Roles assigned successfully", nil)

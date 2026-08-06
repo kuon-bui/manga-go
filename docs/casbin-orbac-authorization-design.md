@@ -6,8 +6,8 @@ The project already has the first pieces for authorization:
 
 - `internal/pkg/casbin` creates a Casbin enforcer with GORM adapter and Redis watcher.
 - `internal/pkg/casbin/model.conf` defines the OrBAC-style request/policy/grouping model.
-- `roles`, `permissions`, `users_roles`, and `roles_permissions` tables already exist.
-- Seeders create coarse permissions such as `comic:read`, `chapter:write`, `role:manage`.
+- `casbin_rule` is the single source of truth for who holds which role and what each role grants. The `roles` table survives only as display metadata; `permissions`, `users_roles` and `roles_permissions` were dropped.
+- The permission vocabulary is defined in code (`internal/pkg/authorization/catalog.go`) and served read-only by `GET /permissions`. Names look like `comic:read`, `chapter:write`, `role:manage`, where `write` is shorthand for create + update + publish.
 - Routes use `AuthMiddleware.RequireJwt` plus `AuthzMiddleware.Require(action, resource, resolvers...)` where authorization is required.
 - Domain ownership data already exists:
   - `users.translation_group_id`
@@ -58,37 +58,36 @@ Role assignment:
 g = sub, role, org
 ```
 
-Matcher:
+Two virtual subjects carry the baseline every visitor has before any role
+applies, so that baseline is policy rather than a branch in Go:
 
-```ini
-m = (g(r.sub, p.role, r.org) || g(r.sub, p.role, p.org)) &&
-    (p.org == r.org || p.org == "platform") &&
-    (p.view == "*" || keyMatch(r.obj, p.view)) &&
-    (p.act == r.act || p.act == "manage") &&
-    (p.ctx == r.ctx || p.ctx == "any") &&
-    (p.eft == "allow")
-```
+- `anonymous` — matches every caller, signed in or not. This is the public floor.
+- `authenticated` — matches any caller that is not `anonymous`, resolved by the
+  matcher rather than a grouping row, so there is no per-user bookkeeping.
 
-Suggested `internal/pkg/casbin/model.conf`:
+Actual `internal/pkg/casbin/model.conf`:
 
 ```ini
 [request_definition]
 r = sub, org, act, obj, ctx
 
 [policy_definition]
-p = org, role, act, view, ctx, eft
+p = org, sub, act, obj, ctx, eft
 
 [role_definition]
 g = _, _, _
 
 [policy_effect]
-e = some(where (p.eft == allow))
+e = some(where (p.eft == allow)) && !some(where (p.eft == deny))
 
 [matchers]
-m = (g(r.sub, p.role, r.org) || g(r.sub, p.role, p.org)) && (p.org == r.org || p.org == "platform") && (p.view == "*" || keyMatch(r.obj, p.view)) && (p.act == r.act || p.act == "manage") && (p.ctx == r.ctx || p.ctx == "any")
+m = (p.sub == "anonymous" || (r.sub != "anonymous" && p.sub == "authenticated") || g(r.sub, p.sub, r.org) || g(r.sub, p.sub, p.org)) && (p.org == r.org || p.org == "platform") && (p.obj == "*" || keyMatch(r.obj, p.obj)) && (p.act == r.act || p.act == "manage") && (p.ctx == r.ctx || p.ctx == "any")
 ```
 
 Notes:
+
+- `g` is a single level: user → role. Policy rows are keyed by the role itself, so there is no separate permission entity to keep in step.
+- The effect makes `deny` real. A policy table that declares an `eft` column but ignores `deny` is a trap: someone eventually writes a deny rule and believes it.
 
 - `org` is a domain. Use `platform` for global authorization.
 - For group-specific authorization, use `tg:<uuid>` as org.
@@ -115,7 +114,26 @@ p, platform, translator, update, chapter, group_member, allow
 p, platform, translator, publish, chapter, group_member, allow
 ```
 
-Reader permissions are not represented by a `reader` role assignment. Every authenticated user has the reader baseline implicitly in application code.
+Baseline, written by `PolicyManager.ReplaceBaselinePolicies` and seeded on every run:
+
+```csv
+p, platform, anonymous, read, comic, published, allow
+p, platform, anonymous, read, chapter, published, allow
+
+p, platform, authenticated, create, comment, any, allow
+p, platform, authenticated, update, comment, owner, allow
+p, platform, authenticated, delete, comment, owner, allow
+p, platform, authenticated, create, rating, any, allow
+p, platform, authenticated, update, rating, owner, allow
+p, platform, authenticated, delete, rating, owner, allow
+p, platform, authenticated, create, reading_history, any, allow
+p, platform, authenticated, read, reading_history, owner, allow
+p, platform, authenticated, update, reading_history, owner, allow
+p, platform, authenticated, delete, reading_history, owner, allow
+p, platform, authenticated, update, user, self, allow
+```
+
+There is no `reader` role. These rights were once a switch statement in Go; keeping them as policy means enforcement has exactly one source of truth.
 
 Translation group roles:
 
@@ -228,7 +246,7 @@ The middleware flow is:
 Static examples:
 
 - `POST /roles` -> `manage role`
-- `POST /permissions` -> `manage permission`
+- `GET /permissions` -> `read permission` (the catalog is code, so this is the only permission endpoint)
 - `POST /tags` -> `create tag`
 - `DELETE /genres/:slug` -> `delete genre`
 - `POST /files/upload` -> `create file`
@@ -279,32 +297,39 @@ Suggested initial mapping:
 | `PUT /ratings/:id` | update | rating | owner |
 | `DELETE /ratings/:id` | delete | rating | owner/moderator/admin |
 | `/roles/**` | manage | role | any |
-| `/permissions/**` | manage | permission | any |
+| `GET /permissions` | read | permission | any |
 | `/translation-groups/:slug/**` | manage | translation_group | group_owner |
 
 ## 10. Data Migration Strategy
 
-The migration creates `casbin_rule`, inserts built-in policies, and backfills once from existing tables:
+There is no backfill: `permissions`, `users_roles` and `roles_permissions` were
+dropped outright while the product had no production data
+(`migrations/20260806_150000_drop_permission_tables_for_casbin.sql`). `casbin_rule`
+is created by the GORM adapter, and the seeders write the roles, their grants and
+the baseline directly into it.
 
-- `users_roles` -> `g, <user_id>, <role.id>, platform`
-- `roles_permissions` -> `g, <role.id>, <permission.id>, platform` and `p, platform, <permission.id>, <action>, <resource>, any, allow`
-- `users.translation_group_id` -> `g, <user_id>, group_member, tg:<translation_group_id>`
-- `translation_groups.owner_id` -> `g, <owner_id>, group_owner, tg:<translation_group_id>`
+If a deployment ever needs to be rebuilt from scratch, re-running the seeder is
+the supported route: it replaces rather than appends, so it converges.
 
 ## 11. Policy Sync Rules
 
-Current permission names are `resource:action`, for example `comic:read`. Convert them into Casbin policies:
+Permission names are `<resource>:<action>` drawn from the catalog. A grant is
+written straight against the role, with the shorthand expanded:
 
 ```text
-permission.name = "<resource>:<action>"
-Casbin p = platform, <permission.id>, <action>, <resource>, any, allow
+"comic:read"  -> p, platform, <role.id>, read,    comic, any, allow
+"comic:write" -> p, platform, <role.id>, create,  comic, any, allow
+                 p, platform, <role.id>, update,  comic, any, allow
+                 p, platform, <role.id>, publish, comic, any, allow
 ```
+
+Reading a role's grants back folds the expansion up again, so a role granted
+`comic:write` reports `comic:write` rather than three separate actions.
 
 For user roles:
 
 ```text
-users_roles row -> g, <user_id>, <role.id>, platform
-roles_permissions row -> g, <role.id>, <permission.id>, platform
+role assignment -> g, <user_id>, <role.id>, platform
 ```
 
 For translation group membership:
@@ -324,7 +349,9 @@ When these change, update Casbin through `PolicyManager`:
 - `TranslationGroupService.TransferOwnership`
 - any future group member join/leave endpoint
 
-There is no startup reconciliation job. The one-time migration backfills existing data, and all future writes update Casbin directly.
+There is no startup reconciliation job. Every write updates Casbin directly, and
+a write that cannot reach the engine fails loudly rather than leaving the two
+out of step.
 
 ## 12. Implementation Plan
 
@@ -350,15 +377,24 @@ While adding authorization, also tighten these existing flows:
 - `ChapterService.UpdateChapter`, `UpdateChapterPages`, and `PublishChapter` do not verify uploader or group membership.
 - `TranslationGroupService.UpdateTranslationGroup`, `DeleteTranslationGroup`, `TransferOwnership`, and logo update should require group owner or platform admin.
 - User role management routes should require `role manage`.
-- Permission management routes should require `permission manage`, not merely JWT.
+- The permission catalog route should require `permission read`, not merely JWT.
 
 ## 14. Suggested First Rollout
 
 Start with a conservative policy:
 
 - `admin` can manage everything.
-- Every authenticated user has the reader baseline: read published comics/chapters and manage own comments, ratings, histories, and notifications.
+- The baseline gives every visitor read access to published comics/chapters, and every signed-in user control over their own comments, ratings, histories and profile.
 - `translator` can create comics and chapters, and update/publish resources belonging to their translation group.
 - `group_owner` can manage its own translation group, comics, and chapters.
 
-Do not expose deny policies in the first rollout unless there is a clear need. Keep `eft = allow` only, because the current product rules are simpler as positive permissions plus object context.
+Deny is supported by the effect but unused: the current product rules are all
+positive permissions plus object context. It exists so that a future blacklist
+rule behaves as written rather than being silently ignored.
+
+## 15. Known Gaps
+
+- Public read is modelled (`anonymous` policies) but not yet reachable: every route still sits behind `RequireJwt`, so no request ever arrives with subject `anonymous`. Wiring optional authentication and splitting the public route group is separate work.
+- List endpoints do not filter unpublished records. `GET /comics`, `GET /comics/:slug` and the chapter list return drafts to any signed-in caller.
+- `group_member` is only ever granted to the creator of a translation group. There is no join/leave/kick flow, and `users.translation_group_id` is never written.
+- Database writes and policy writes are not in one transaction. A failure between them is reported, but leaves the two out of step until the seeder or the operation is re-run.

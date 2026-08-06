@@ -7,7 +7,6 @@ import (
 	comicseeder "manga-go/internal/pkg/seeder/comic"
 	genreseeder "manga-go/internal/pkg/seeder/genre"
 	notificationseeder "manga-go/internal/pkg/seeder/notification"
-	permissionseeder "manga-go/internal/pkg/seeder/permission"
 	roleseeder "manga-go/internal/pkg/seeder/role"
 	tagseeder "manga-go/internal/pkg/seeder/tag"
 	translationgroupseeder "manga-go/internal/pkg/seeder/translation_group"
@@ -23,7 +22,6 @@ type SeederRunnerParams struct {
 
 	Db                     *gorm.DB
 	Logger                 *logger.Logger
-	PermissionSeeder       *permissionseeder.PermissionSeeder
 	RoleSeeder             *roleseeder.RoleSeeder
 	UserSeeder             *userseeder.UserSeeder
 	AuthorSeeder           *authorseeder.AuthorSeeder
@@ -38,7 +36,6 @@ type SeederRunnerParams struct {
 func newSeederRunner(p SeederRunnerParams) *SeederRunner {
 	// Order is significant: permissions → roles → users → authors → genres → tags → translation groups → comics → activity → notifications
 	seeders := []Seeder{
-		p.PermissionSeeder,
 		p.RoleSeeder,
 		p.UserSeeder,
 		p.AuthorSeeder,
@@ -55,7 +52,6 @@ func newSeederRunner(p SeederRunnerParams) *SeederRunner {
 var Module = fx.Module(
 	"seeder",
 	fx.Provide(
-		permissionseeder.NewPermissionSeeder,
 		roleseeder.NewRoleSeeder,
 		userseeder.NewUserSeeder,
 		authorseeder.NewAuthorSeeder,

@@ -9,7 +9,6 @@ import (
 	comicrepo "manga-go/internal/pkg/repo/comic"
 	commentrepo "manga-go/internal/pkg/repo/comment"
 	genrerepo "manga-go/internal/pkg/repo/genre"
-	permissionrepo "manga-go/internal/pkg/repo/permission"
 	ratingrepo "manga-go/internal/pkg/repo/rating"
 	reactionrepo "manga-go/internal/pkg/repo/reaction"
 	readinghistoryrepo "manga-go/internal/pkg/repo/reading_history"
@@ -38,7 +37,6 @@ func TestRepoModulesAreRegistered(t *testing.T) {
 	assertNotNil(t, "chapterrepo.Module", chapterrepo.Module)
 	assertNotNil(t, "translationgrouprepo.Module", translationgrouprepo.Module)
 	assertNotNil(t, "rolerepo.Module", rolerepo.Module)
-	assertNotNil(t, "permissionrepo.Module", permissionrepo.Module)
 	assertNotNil(t, "ratingrepo.Module", ratingrepo.Module)
 	assertNotNil(t, "readinghistoryrepo.Module", readinghistoryrepo.Module)
 	assertNotNil(t, "commentrepo.Module", commentrepo.Module)
@@ -71,9 +69,6 @@ func TestRepoConstructorsReturnInstance(t *testing.T) {
 	}
 	if r := rolerepo.NewRoleRepo(nil); r == nil {
 		t.Fatal("expected role repo instance")
-	}
-	if r := permissionrepo.NewPermissionRepo(nil); r == nil {
-		t.Fatal("expected permission repo instance")
 	}
 	if r := ratingrepo.NewRatingRepo(nil); r == nil {
 		t.Fatal("expected rating repo instance")

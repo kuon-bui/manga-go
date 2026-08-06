@@ -9,15 +9,16 @@ import (
 )
 
 // @Summary      Assign permissions to role
-// @Description  Assign one or more permissions to a role
+// @Description  Replace the role's permissions with the given set. Names come from GET /permissions, e.g. "comic:write".
 // @Tags         Role
 // @Accept       json
 // @Produce      json
-// @Param        id    path      string                          true  "Role ID"
-// @Param        body  body      rolerequest.AssignPermissionRequest  true  "Permissions to assign"
-// @Success      200   {object}  response.Response
-// @Failure      400   {object}  response.Response
-// @Failure      401   {object}  response.Response
+// @Param        id    path      string                               true  "Role ID"
+// @Param        body  body      rolerequest.AssignPermissionRequest   true  "Permissions to assign"
+// @Success      200   {object}  response.Result
+// @Failure      400   {object}  response.Result
+// @Failure      401   {object}  response.Result
+// @Failure      403   {object}  response.Result
 // @Router       /roles/{id}/permissions [post]
 // @Security     AccessToken
 func (h *RoleHandler) assignRolePermission(c *gin.Context) {
@@ -33,6 +34,6 @@ func (h *RoleHandler) assignRolePermission(c *gin.Context) {
 		return
 	}
 
-	result := h.roleService.AssignPermissions(c.Request.Context(), id, req.PermissionIDs)
+	result := h.roleService.AssignPermissions(c.Request.Context(), id, &req)
 	result.ResponseResult(c)
 }

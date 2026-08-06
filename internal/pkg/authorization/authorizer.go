@@ -43,10 +43,6 @@ func (a *Authorizer) Enforce(ctx context.Context, req Request) error {
 		req.Context = CtxAny
 	}
 
-	if isImplicitReaderAllowed(req) {
-		return nil
-	}
-
 	ok, err := a.enforcer.Enforce(
 		req.Subject,
 		string(req.Org),
@@ -88,32 +84,3 @@ func (a *Authorizer) EnforceAny(ctx context.Context, req Request, contexts []Con
 	return ErrForbidden
 }
 
-func isImplicitReaderAllowed(req Request) bool {
-	if req.Subject == "" {
-		return false
-	}
-
-	switch req.Object {
-	case ObjectComic, ObjectChapter:
-		return req.Action == ActionRead && req.Context == CtxPublished
-	case ObjectComment, ObjectRating:
-		if req.Org != OrgPlatform {
-			return false
-		}
-		return req.Action == ActionCreate && req.Context == CtxAny ||
-			(req.Action == ActionUpdate || req.Action == ActionDelete) && req.Context == CtxOwner
-	case ObjectReadingHistory:
-		if req.Org != OrgPlatform {
-			return false
-		}
-		return req.Action == ActionCreate && req.Context == CtxAny ||
-			(req.Action == ActionRead || req.Action == ActionUpdate || req.Action == ActionDelete) && req.Context == CtxOwner
-	case ObjectUser:
-		if req.Org != OrgPlatform {
-			return false
-		}
-		return req.Action == ActionUpdate && req.Context == CtxSelf
-	default:
-		return false
-	}
-}

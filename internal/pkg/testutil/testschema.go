@@ -246,15 +246,6 @@ func (Rating) TableName() string {
 	return "ratings"
 }
 
-type Permission struct {
-	SQLModel
-	Name string `gorm:"column:name"`
-}
-
-func (Permission) TableName() string {
-	return "permissions"
-}
-
 type Role struct {
 	SQLModel
 	Name string `gorm:"column:name"`
@@ -278,24 +269,6 @@ type User struct {
 
 func (User) TableName() string {
 	return "users"
-}
-
-type UserRole struct {
-	UserID uuid.UUID `gorm:"column:user_id;type:uuid;primaryKey"`
-	RoleID uuid.UUID `gorm:"column:role_id;type:uuid;primaryKey"`
-}
-
-func (UserRole) TableName() string {
-	return "users_roles"
-}
-
-type RolePermission struct {
-	RoleID       uuid.UUID `gorm:"column:role_id;type:uuid;primaryKey"`
-	PermissionID uuid.UUID `gorm:"column:permission_id;type:uuid;primaryKey"`
-}
-
-func (RolePermission) TableName() string {
-	return "roles_permissions"
 }
 
 type TranslationGroup struct {

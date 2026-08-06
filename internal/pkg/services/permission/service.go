@@ -1,30 +1,30 @@
 package permissionservice
 
 import (
+	"context"
+	"manga-go/internal/app/api/common/response"
 	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
-	permissionrepo "manga-go/internal/pkg/repo/permission"
 
 	"go.uber.org/fx"
 )
 
+// PermissionService serves the permission catalog. Permissions are defined in
+// code rather than stored as rows, so there is nothing here to create, update
+// or delete — only the vocabulary an administrator can grant to a role.
 type PermissionService struct {
-	logger         *logger.Logger
-	permissionRepo *permissionrepo.PermissionRepo
-	policyManager  *authorization.PolicyManager
+	logger *logger.Logger
 }
 
 type PermissionServiceParams struct {
 	fx.In
-	Logger         *logger.Logger
-	PermissionRepo *permissionrepo.PermissionRepo
-	PolicyManager  *authorization.PolicyManager
+	Logger *logger.Logger
 }
 
 func NewPermissionService(params PermissionServiceParams) *PermissionService {
-	return &PermissionService{
-		logger:         params.Logger,
-		permissionRepo: params.PermissionRepo,
-		policyManager:  params.PolicyManager,
-	}
+	return &PermissionService{logger: params.Logger}
+}
+
+func (s *PermissionService) ListPermissions(ctx context.Context) response.Result {
+	return response.ResultSuccess("Permissions retrieved successfully", authorization.Catalog())
 }
