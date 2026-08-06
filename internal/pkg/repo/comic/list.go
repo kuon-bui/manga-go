@@ -10,8 +10,8 @@ import (
 )
 
 var allowedSortFields = map[string]string{
-	"lastChapterAt": "comics.last_chapter_at",
-	"createdAt":     "comics.created_at",
+	"lastChapterAt": "last_chapter_at",
+	"createdAt":     "created_at",
 	"rating":        "COALESCE(cs.avg_rating, 0)",
 	"followCount":   "COALESCE(cs.follow_count, 0)",
 }
