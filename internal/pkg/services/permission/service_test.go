@@ -73,7 +73,7 @@ func TestUpdatePermissionReturnsNotFoundWhenMissing(t *testing.T) {
 	t.Parallel()
 
 	s := newPermissionService(t, true)
-	res := s.UpdatePermission(context.Background(), uuid.New(), &permissionrequest.UpdatePermissionRequest{Name: "admin"})
+	res := s.UpdatePermission(context.Background(), uuid.New(), &permissionrequest.UpdatePermissionRequest{Name: "user:manage"})
 
 	if res.Success {
 		t.Fatalf("expected failure result")
@@ -107,7 +107,7 @@ func TestCreatePermissionReturnsDbErrorWhenTableMissing(t *testing.T) {
 	t.Parallel()
 
 	s := newPermissionService(t, false)
-	res := s.CreatePermission(context.Background(), &permissionrequest.CreatePermissionRequest{Name: "manage_users"})
+	res := s.CreatePermission(context.Background(), &permissionrequest.CreatePermissionRequest{Name: "user:manage"})
 
 	if res.Success {
 		t.Fatalf("expected failure result")

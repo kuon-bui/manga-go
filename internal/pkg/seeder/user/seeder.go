@@ -3,12 +3,14 @@ package userseeder
 import (
 	"errors"
 	"fmt"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/model"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	userrepo "manga-go/internal/pkg/repo/user"
 	seederutil "manga-go/internal/pkg/seeder/util"
 
+	"github.com/google/uuid"
 	"github.com/jaswdr/faker/v2"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -36,10 +38,11 @@ func adminPassword(cfg *config.Config) string {
 }
 
 type UserSeeder struct {
-	userRepo *userrepo.UserRepository
-	roleRepo *rolerepo.RoleRepo
-	config   *config.Config
-	faker    faker.Faker
+	userRepo      *userrepo.UserRepository
+	roleRepo      *rolerepo.RoleRepo
+	config        *config.Config
+	faker         faker.Faker
+	policyManager *authorization.PolicyManager
 }
 
 func NewUserSeeder(
@@ -47,13 +50,29 @@ func NewUserSeeder(
 	roleRepo *rolerepo.RoleRepo,
 	config *config.Config,
 	faker faker.Faker,
+	policyManager *authorization.PolicyManager,
 ) *UserSeeder {
 	return &UserSeeder{
-		userRepo: userRepo,
-		roleRepo: roleRepo,
-		config:   config,
-		faker:    faker,
+		userRepo:      userRepo,
+		roleRepo:      roleRepo,
+		config:        config,
+		faker:         faker,
+		policyManager: policyManager,
 	}
+}
+
+// assignRoles writes the grant to the database and to the policy engine, which
+// is the only place enforcement actually reads from.
+func (s *UserSeeder) assignRoles(tx *gorm.DB, userID uuid.UUID, roles []*model.Role) error {
+	if err := s.userRepo.AssignRolesWithTransaction(tx, userID, roles); err != nil {
+		return err
+	}
+
+	roleIDs := make([]string, 0, len(roles))
+	for _, role := range roles {
+		roleIDs = append(roleIDs, role.ID.String())
+	}
+	return s.policyManager.ReplaceRolesForUser(userID.String(), roleIDs, authorization.OrgPlatform)
 }
 
 func (s *UserSeeder) Name() string {
@@ -66,7 +85,6 @@ func (s *UserSeeder) Truncate(tx *gorm.DB) error {
 
 func (s *UserSeeder) Seed(tx *gorm.DB) error {
 	email := adminEmail(s.config)
-	createdAdmin := false
 
 	user, err := s.userRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "email", Value: email}}, nil)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -86,7 +104,6 @@ func (s *UserSeeder) Seed(tx *gorm.DB) error {
 		if err := s.userRepo.CreateWithTransaction(tx, user); err != nil {
 			return err
 		}
-		createdAdmin = true
 	}
 
 	adminRole, err := s.roleRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: "admin"}}, nil)
@@ -102,11 +119,9 @@ func (s *UserSeeder) Seed(tx *gorm.DB) error {
 		return err
 	}
 
-	if !createdAdmin {
-		return nil
-	}
-
-	return s.userRepo.AssignRolesWithTransaction(tx, user.ID, []*model.Role{adminRole})
+	// Re-assigned on every run so a re-seed repairs a policy engine that has
+	// drifted from the database.
+	return s.assignRoles(tx, user.ID, []*model.Role{adminRole})
 }
 
 func (s *UserSeeder) fakeUsers(tx *gorm.DB, count int, translatorRole *model.Role) error {
@@ -128,7 +143,7 @@ func (s *UserSeeder) fakeUsers(tx *gorm.DB, count int, translatorRole *model.Rol
 		}
 
 		if index <= 6 {
-			if err := s.userRepo.AssignRolesWithTransaction(tx, user.ID, []*model.Role{translatorRole}); err != nil {
+			if err := s.assignRoles(tx, user.ID, []*model.Role{translatorRole}); err != nil {
 				return err
 			}
 		}

@@ -9,7 +9,8 @@ import (
 
 func EnforceAnyResult(ctx context.Context, authorizer *Authorizer, req Request, contexts []Context) *response.Result {
 	if authorizer == nil {
-		return nil
+		result := response.ResultErrInternal(ErrAuthorizerUnavailable)
+		return &result
 	}
 
 	if err := authorizer.EnforceAny(ctx, req, contexts); err != nil {

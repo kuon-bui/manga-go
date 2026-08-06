@@ -9,6 +9,12 @@ import (
 
 var ErrForbidden = errors.New("forbidden")
 
+// ErrAuthorizerUnavailable means the authorization engine could not answer the
+// request at all. It is deliberately distinct from ErrForbidden so callers
+// answer 500 instead of 403: a broken enforcer is a server fault, not a
+// decision about the caller. Either way the request is denied.
+var ErrAuthorizerUnavailable = errors.New("authorizer unavailable")
+
 type Request struct {
 	Subject string
 	Org     Org
@@ -27,7 +33,7 @@ func NewAuthorizer(enforcer *casbinpkg.Enforcer) *Authorizer {
 
 func (a *Authorizer) Enforce(ctx context.Context, req Request) error {
 	if a == nil || a.enforcer == nil {
-		return nil
+		return ErrAuthorizerUnavailable
 	}
 
 	if req.Org == "" {
@@ -59,7 +65,7 @@ func (a *Authorizer) Enforce(ctx context.Context, req Request) error {
 
 func (a *Authorizer) EnforceAny(ctx context.Context, req Request, contexts []Context) error {
 	if a == nil || a.enforcer == nil {
-		return nil
+		return ErrAuthorizerUnavailable
 	}
 
 	if len(contexts) == 0 {

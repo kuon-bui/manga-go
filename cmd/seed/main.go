@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"manga-go/internal/pkg/authorization"
+	casbinpkg "manga-go/internal/pkg/casbin"
 	"manga-go/internal/pkg/config"
 	gormdb "manga-go/internal/pkg/gorm"
 	"manga-go/internal/pkg/logger"
@@ -33,6 +35,10 @@ func main() {
 			faker.New,
 		),
 		repo.Module,
+		// Seeding grants roles and permissions, which only take effect once they
+		// reach the policy engine.
+		casbinpkg.Module,
+		authorization.Module,
 		seeder.Module,
 		fx.Populate(&runner),
 		fx.NopLogger,
