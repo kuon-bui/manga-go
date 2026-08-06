@@ -10,8 +10,13 @@ import (
 )
 
 func GetCurrentUserFromGinContext(c *gin.Context) (*model.User, error) {
-	user := c.MustGet(string(common.CurrentUser)).(*model.User)
-	if user == nil {
+	value, exists := c.Get(string(common.CurrentUser))
+	if !exists {
+		return nil, fmt.Errorf("could not get current user")
+	}
+
+	user, ok := value.(*model.User)
+	if !ok || user == nil {
 		return nil, fmt.Errorf("could not get current user")
 	}
 

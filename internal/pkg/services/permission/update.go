@@ -13,6 +13,10 @@ import (
 )
 
 func (s *PermissionService) UpdatePermission(ctx context.Context, id uuid.UUID, req *permissionrequest.UpdatePermissionRequest) response.Result {
+	if err := authorization.ValidatePermissionName(req.Name); err != nil {
+		return response.ResultError(err.Error())
+	}
+
 	permission, err := s.permissionRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: id},
 	}, nil)

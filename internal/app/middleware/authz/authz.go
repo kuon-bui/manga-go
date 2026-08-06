@@ -74,15 +74,23 @@ func NewAuthzMiddleware(p AuthzMiddlewareParams) *AuthzMiddleware {
 
 func Require(m *AuthzMiddleware, action authorization.Action, resource authorization.Object, resolvers ...ResourceResolver) gin.HandlerFunc {
 	if m == nil {
-		return func(c *gin.Context) { c.Next() }
+		return denyUnavailable
 	}
 	return m.Require(action, resource, resolvers...)
+}
+
+// denyUnavailable rejects a request the authorization layer could not evaluate.
+// A route wired without a working middleware is a deployment fault, so it
+// answers 500 — but it must never let the request through unchecked.
+func denyUnavailable(c *gin.Context) {
+	response.ResultErrInternal(authorization.ErrAuthorizerUnavailable).ResponseResult(c)
+	c.Abort()
 }
 
 func (m *AuthzMiddleware) Require(action authorization.Action, resource authorization.Object, resolvers ...ResourceResolver) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if m == nil || m.authorizer == nil {
-			c.Next()
+			denyUnavailable(c)
 			return
 		}
 
