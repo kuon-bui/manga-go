@@ -39,20 +39,24 @@ func NewChapterRoute(p ChapterRouteParams) *ChapterRoute {
 }
 
 func (cr *ChapterRoute) Setup() {
-	cr.GET("/chapters/recent-updates", cr.authMiddleware.RequireJwt, cr.handler.getRecentUpdates)
+	requirePublishedChapterRead := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionRead, authorization.ObjectChapter, authzmiddleware.Published())
+	cr.GET("/chapters/recent-updates", cr.authMiddleware.OptionalJwt, requirePublishedChapterRead, cr.handler.getRecentUpdates)
+
+	publicRg := cr.Group("/comics/:comicSlug/chapters", cr.authMiddleware.OptionalJwt, cr.slugMiddleware.ResolveComicID)
+	requireComicRead := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionRead, authorization.ObjectComic, cr.authzMiddleware.Comic())
+	requireChapterRead := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionRead, authorization.ObjectChapter, cr.authzMiddleware.Chapter(), cr.authzMiddleware.ComicGroupFromContext())
+	publicRg.GET("", requireComicRead, requirePublishedChapterRead, cr.handler.listChapters)
+	publicRg.GET("/:chapterSlug", requireComicRead, cr.slugMiddleware.ResolveChapterID, requireChapterRead, cr.handler.getChapter)
 
 	rg := cr.Group("/comics/:comicSlug/chapters", cr.authMiddleware.RequireJwt, cr.slugMiddleware.ResolveComicID)
 	requireChapterCreate := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionCreate, authorization.ObjectChapter, cr.authzMiddleware.ComicGroupFromContext())
-	requireChapterRead := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionRead, authorization.ObjectChapter, cr.authzMiddleware.Chapter(), cr.authzMiddleware.ComicGroupFromContext())
 	requireChapterUpdate := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionUpdate, authorization.ObjectChapter, cr.authzMiddleware.Chapter(), cr.authzMiddleware.ComicGroupFromContext())
 	requireChapterPublish := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionPublish, authorization.ObjectChapter, cr.authzMiddleware.Chapter(), cr.authzMiddleware.ComicGroupFromContext())
 
-	rg.GET("", cr.handler.listChapters)
 	rg.POST("", requireChapterCreate, cr.handler.createChapter)
 
 	rgSlug := rg.Group("/:chapterSlug", cr.slugMiddleware.ResolveChapterID)
 
-	rgSlug.GET("", requireChapterRead, cr.handler.getChapter)
 	rgSlug.PUT("", requireChapterUpdate, cr.handler.updateChapter)
 	rgSlug.PUT("/pages", requireChapterUpdate, cr.handler.updateChapterPages)
 	rgSlug.PATCH("/publish", requireChapterPublish, cr.handler.publishChapter)

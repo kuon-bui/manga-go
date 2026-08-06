@@ -20,9 +20,7 @@ import (
 // @Param        search  query     string  false  "Search by comic title or alternative titles"
 // @Success      200    {object}  response.Result
 // @Failure      400    {object}  response.Response
-// @Failure      401    {object}  response.Response
 // @Router       /comics [get]
-// @Security     AccessToken
 func (h *ComicHandler) getComics(c *gin.Context) {
 	var req comicrequest.ListComicsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {

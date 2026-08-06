@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/common"
-	"manga-go/internal/pkg/utils"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -19,15 +19,15 @@ func (s *ChapterService) ListChapters(ctx context.Context, paging *common.Paging
 
 	chapters, total, err := s.chapterRepo.FindPaginated(ctx, []any{
 		clause.Eq{Column: "comic_id", Value: comicID},
+		s.chapterRepo.IsPublished(true),
 	}, paging, nil)
 	if err != nil {
 		s.logger.Error("Failed to list chapters", "error", err)
 		return response.ResultErrDb(err)
 	}
-	user, err := utils.GetCurrentUserFormContext(ctx)
-	if err != nil {
-		s.logger.Error("Failed to get current user from context", "error", err)
-		return response.ResultErrInternal(err)
+	user := authorization.ViewerFromContext(ctx).User
+	if user == nil {
+		return response.ResultPaginationData(chapters, total, "Chapters retrieved successfully")
 	}
 
 	userComicRead, err := s.userComicReadRepo.FindOne(ctx, []any{

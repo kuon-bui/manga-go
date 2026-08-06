@@ -13,10 +13,8 @@ import (
 // @Param        comicSlug  path      string  true  "Comic slug"
 // @Success      200        {object}  response.Response
 // @Failure      400        {object}  response.Response
-// @Failure      401        {object}  response.Response
 // @Failure      404        {object}  response.Response
 // @Router       /comics/{comicSlug} [get]
-// @Security     AccessToken
 func (h *ComicHandler) getComic(c *gin.Context) {
 	slug := c.Param("comicSlug")
 

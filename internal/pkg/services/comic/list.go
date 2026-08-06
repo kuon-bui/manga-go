@@ -16,7 +16,7 @@ func (s *ComicService) ListComics(ctx context.Context, req *comicrequest.ListCom
 		"Tags":             {},
 		"TranslationGroup": {},
 		"UploadedBy":       {},
-	})
+	}, s.comicRepo.IsPublished(true))
 	if err != nil {
 		s.logger.Error("Failed to list comics", "error", err)
 		return response.ResultErrDb(err)

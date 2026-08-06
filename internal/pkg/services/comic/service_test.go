@@ -95,6 +95,33 @@ func TestListComicsReturnsEmptyPagination(t *testing.T) {
 	}
 }
 
+func TestPublicComicQueriesHideDrafts(t *testing.T) {
+	t.Parallel()
+
+	s := newComicService(t, true)
+	published := testutil.Comic{Title: "Published", Slug: "published", AlternativeTitles: []byte("[]"), IsPublished: true}
+	draft := testutil.Comic{Title: "Draft", Slug: "draft", AlternativeTitles: []byte("[]"), IsPublished: false}
+	if err := s.gormDb.Create(&[]*testutil.Comic{&published, &draft}).Error; err != nil {
+		t.Fatalf("failed to seed comics: %v", err)
+	}
+
+	_, total, err := s.comicRepo.FindPaginatedWithFilters(
+		context.Background(),
+		&comicrequest.ListComicsRequest{Paging: common.Paging{Page: 1, Limit: 10}},
+		nil,
+		s.comicRepo.IsPublished(true),
+	)
+	if err != nil {
+		t.Fatalf("failed to list published comics: %v", err)
+	}
+	if total != 1 {
+		t.Fatalf("expected only one published comic, got %d", total)
+	}
+	if res := s.GetComic(context.Background(), "draft"); res.Success {
+		t.Fatal("expected anonymous viewer not to find draft")
+	}
+}
+
 func TestGetComicReturnsNotFoundWhenMissing(t *testing.T) {
 	t.Parallel()
 

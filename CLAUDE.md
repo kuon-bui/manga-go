@@ -302,10 +302,10 @@ Sau khi thêm annotations, chạy:
 ```bash
 make swagger
 # hoặc
-swag init -g cmd/dev/main.go -o docs/ --parseDependency --parseInternal
+swag init -g cmd/dev/main.go -o swagger-docs/ --parseDependency --parseInternal
 ```
 
-Các file docs/docs.go, swagger.json, swagger.yaml được generate automatically.
+Các file `swagger-docs/docs.go`, `swagger-docs/swagger.json`, `swagger-docs/swagger.yaml` được generate automatically. Thư mục `docs/` chỉ chứa design docs.
 
 ---
 
