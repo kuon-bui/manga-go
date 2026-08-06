@@ -1,6 +1,7 @@
 package roleservice
 
 import (
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
 	permissionrepo "manga-go/internal/pkg/repo/permission"
 	rolerepo "manga-go/internal/pkg/repo/role"
@@ -12,6 +13,7 @@ type RoleService struct {
 	logger         *logger.Logger
 	roleRepo       *rolerepo.RoleRepo
 	permissionRepo *permissionrepo.PermissionRepo
+	policyManager  *authorization.PolicyManager
 }
 
 type RoleServiceParams struct {
@@ -19,6 +21,7 @@ type RoleServiceParams struct {
 	Logger         *logger.Logger
 	RoleRepo       *rolerepo.RoleRepo
 	PermissionRepo *permissionrepo.PermissionRepo
+	PolicyManager  *authorization.PolicyManager
 }
 
 func NewRoleService(params RoleServiceParams) *RoleService {
@@ -26,5 +29,6 @@ func NewRoleService(params RoleServiceParams) *RoleService {
 		logger:         params.Logger,
 		roleRepo:       params.RoleRepo,
 		permissionRepo: params.PermissionRepo,
+		policyManager:  params.PolicyManager,
 	}
 }

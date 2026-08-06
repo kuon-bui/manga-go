@@ -22,6 +22,7 @@ func (s *CommentService) UpdateComment(ctx context.Context, id uuid.UUID, req *c
 		s.logger.Error("Failed to find comment", "error", err)
 		return response.ResultErrDb(err)
 	}
+
 	dataUpdate := map[string]any{
 		"content": req.Content,
 	}

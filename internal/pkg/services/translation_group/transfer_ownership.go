@@ -44,6 +44,17 @@ func (s *TranslationGroupService) TransferOwnership(ctx context.Context, slug st
 		return response.ResultErrDb(err)
 	}
 
+	if s.policyManager != nil {
+		if err := s.policyManager.RemoveTranslationGroupOwner(group.OwnerID.String(), group.ID.String()); err != nil {
+			s.logger.Error("Failed to remove old translation group owner policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
+		if err := s.policyManager.AddTranslationGroupOwner(req.NewOwnerID.String(), group.ID.String()); err != nil {
+			s.logger.Error("Failed to add new translation group owner policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
+	}
+
 	group.OwnerID = req.NewOwnerID
 	return response.ResultSuccess("Ownership transferred successfully", group)
 }

@@ -93,16 +93,12 @@ func (s *UserSeeder) Seed(tx *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	readerRole, err := s.roleRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: "reader"}}, nil)
-	if err != nil {
-		return err
-	}
 	translatorRole, err := s.roleRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: "translator"}}, nil)
 	if err != nil {
 		return err
 	}
 
-	if err := s.fakeUsers(tx, fakeUserCount, readerRole, translatorRole); err != nil {
+	if err := s.fakeUsers(tx, fakeUserCount, translatorRole); err != nil {
 		return err
 	}
 
@@ -113,7 +109,7 @@ func (s *UserSeeder) Seed(tx *gorm.DB) error {
 	return s.userRepo.AssignRolesWithTransaction(tx, user.ID, []*model.Role{adminRole})
 }
 
-func (s *UserSeeder) fakeUsers(tx *gorm.DB, count int, readerRole, translatorRole *model.Role) error {
+func (s *UserSeeder) fakeUsers(tx *gorm.DB, count int, translatorRole *model.Role) error {
 	for index := 1; index <= count; index++ {
 		email := fmt.Sprintf("seed-user-%02d@manga.local", index)
 		user, err := s.userRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "email", Value: email}}, nil)
@@ -131,13 +127,10 @@ func (s *UserSeeder) fakeUsers(tx *gorm.DB, count int, readerRole, translatorRol
 			}
 		}
 
-		roles := []*model.Role{readerRole}
 		if index <= 6 {
-			roles = []*model.Role{readerRole, translatorRole}
-		}
-
-		if err := s.userRepo.AssignRolesWithTransaction(tx, user.ID, roles); err != nil {
-			return err
+			if err := s.userRepo.AssignRolesWithTransaction(tx, user.ID, []*model.Role{translatorRole}); err != nil {
+				return err
+			}
 		}
 	}
 

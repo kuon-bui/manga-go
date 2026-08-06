@@ -1,6 +1,7 @@
 package translationgroupservice
 
 import (
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
 	"manga-go/internal/pkg/object_storage"
 	"manga-go/internal/pkg/redis"
@@ -16,6 +17,7 @@ type TranslationGroupService struct {
 	userRepo             *userrepo.UserRepository
 	rds                  *redis.Redis
 	objectStorage        *objectstorage.ObjectStorage
+	policyManager        *authorization.PolicyManager
 }
 
 type TranslationGroupServiceParams struct {
@@ -25,6 +27,7 @@ type TranslationGroupServiceParams struct {
 	UserRepo             *userrepo.UserRepository
 	Redis                *redis.Redis
 	ObjectStorage        *objectstorage.ObjectStorage
+	PolicyManager        *authorization.PolicyManager
 }
 
 func NewTranslationGroupService(params TranslationGroupServiceParams) *TranslationGroupService {
@@ -34,5 +37,6 @@ func NewTranslationGroupService(params TranslationGroupServiceParams) *Translati
 		userRepo:             params.UserRepo,
 		rds:                  params.Redis,
 		objectStorage:        params.ObjectStorage,
+		policyManager:        params.PolicyManager,
 	}
 }

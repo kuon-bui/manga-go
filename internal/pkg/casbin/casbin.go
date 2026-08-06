@@ -24,23 +24,28 @@ type Enforcer struct {
 	*casbin.Enforcer
 }
 
-func NewEnforcer(cfg *config.Config, db *gorm.DB, logger *logger.Logger) *Enforcer {
+func NewEnforcer(cfg *config.Config, db *gorm.DB, log *logger.Logger) *Enforcer {
 	adapter, err := gormadapter.NewAdapterByDB(db)
 	if err != nil {
-		logger.Error("Failed to create Casbin adapter: %v", err)
+		log.Error("Failed to create Casbin adapter: %v", err)
 		panic(err)
 	}
 
-	m, _ := model.NewModelFromString(modelStr)
+	m, err := model.NewModelFromString(modelStr)
+	if err != nil {
+		log.Error("Failed to create Casbin model: %v", err)
+		panic(err)
+	}
+
 	enforcer, err := casbin.NewEnforcer(m, adapter)
 	if err != nil {
-		logger.Error("Failed to create Casbin enforcer: %v", err)
+		log.Error("Failed to create Casbin enforcer: %v", err)
 		panic(err)
 	}
 
 	err = enforcer.LoadPolicy()
 	if err != nil {
-		logger.Error("Failed to load Casbin policy: %v", err)
+		log.Error("Failed to load Casbin policy: %v", err)
 		panic(err)
 	}
 
@@ -54,16 +59,16 @@ func NewEnforcer(cfg *config.Config, db *gorm.DB, logger *logger.Logger) *Enforc
 		IgnoreSelf: true,
 	})
 	if err := enforcer.SetWatcher(w); err != nil {
-		logger.Error("Failed to set Casbin watcher: %v", err)
+		log.Error("Failed to set Casbin watcher: %v", err)
 		panic(err)
 	}
 	if err := w.SetUpdateCallback(func(s string) {
-		logger.Info("Received Casbin policy update notification: %s", s)
+		log.Info("Received Casbin policy update notification: %s", s)
 		if err := enforcer.LoadPolicy(); err != nil {
-			logger.Error("Failed to reload Casbin policy: %v", err)
+			log.Error("Failed to reload Casbin policy: %v", err)
 		}
 	}); err != nil {
-		logger.Error("Failed to set Casbin watcher callback: %v", err)
+		log.Error("Failed to set Casbin watcher callback: %v", err)
 		panic(err)
 	}
 

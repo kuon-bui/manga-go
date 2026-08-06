@@ -32,5 +32,16 @@ func (s *TranslationGroupService) CreateTranslationGroup(ctx context.Context, ow
 		return response.ResultErrDb(err)
 	}
 
+	if s.policyManager != nil {
+		if err := s.policyManager.AddTranslationGroupMember(ownerID.String(), group.ID.String()); err != nil {
+			s.logger.Error("Failed to add translation group member policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
+		if err := s.policyManager.AddTranslationGroupOwner(ownerID.String(), group.ID.String()); err != nil {
+			s.logger.Error("Failed to add translation group owner policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
+	}
+
 	return response.ResultSuccess("Translation group created successfully", group)
 }

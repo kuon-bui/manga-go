@@ -2,8 +2,11 @@ package app
 
 import (
 	authmiddleware "manga-go/internal/app/middleware/auth"
+	authzmiddleware "manga-go/internal/app/middleware/authz"
 	slugmiddleware "manga-go/internal/app/middleware/slug"
 	asynqclient "manga-go/internal/pkg/asynq"
+	"manga-go/internal/pkg/authorization"
+	casbinpkg "manga-go/internal/pkg/casbin"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/gorm"
 	jwtprovider "manga-go/internal/pkg/jwt_provider"
@@ -29,11 +32,14 @@ var Module = fx.Module(
 		logger.NewLogger,
 		jwtprovider.NewJwtProvider,
 		authmiddleware.NewAuthMiddleware,
+		authzmiddleware.NewAuthzMiddleware,
 		slugmiddleware.NewSlugMiddleware,
 		mail.NewMailDialer,
 		asynqclient.NewAsynqClient,
 		objectstorage.NewObjectStorage,
 	),
+	casbinpkg.Module,
+	authorization.Module,
 	repo.Module,
 	services.Module,
 )

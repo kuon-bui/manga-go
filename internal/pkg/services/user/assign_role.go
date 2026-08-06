@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/model"
 
 	"github.com/google/uuid"
@@ -41,6 +42,17 @@ func (s *UserService) AssignRoles(ctx context.Context, userID uuid.UUID, roleIDs
 	if err := s.userRepo.AssignRoles(ctx, userID, roles); err != nil {
 		s.logger.Error("Failed to assign roles to user", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.policyManager != nil {
+		roleIDs := make([]string, 0, len(roles))
+		for _, role := range roles {
+			roleIDs = append(roleIDs, role.ID.String())
+		}
+		if err := s.policyManager.ReplaceRolesForUser(userID.String(), roleIDs, authorization.OrgPlatform); err != nil {
+			s.logger.Error("Failed to update authorization policy", "error", err)
+			return response.ResultErrInternal(err)
+		}
 	}
 
 	return response.ResultSuccess("Roles assigned successfully", nil)
