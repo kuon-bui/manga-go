@@ -8,16 +8,17 @@ import (
 )
 
 // @Summary      Remove permission from role
-// @Description  Remove a permission from a role
+// @Description  Revoke a single permission from a role, named as in GET /permissions, e.g. "comic:write".
 // @Tags         Role
 // @Accept       json
 // @Produce      json
-// @Param        id            path      string  true  "Role ID"
-// @Param        permissionId  path      string  true  "Permission ID"
-// @Success      200           {object}  response.Response
-// @Failure      400           {object}  response.Response
-// @Failure      401           {object}  response.Response
-// @Router       /roles/{id}/permissions/{permissionId} [delete]
+// @Param        id              path      string  true  "Role ID"
+// @Param        permissionName  path      string  true  "Permission name, e.g. comic:write"
+// @Success      200             {object}  response.Result
+// @Failure      400             {object}  response.Result
+// @Failure      401             {object}  response.Result
+// @Failure      403             {object}  response.Result
+// @Router       /roles/{id}/permissions/{permissionName} [delete]
 // @Security     AccessToken
 func (h *RoleHandler) removeRolePermission(c *gin.Context) {
 	roleID, err := uuid.Parse(c.Param("id"))
@@ -26,12 +27,6 @@ func (h *RoleHandler) removeRolePermission(c *gin.Context) {
 		return
 	}
 
-	permissionID, err := uuid.Parse(c.Param("permissionId"))
-	if err != nil {
-		response.ResultError("invalid permission id").ResponseResult(c)
-		return
-	}
-
-	result := h.roleService.RemovePermission(c.Request.Context(), roleID, permissionID)
+	result := h.roleService.RemovePermission(c.Request.Context(), roleID, c.Param("permissionName"))
 	result.ResponseResult(c)
 }

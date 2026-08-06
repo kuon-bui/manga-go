@@ -14,6 +14,14 @@ type Context string
 const (
 	OrgPlatform Org = "platform"
 
+	// SubjectAnonymous is the subject used when nobody is signed in. Policies
+	// granted to it are the platform's public floor and apply to every caller.
+	SubjectAnonymous = "anonymous"
+
+	// RoleAuthenticated is held implicitly by every signed-in user. The matcher
+	// resolves it without a grouping row, so there is no per-user bookkeeping.
+	RoleAuthenticated = "authenticated"
+
 	// Contexts
 	CtxAny         Context = "any"
 	CtxOwner       Context = "owner"

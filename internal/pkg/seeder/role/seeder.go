@@ -4,7 +4,6 @@ import (
 	"errors"
 	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/model"
-	permissionrepo "manga-go/internal/pkg/repo/permission"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	seederutil "manga-go/internal/pkg/seeder/util"
 
@@ -13,13 +12,15 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// rolePermissions maps role name → permission names assigned to that role.
+// rolePermissions maps role name → the catalog permissions it grants. Names are
+// validated against authorization.Catalog when written, so a typo here fails the
+// seed rather than producing a role that silently grants nothing.
 var rolePermissions = map[string][]string{
 	"admin": {
 		"comic:read", "comic:write", "comic:delete",
 		"chapter:read", "chapter:write", "chapter:delete",
 		"user:read", "user:manage",
-		"role:manage",
+		"role:manage", "permission:read",
 		"tag:write", "tag:delete",
 		"genre:write", "genre:delete",
 		"author:write", "author:delete",
@@ -34,23 +35,20 @@ var rolePermissions = map[string][]string{
 }
 
 type RoleSeeder struct {
-	roleRepo       *rolerepo.RoleRepo
-	permissionRepo *permissionrepo.PermissionRepo
-	faker          faker.Faker
-	policyManager  *authorization.PolicyManager
+	roleRepo      *rolerepo.RoleRepo
+	faker         faker.Faker
+	policyManager *authorization.PolicyManager
 }
 
 func NewRoleSeeder(
 	roleRepo *rolerepo.RoleRepo,
-	permissionRepo *permissionrepo.PermissionRepo,
 	faker faker.Faker,
 	policyManager *authorization.PolicyManager,
 ) *RoleSeeder {
 	return &RoleSeeder{
-		roleRepo:       roleRepo,
-		permissionRepo: permissionRepo,
-		faker:          faker,
-		policyManager:  policyManager,
+		roleRepo:      roleRepo,
+		faker:         faker,
+		policyManager: policyManager,
 	}
 }
 
@@ -59,7 +57,7 @@ func (s *RoleSeeder) Name() string {
 }
 
 // Truncate drops the seeded roles from the database and from the policy engine
-// together. Clearing only the tables would leave policy rules keyed by role ids
+// together. Clearing only the table would leave policy rules keyed by role ids
 // that no longer exist.
 func (s *RoleSeeder) Truncate(tx *gorm.DB) error {
 	for roleName := range rolePermissions {
@@ -75,11 +73,17 @@ func (s *RoleSeeder) Truncate(tx *gorm.DB) error {
 		}
 	}
 
-	return seederutil.TruncateTables(tx, "users_roles", "roles_permissions", "roles")
+	return seederutil.TruncateTables(tx, "roles")
 }
 
 func (s *RoleSeeder) Seed(tx *gorm.DB) error {
-	for roleName, permNames := range rolePermissions {
+	// The baseline is what every visitor gets before any role applies: what is
+	// publicly readable, and what merely being signed in allows.
+	if err := s.policyManager.ReplaceBaselinePolicies(); err != nil {
+		return err
+	}
+
+	for roleName, permissions := range rolePermissions {
 		role, err := s.roleRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: roleName}}, nil)
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
@@ -93,24 +97,11 @@ func (s *RoleSeeder) Seed(tx *gorm.DB) error {
 			}
 		}
 
-		perms := make([]*model.Permission, 0, len(permNames))
-		rules := make([]authorization.PermissionRule, 0, len(permNames))
-		for _, pn := range permNames {
-			perm, err := s.permissionRepo.FindOneWithTransaction(tx, []any{clause.Eq{Column: "name", Value: pn}}, nil)
-			if err != nil {
-				return err
-			}
-			perms = append(perms, perm)
-			rules = append(rules, authorization.PermissionRule{ID: perm.ID.String(), Name: perm.Name})
-		}
-
-		if err := s.roleRepo.AssignPermissionsWithTransaction(tx, role.ID, perms); err != nil {
-			return err
-		}
-
-		// A role means nothing until the policy engine knows about it: without
-		// this the seeded admin exists in the database but is denied everything.
-		if err := s.policyManager.ReplacePermissionsForRole(role.ID.String(), rules, authorization.OrgPlatform); err != nil {
+		// Re-written on every run so a re-seed repairs a policy engine that has
+		// drifted from the roles table.
+		if err := s.policyManager.ReplacePermissionsForRole(
+			role.ID.String(), permissions, authorization.OrgPlatform,
+		); err != nil {
 			return err
 		}
 	}

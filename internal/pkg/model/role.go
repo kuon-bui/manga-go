@@ -6,11 +6,15 @@ import (
 	"github.com/jaswdr/faker/v2"
 )
 
+// Role carries only the human-facing metadata. Who holds a role, and what it
+// grants, live in the policy engine — see authorization.PolicyManager.
 type Role struct {
 	common.SqlModel
-	Name        string        `json:"name" gorm:"column:name"`
-	Permissions []*Permission `json:"permissions,omitempty" gorm:"many2many:roles_permissions;"`
-	Users       []*User       `json:"-" gorm:"many2many:users_roles;"`
+	Name string `json:"name" gorm:"column:name"`
+
+	// Permissions is populated on read from the policy engine; it is never
+	// persisted, which is why it carries no gorm mapping.
+	Permissions []string `json:"permissions,omitempty" gorm:"-"`
 }
 
 func (Role) TableName() string {

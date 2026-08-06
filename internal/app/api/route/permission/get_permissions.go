@@ -2,30 +2,21 @@ package permissionroute
 
 import (
 	"manga-go/internal/app/api/common/response"
-	"manga-go/internal/pkg/common"
 
 	"github.com/gin-gonic/gin"
 )
 
 // @Summary      List permissions
-// @Description  Get paginated list of permissions
+// @Description  List every permission that can be granted to a role. The catalog is defined in code, so it is fixed for a given deployment.
 // @Tags         Permission
 // @Accept       json
 // @Produce      json
-// @Param        page   query     int  false  "Page number"
-// @Param        limit  query     int  false  "Items per page"
-// @Success      200    {object}  response.Result
-// @Failure      400    {object}  response.Response
-// @Failure      401    {object}  response.Response
+// @Success      200  {object}  response.Result
+// @Failure      401  {object}  response.Result
+// @Failure      403  {object}  response.Result
 // @Router       /permissions [get]
 // @Security     AccessToken
 func (h *PermissionHandler) getPermissions(c *gin.Context) {
-	var paging common.Paging
-	if err := c.ShouldBindQuery(&paging); err != nil {
-		response.ResultInvalidRequestErr(err).ResponseResult(c)
-		return
-	}
-
-	result := h.permissionService.ListPermissions(c.Request.Context(), &paging)
+	var result response.Result = h.permissionService.ListPermissions(c.Request.Context())
 	result.ResponseResult(c)
 }

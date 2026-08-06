@@ -40,11 +40,9 @@ func NewPermissionRoute(params PermissionRouteParams) *PermissionRoute {
 
 func (pr *PermissionRoute) Setup() {
 	rg := pr.Group("/permissions", pr.authMiddleware.RequireJwt)
-	requirePermissionManage := authzmiddleware.Require(pr.authzMiddleware, authorization.ActionManage, authorization.ObjectPermission)
+	requirePermissionRead := authzmiddleware.Require(pr.authzMiddleware, authorization.ActionRead, authorization.ObjectPermission)
 
-	rg.GET("", requirePermissionManage, pr.permissionHandler.getPermissions)
-	rg.GET("/all", requirePermissionManage, pr.permissionHandler.getAllPermissions)
-	rg.POST("", requirePermissionManage, pr.permissionHandler.createPermission)
-	rg.PUT("/:id", requirePermissionManage, pr.permissionHandler.updatePermission)
-	rg.DELETE("/:id", requirePermissionManage, pr.permissionHandler.deletePermission)
+	// The catalog is code, not data: there is nothing to create, update or
+	// delete. Whoever administers roles needs to read it to build the UI.
+	rg.GET("", requirePermissionRead, pr.permissionHandler.getPermissions)
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/hash"
 	"manga-go/internal/pkg/logger"
@@ -31,7 +32,6 @@ func newUserService(t *testing.T, createTables bool) *UserService {
 		testutil.MustSyncSchemas(t, db,
 			&testutil.User{},
 			&testutil.Role{},
-			&testutil.UserRole{},
 		)
 	}
 
@@ -39,6 +39,9 @@ func newUserService(t *testing.T, createTables bool) *UserService {
 		logger:   logger.NewLogger(),
 		userRepo: userrepo.NewUserRepository(db, nil),
 		roleRepo: rolerepo.NewRoleRepo(db),
+		policyManager: authorization.NewPolicyManager(authorization.PolicyManagerParams{
+			Enforcer: testutil.NewInMemoryEnforcer(t),
+		}),
 		config: &config.Config{
 			ResetPassword: config.ResetPasswordConfig{
 				TokenExpiryMinutes: 30,

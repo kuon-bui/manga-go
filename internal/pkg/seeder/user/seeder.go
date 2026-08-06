@@ -61,13 +61,9 @@ func NewUserSeeder(
 	}
 }
 
-// assignRoles writes the grant to the database and to the policy engine, which
-// is the only place enforcement actually reads from.
-func (s *UserSeeder) assignRoles(tx *gorm.DB, userID uuid.UUID, roles []*model.Role) error {
-	if err := s.userRepo.AssignRolesWithTransaction(tx, userID, roles); err != nil {
-		return err
-	}
-
+// assignRoles records the grant in the policy engine, which is the only place
+// role membership lives.
+func (s *UserSeeder) assignRoles(userID uuid.UUID, roles []*model.Role) error {
 	roleIDs := make([]string, 0, len(roles))
 	for _, role := range roles {
 		roleIDs = append(roleIDs, role.ID.String())
@@ -80,7 +76,7 @@ func (s *UserSeeder) Name() string {
 }
 
 func (s *UserSeeder) Truncate(tx *gorm.DB) error {
-	return seederutil.TruncateTables(tx, "users_roles", "users")
+	return seederutil.TruncateTables(tx, "users")
 }
 
 func (s *UserSeeder) Seed(tx *gorm.DB) error {
@@ -121,7 +117,7 @@ func (s *UserSeeder) Seed(tx *gorm.DB) error {
 
 	// Re-assigned on every run so a re-seed repairs a policy engine that has
 	// drifted from the database.
-	return s.assignRoles(tx, user.ID, []*model.Role{adminRole})
+	return s.assignRoles(user.ID, []*model.Role{adminRole})
 }
 
 func (s *UserSeeder) fakeUsers(tx *gorm.DB, count int, translatorRole *model.Role) error {
@@ -143,7 +139,7 @@ func (s *UserSeeder) fakeUsers(tx *gorm.DB, count int, translatorRole *model.Rol
 		}
 
 		if index <= 6 {
-			if err := s.assignRoles(tx, user.ID, []*model.Role{translatorRole}); err != nil {
+			if err := s.assignRoles(user.ID, []*model.Role{translatorRole}); err != nil {
 				return err
 			}
 		}

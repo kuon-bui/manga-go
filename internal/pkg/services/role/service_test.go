@@ -8,7 +8,6 @@ import (
 
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/logger"
-	permissionrepo "manga-go/internal/pkg/repo/permission"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	rolerequest "manga-go/internal/pkg/request/role"
 	"manga-go/internal/pkg/testutil"
@@ -29,15 +28,12 @@ func newRoleService(t *testing.T, createTables bool) *RoleService {
 	if createTables {
 		testutil.MustSyncSchemas(t, db,
 			&testutil.Role{},
-			&testutil.Permission{},
-			&testutil.RolePermission{},
 		)
 	}
 
 	return &RoleService{
-		logger:         logger.NewLogger(),
-		roleRepo:       rolerepo.NewRoleRepo(db),
-		permissionRepo: permissionrepo.NewPermissionRepo(db),
+		logger:   logger.NewLogger(),
+		roleRepo: rolerepo.NewRoleRepo(db),
 	}
 }
 
@@ -143,66 +139,5 @@ func TestCreateRoleReturnsDbErrorWhenTableMissing(t *testing.T) {
 	}
 	if res.Error == nil {
 		t.Fatalf("expected non-nil error")
-	}
-}
-
-func TestAssignPermissionsReturnsRoleNotFoundWhenMissing(t *testing.T) {
-	t.Parallel()
-
-	s := newRoleService(t, true)
-	res := s.AssignPermissions(context.Background(), uuid.New(), []uuid.UUID{uuid.New()})
-
-	if res.Success {
-		t.Fatalf("expected failure result")
-	}
-	if res.HttpStatus != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", res.HttpStatus)
-	}
-	if res.Message != "Role not found" {
-		t.Fatalf("unexpected message: %s", res.Message)
-	}
-}
-
-func TestAssignPermissionsReturnsPermissionNotFoundWhenMissing(t *testing.T) {
-	t.Parallel()
-
-	s := newRoleService(t, true)
-	roleID := uuid.New()
-	if err := s.roleRepo.DB.Exec("INSERT INTO roles (id, name) VALUES (?, ?)", roleID.String(), "editor").Error; err != nil {
-		t.Fatalf("failed to seed role: %v", err)
-	}
-
-	res := s.AssignPermissions(context.Background(), roleID, []uuid.UUID{uuid.New()})
-
-	if res.Success {
-		t.Fatalf("expected failure result")
-	}
-	if res.HttpStatus != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", res.HttpStatus)
-	}
-	if res.Message != "Permission not found" {
-		t.Fatalf("unexpected message: %s", res.Message)
-	}
-}
-
-func TestRemovePermissionReturnsPermissionNotFoundWhenMissing(t *testing.T) {
-	t.Parallel()
-
-	s := newRoleService(t, true)
-	roleID := uuid.New()
-	if err := s.roleRepo.DB.Exec("INSERT INTO roles (id, name) VALUES (?, ?)", roleID.String(), "editor").Error; err != nil {
-		t.Fatalf("failed to seed role: %v", err)
-	}
-
-	res := s.RemovePermission(context.Background(), roleID, uuid.New())
-
-	if res.Success {
-		t.Fatalf("expected failure result")
-	}
-	if res.HttpStatus != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", res.HttpStatus)
-	}
-	if res.Message != "Permission not found" {
-		t.Fatalf("unexpected message: %s", res.Message)
 	}
 }

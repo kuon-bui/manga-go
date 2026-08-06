@@ -152,8 +152,9 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 5 {
-			t.Fatalf("expected 5 routes, got %d", len(routes))
+		// The catalog is read-only: listing it is the only permission endpoint.
+		if len(routes) != 1 {
+			t.Fatalf("expected 1 route, got %d", len(routes))
 		}
 		assertRouteExists(t, routes, "GET", "/permissions")
 	})

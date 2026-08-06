@@ -12,7 +12,6 @@ import (
 	notificationrepo "manga-go/internal/pkg/repo/notification"
 	pagerepo "manga-go/internal/pkg/repo/page"
 	pagereactionrepo "manga-go/internal/pkg/repo/page_reaction"
-	permissionrepo "manga-go/internal/pkg/repo/permission"
 	ratingrepo "manga-go/internal/pkg/repo/rating"
 	reactionrepo "manga-go/internal/pkg/repo/reaction"
 	readinghistoryrepo "manga-go/internal/pkg/repo/reading_history"
@@ -40,7 +39,6 @@ var Module = fx.Module(
 	pagereactionrepo.Module,
 	translationgrouprepo.Module,
 	rolerepo.Module,
-	permissionrepo.Module,
 	ratingrepo.Module,
 	readinghistoryrepo.Module,
 	commentrepo.Module,

@@ -3,7 +3,7 @@ package authorization
 import (
 	"errors"
 	"fmt"
-	"strings"
+	"sort"
 
 	casbinpkg "manga-go/internal/pkg/casbin"
 
@@ -14,13 +14,8 @@ const (
 	roleGroupOwner  = "group_owner"
 	roleGroupMember = "group_member"
 
-	permissionGroupMemberCreateChapter  = "group_member:chapter:create"
-	permissionGroupMemberUpdateChapter  = "group_member:chapter:update"
-	permissionGroupMemberPublishChapter = "group_member:chapter:publish"
-
-	permissionGroupOwnerManageTranslationGroup = "group_owner:translation_group:manage"
-	permissionGroupOwnerManageComic            = "group_owner:comic:manage"
-	permissionGroupOwnerManageChapter          = "group_owner:chapter:manage"
+	effectAllow = "allow"
+	effectDeny  = "deny"
 )
 
 // Writing a policy must never fail silently: a caller that believes it granted
@@ -32,20 +27,24 @@ var (
 	ErrInvalidPermissionName   = errors.New("invalid permission name")
 )
 
-type PolicyManager struct {
-	enforcer *casbinpkg.Enforcer
-}
-
-type PermissionRule struct {
-	ID   string
-	Name string
-}
-
-type permissionPolicy struct {
-	ID      string
-	Actions []Action
+// PolicyRule is a single row of the policy table: the subject it is attached to
+// may perform Action on Object, but only in Context.
+type PolicyRule struct {
+	Action  Action
 	Object  Object
 	Context Context
+	Deny    bool
+}
+
+func (r PolicyRule) effect() string {
+	if r.Deny {
+		return effectDeny
+	}
+	return effectAllow
+}
+
+type PolicyManager struct {
+	enforcer *casbinpkg.Enforcer
 }
 
 type PolicyManagerParams struct {
@@ -73,6 +72,8 @@ func requireNonEmpty(operation string, fields map[string]string) error {
 	}
 	return nil
 }
+
+// ---------------------------------------------------------------- user ↔ role
 
 func (m *PolicyManager) AddRoleForUser(userID string, roleID string, org Org) error {
 	enforcer, err := m.requireEnforcer()
@@ -131,6 +132,24 @@ func (m *PolicyManager) ReplaceRolesForUser(userID string, roleIDs []string, org
 	return nil
 }
 
+// RolesForUser reports the role ids a user holds. The policy engine is the
+// record of who holds what, so this is the only place to ask.
+func (m *PolicyManager) RolesForUser(userID string, org Org) ([]string, error) {
+	enforcer, err := m.requireEnforcer()
+	if err != nil {
+		return nil, err
+	}
+	if err := requireNonEmpty("RolesForUser", map[string]string{
+		"user id": userID,
+		"org":     string(org),
+	}); err != nil {
+		return nil, err
+	}
+
+	return enforcer.GetRolesForUserInDomain(userID, string(org)), nil
+}
+
+// RemoveRole deletes a role: both what it grants and who holds it.
 func (m *PolicyManager) RemoveRole(roleID string, org Org) error {
 	enforcer, err := m.requireEnforcer()
 	if err != nil {
@@ -143,16 +162,20 @@ func (m *PolicyManager) RemoveRole(roleID string, org Org) error {
 		return err
 	}
 
-	if _, err := enforcer.RemoveFilteredGroupingPolicy(0, roleID, "", string(org)); err != nil {
+	if _, err := enforcer.RemoveFilteredPolicy(0, string(org), roleID); err != nil {
 		return err
 	}
 	_, err = enforcer.RemoveFilteredGroupingPolicy(1, roleID, string(org))
 	return err
 }
 
-func (m *PolicyManager) ReplacePermissionsForRole(roleID string, permissions []PermissionRule, org Org) error {
-	enforcer, err := m.requireEnforcer()
-	if err != nil {
+// ---------------------------------------------------------- role ↔ permission
+
+// ReplacePermissionsForRole sets the role's grants to exactly names. Every name
+// is checked against the catalog first: a batch containing one unknown name
+// changes nothing, so a typo cannot strip a role of everything it had.
+func (m *PolicyManager) ReplacePermissionsForRole(roleID string, names []string, org Org) error {
+	if _, err := m.requireEnforcer(); err != nil {
 		return err
 	}
 	if err := requireNonEmpty("ReplacePermissionsForRole", map[string]string{
@@ -162,262 +185,285 @@ func (m *PolicyManager) ReplacePermissionsForRole(roleID string, permissions []P
 		return err
 	}
 
-	// Reject the whole batch before touching the engine, so one bad name cannot
-	// leave the role stripped of every permission it used to have.
-	for _, permission := range permissions {
-		if err := ValidatePermissionName(permission.Name); err != nil {
-			return err
-		}
-	}
-
-	if _, err := enforcer.RemoveFilteredGroupingPolicy(0, roleID, "", string(org)); err != nil {
+	rules, err := rulesForPermissionNames(names)
+	if err != nil {
 		return err
 	}
-	for _, permission := range permissions {
-		if err := m.AddPermissionForRole(roleID, permission, org); err != nil {
+	return m.replacePoliciesForSubject(roleID, org, rules)
+}
+
+func (m *PolicyManager) GrantPermissionToRole(roleID string, name string, org Org) error {
+	enforcer, err := m.requireEnforcer()
+	if err != nil {
+		return err
+	}
+	if err := requireNonEmpty("GrantPermissionToRole", map[string]string{
+		"role id": roleID,
+		"org":     string(org),
+	}); err != nil {
+		return err
+	}
+
+	rules, err := rulesForPermissionNames([]string{name})
+	if err != nil {
+		return err
+	}
+	return addPolicies(enforcer, roleID, org, rules)
+}
+
+func (m *PolicyManager) RevokePermissionFromRole(roleID string, name string, org Org) error {
+	enforcer, err := m.requireEnforcer()
+	if err != nil {
+		return err
+	}
+	if err := requireNonEmpty("RevokePermissionFromRole", map[string]string{
+		"role id": roleID,
+		"org":     string(org),
+	}); err != nil {
+		return err
+	}
+
+	rules, err := rulesForPermissionNames([]string{name})
+	if err != nil {
+		return err
+	}
+	for _, rule := range rules {
+		if _, err := enforcer.RemoveFilteredPolicy(
+			0, string(org), roleID, string(rule.Action), string(rule.Object), string(rule.Context),
+		); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *PolicyManager) AddPermissionForRole(roleID string, permission PermissionRule, org Org) error {
+// PermissionNamesForRole reads the role's grants back as catalog names. The
+// expansion of a shorthand is folded back up, so a role granted "comic:write"
+// reads back as "comic:write" rather than three separate actions.
+func (m *PolicyManager) PermissionNamesForRole(roleID string, org Org) ([]string, error) {
 	enforcer, err := m.requireEnforcer()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if err := requireNonEmpty("AddPermissionForRole", map[string]string{
-		"role id":       roleID,
-		"permission id": permission.ID,
-		"org":           string(org),
+	if err := requireNonEmpty("PermissionNamesForRole", map[string]string{
+		"role id": roleID,
+		"org":     string(org),
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	actions, object, err := parsePermissionName(permission.Name)
+	rows, err := enforcer.GetFilteredPolicy(0, string(org), roleID)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	if _, err := enforcer.AddGroupingPolicy(roleID, permission.ID, string(org)); err != nil {
-		return err
+
+	granted := map[Object]map[Action]bool{}
+	for _, row := range rows {
+		if len(row) < 6 || row[4] != string(CtxAny) || row[5] != effectAllow {
+			continue
+		}
+		object, action := Object(row[3]), Action(row[2])
+		if granted[object] == nil {
+			granted[object] = map[Action]bool{}
+		}
+		granted[object][action] = true
 	}
-	return m.addPermissionPolicy(org, permission.ID, actions, object, CtxAny)
+
+	names := make([]string, 0, len(granted))
+	for object, actions := range granted {
+		names = append(names, foldActionsToNames(object, actions)...)
+	}
+	sort.Strings(names)
+	return names, nil
 }
 
-func (m *PolicyManager) RemovePermissionForRole(roleID string, permissionID string, org Org) error {
-	enforcer, err := m.requireEnforcer()
-	if err != nil {
-		return err
-	}
-	if err := requireNonEmpty("RemovePermissionForRole", map[string]string{
-		"role id":       roleID,
-		"permission id": permissionID,
-		"org":           string(org),
-	}); err != nil {
+// ------------------------------------------------------------------ baseline
+
+// ReplaceBaselinePolicies writes the rights every visitor has before any role
+// is considered: what an anonymous visitor may read, and what merely being
+// signed in allows. Keeping these as policy rows rather than Go branches means
+// enforcement has exactly one source of truth.
+func (m *PolicyManager) ReplaceBaselinePolicies() error {
+	if _, err := m.requireEnforcer(); err != nil {
 		return err
 	}
 
-	_, err = enforcer.RemoveGroupingPolicy(roleID, permissionID, string(org))
-	return err
+	for _, subject := range []string{SubjectAnonymous, RoleAuthenticated} {
+		if err := m.replacePoliciesForSubject(subject, OrgPlatform, baselinePolicies()[subject]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (m *PolicyManager) ReplacePermission(permissionID string, permissionName string, org Org) error {
-	enforcer, err := m.requireEnforcer()
-	if err != nil {
-		return err
-	}
-	if err := requireNonEmpty("ReplacePermission", map[string]string{
-		"permission id": permissionID,
-		"org":           string(org),
-	}); err != nil {
-		return err
-	}
+func baselinePolicies() map[string][]PolicyRule {
+	return map[string][]PolicyRule{
+		SubjectAnonymous: {
+			{Action: ActionRead, Object: ObjectComic, Context: CtxPublished},
+			{Action: ActionRead, Object: ObjectChapter, Context: CtxPublished},
+		},
+		RoleAuthenticated: {
+			{Action: ActionCreate, Object: ObjectComment, Context: CtxAny},
+			{Action: ActionUpdate, Object: ObjectComment, Context: CtxOwner},
+			{Action: ActionDelete, Object: ObjectComment, Context: CtxOwner},
 
-	actions, object, err := parsePermissionName(permissionName)
-	if err != nil {
-		return err
+			{Action: ActionCreate, Object: ObjectRating, Context: CtxAny},
+			{Action: ActionUpdate, Object: ObjectRating, Context: CtxOwner},
+			{Action: ActionDelete, Object: ObjectRating, Context: CtxOwner},
+
+			{Action: ActionCreate, Object: ObjectReadingHistory, Context: CtxAny},
+			{Action: ActionRead, Object: ObjectReadingHistory, Context: CtxOwner},
+			{Action: ActionUpdate, Object: ObjectReadingHistory, Context: CtxOwner},
+			{Action: ActionDelete, Object: ObjectReadingHistory, Context: CtxOwner},
+
+			{Action: ActionUpdate, Object: ObjectUser, Context: CtxSelf},
+		},
 	}
-	if _, err := enforcer.RemoveFilteredPolicy(0, string(org), permissionID); err != nil {
-		return err
-	}
-	return m.addPermissionPolicy(org, permissionID, actions, object, CtxAny)
 }
 
-func (m *PolicyManager) RemovePermission(permissionID string, org Org) error {
-	enforcer, err := m.requireEnforcer()
-	if err != nil {
-		return err
-	}
-	if err := requireNonEmpty("RemovePermission", map[string]string{
-		"permission id": permissionID,
-		"org":           string(org),
-	}); err != nil {
-		return err
-	}
-
-	if _, err := enforcer.RemoveFilteredGroupingPolicy(1, permissionID, string(org)); err != nil {
-		return err
-	}
-	_, err = enforcer.RemoveFilteredPolicy(0, string(org), permissionID)
-	return err
-}
+// ---------------------------------------------------------- translation group
 
 func (m *PolicyManager) AddTranslationGroupMember(userID string, groupID string) error {
-	if err := requireNonEmpty("AddTranslationGroupMember", map[string]string{
-		"group id": groupID,
-	}); err != nil {
+	if err := requireNonEmpty("AddTranslationGroupMember", map[string]string{"group id": groupID}); err != nil {
 		return err
 	}
 
 	org := TranslationGroupOrgString(groupID)
-	if err := m.ensureTranslationGroupPermissions(org); err != nil {
+	if err := m.ensureTranslationGroupPolicies(org); err != nil {
 		return err
 	}
 	return m.AddRoleForUser(userID, roleGroupMember, org)
 }
 
 func (m *PolicyManager) AddTranslationGroupOwner(userID string, groupID string) error {
-	if err := requireNonEmpty("AddTranslationGroupOwner", map[string]string{
-		"group id": groupID,
-	}); err != nil {
+	if err := requireNonEmpty("AddTranslationGroupOwner", map[string]string{"group id": groupID}); err != nil {
 		return err
 	}
 
 	org := TranslationGroupOrgString(groupID)
-	if err := m.ensureTranslationGroupPermissions(org); err != nil {
+	if err := m.ensureTranslationGroupPolicies(org); err != nil {
 		return err
 	}
 	return m.AddRoleForUser(userID, roleGroupOwner, org)
 }
 
-func (m *PolicyManager) RemoveTranslationGroupOwner(userID string, groupID string) error {
-	if err := requireNonEmpty("RemoveTranslationGroupOwner", map[string]string{
-		"group id": groupID,
-	}); err != nil {
+func (m *PolicyManager) RemoveTranslationGroupMember(userID string, groupID string) error {
+	if err := requireNonEmpty("RemoveTranslationGroupMember", map[string]string{"group id": groupID}); err != nil {
 		return err
 	}
+	return m.RemoveRoleForUser(userID, roleGroupMember, TranslationGroupOrgString(groupID))
+}
 
+func (m *PolicyManager) RemoveTranslationGroupOwner(userID string, groupID string) error {
+	if err := requireNonEmpty("RemoveTranslationGroupOwner", map[string]string{"group id": groupID}); err != nil {
+		return err
+	}
 	return m.RemoveRoleForUser(userID, roleGroupOwner, TranslationGroupOrgString(groupID))
 }
 
-func (m *PolicyManager) ensureTranslationGroupPermissions(org Org) error {
+func (m *PolicyManager) ensureTranslationGroupPolicies(org Org) error {
 	if _, err := m.requireEnforcer(); err != nil {
 		return err
 	}
-	if err := requireNonEmpty("ensureTranslationGroupPermissions", map[string]string{
-		"org": string(org),
-	}); err != nil {
+	if err := requireNonEmpty("ensureTranslationGroupPolicies", map[string]string{"org": string(org)}); err != nil {
 		return err
 	}
 
-	for _, policy := range translationGroupMemberPolicies() {
-		if err := m.addPermissionForBuiltinRole(org, roleGroupMember, policy); err != nil {
-			return err
-		}
+	if err := m.replacePoliciesForSubject(roleGroupMember, org, translationGroupMemberPolicies()); err != nil {
+		return err
 	}
-	for _, policy := range translationGroupOwnerPolicies() {
-		if err := m.addPermissionForBuiltinRole(org, roleGroupOwner, policy); err != nil {
+	return m.replacePoliciesForSubject(roleGroupOwner, org, translationGroupOwnerPolicies())
+}
+
+func translationGroupMemberPolicies() []PolicyRule {
+	return []PolicyRule{
+		{Action: ActionCreate, Object: ObjectChapter, Context: CtxGroupMember},
+		{Action: ActionUpdate, Object: ObjectChapter, Context: CtxOwner},
+		{Action: ActionPublish, Object: ObjectChapter, Context: CtxGroupMember},
+	}
+}
+
+func translationGroupOwnerPolicies() []PolicyRule {
+	return []PolicyRule{
+		{Action: ActionManage, Object: ObjectTranslationGroup, Context: CtxGroupOwner},
+		{Action: ActionManage, Object: ObjectComic, Context: CtxGroupMember},
+		{Action: ActionManage, Object: ObjectChapter, Context: CtxGroupMember},
+	}
+}
+
+// -------------------------------------------------------------------- shared
+
+func (m *PolicyManager) replacePoliciesForSubject(subject string, org Org, rules []PolicyRule) error {
+	enforcer, err := m.requireEnforcer()
+	if err != nil {
+		return err
+	}
+
+	if _, err := enforcer.RemoveFilteredPolicy(0, string(org), subject); err != nil {
+		return err
+	}
+	return addPolicies(enforcer, subject, org, rules)
+}
+
+func addPolicies(enforcer *casbinpkg.Enforcer, subject string, org Org, rules []PolicyRule) error {
+	for _, rule := range rules {
+		ctx := rule.Context
+		if ctx == "" {
+			ctx = CtxAny
+		}
+		if _, err := enforcer.AddPolicy(
+			string(org), subject, string(rule.Action), string(rule.Object), string(ctx), rule.effect(),
+		); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (m *PolicyManager) addPermissionForBuiltinRole(org Org, roleID string, policy permissionPolicy) error {
-	enforcer, err := m.requireEnforcer()
-	if err != nil {
-		return err
-	}
-
-	if _, err := enforcer.AddGroupingPolicy(roleID, policy.ID, string(org)); err != nil {
-		return err
-	}
-	return m.addPermissionPolicy(org, policy.ID, policy.Actions, policy.Object, policy.Context)
-}
-
-func (m *PolicyManager) addPermissionPolicy(org Org, permissionID string, actions []Action, object Object, ctx Context) error {
-	enforcer, err := m.requireEnforcer()
-	if err != nil {
-		return err
-	}
-
-	if ctx == "" {
-		ctx = CtxAny
-	}
-	for _, action := range actions {
-		if _, err := enforcer.AddPolicy(string(org), permissionID, string(action), string(object), string(ctx), "allow"); err != nil {
-			return err
+func rulesForPermissionNames(names []string) ([]PolicyRule, error) {
+	rules := make([]PolicyRule, 0, len(names))
+	for _, name := range names {
+		def, ok := LookupPermission(name)
+		if !ok {
+			return nil, fmt.Errorf("%w: %q is not a known permission", ErrInvalidPermissionName, name)
+		}
+		for _, action := range def.Grants {
+			rules = append(rules, PolicyRule{Action: action, Object: def.Object, Context: CtxAny})
 		}
 	}
-	return nil
+	return rules, nil
 }
 
-func translationGroupMemberPolicies() []permissionPolicy {
-	return []permissionPolicy{
-		{
-			ID:      permissionGroupMemberCreateChapter,
-			Actions: []Action{ActionCreate},
-			Object:  ObjectChapter,
-			Context: CtxGroupMember,
-		},
-		{
-			ID:      permissionGroupMemberUpdateChapter,
-			Actions: []Action{ActionUpdate},
-			Object:  ObjectChapter,
-			Context: CtxOwner,
-		},
-		{
-			ID:      permissionGroupMemberPublishChapter,
-			Actions: []Action{ActionPublish},
-			Object:  ObjectChapter,
-			Context: CtxGroupMember,
-		},
+// foldActionsToNames is the inverse of the catalog expansion: it prefers the
+// broadest name that the granted actions fully cover.
+func foldActionsToNames(object Object, actions map[Action]bool) []string {
+	names := []string{}
+
+	for _, candidate := range grantableActions[object] {
+		expansion := expandAction(candidate)
+		if len(expansion) < 2 {
+			continue
+		}
+		if !coversAll(actions, expansion) {
+			continue
+		}
+		names = append(names, fmt.Sprintf("%s:%s", object, candidate))
+		for _, action := range expansion {
+			delete(actions, action)
+		}
 	}
+
+	for action := range actions {
+		names = append(names, fmt.Sprintf("%s:%s", object, action))
+	}
+	return names
 }
 
-func translationGroupOwnerPolicies() []permissionPolicy {
-	return []permissionPolicy{
-		{
-			ID:      permissionGroupOwnerManageTranslationGroup,
-			Actions: []Action{ActionManage},
-			Object:  ObjectTranslationGroup,
-			Context: CtxGroupOwner,
-		},
-		{
-			ID:      permissionGroupOwnerManageComic,
-			Actions: []Action{ActionManage},
-			Object:  ObjectComic,
-			Context: CtxGroupMember,
-		},
-		{
-			ID:      permissionGroupOwnerManageChapter,
-			Actions: []Action{ActionManage},
-			Object:  ObjectChapter,
-			Context: CtxGroupMember,
-		},
+func coversAll(actions map[Action]bool, required []Action) bool {
+	for _, action := range required {
+		if !actions[action] {
+			return false
+		}
 	}
-}
-
-// ValidatePermissionName reports whether name is a permission this system can
-// translate into policy rules. Permission names are "<object>:<action>", where
-// "write" is shorthand for create + update + publish.
-func ValidatePermissionName(name string) error {
-	_, _, err := parsePermissionName(name)
-	return err
-}
-
-func parsePermissionName(name string) ([]Action, Object, error) {
-	parts := strings.Split(name, ":")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return nil, "", fmt.Errorf("%w: %q is not in <object>:<action> form", ErrInvalidPermissionName, name)
-	}
-
-	switch parts[1] {
-	case "write":
-		return []Action{ActionCreate, ActionUpdate, ActionPublish}, Object(parts[0]), nil
-	case string(ActionManage):
-		return []Action{ActionManage}, Object(parts[0]), nil
-	default:
-		return []Action{Action(parts[1])}, Object(parts[0]), nil
-	}
+	return true
 }
