@@ -77,5 +77,8 @@ func (s *ChapterService) CreateChapter(ctx context.Context, req *chapterrequest.
 		return response.ResultErrDb(err)
 	}
 
+	// Enqueue comic stats update asynchronously
+	s.enqueueStatsUpdate(comicID)
+
 	return response.ResultSuccess("Chapter created successfully", chapter)
 }

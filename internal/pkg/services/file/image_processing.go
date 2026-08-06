@@ -44,10 +44,7 @@ func encodeWebPVariant(src image.Image, preset imageVariantPreset) ([]byte, int,
 
 	targetImage := src
 	if targetWidth != srcWidth {
-		targetHeight := int(math.Round(float64(srcHeight) * float64(targetWidth) / float64(srcWidth)))
-		if targetHeight < 1 {
-			targetHeight = 1
-		}
+		targetHeight := max(int(math.Round(float64(srcHeight)*float64(targetWidth)/float64(srcWidth))), 1)
 
 		resized := image.NewRGBA(image.Rect(0, 0, targetWidth, targetHeight))
 		xdraw.CatmullRom.Scale(resized, resized.Bounds(), src, bounds, xdraw.Over, nil)

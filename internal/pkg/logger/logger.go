@@ -24,7 +24,6 @@ func NewLogger() *Logger {
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	config.EncoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout(time.DateTime)
 	logger, _ := config.Build()
-	defer logger.Sync()
 	sugar := logger.Sugar()
 	globalLogger = &Logger{sugar}
 	return globalLogger

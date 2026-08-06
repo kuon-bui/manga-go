@@ -167,7 +167,7 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		if len(routes) != 5 {
 			t.Fatalf("expected 5 routes, got %d", len(routes))
 		}
-		assertRouteExists(t, routes, "GET", "/ratings/comics/:comicSlug")
+		assertRouteExists(t, routes, "GET", "/ratings/comics/:comicSlug/average")
 	})
 
 	t.Run("reading-history", func(t *testing.T) {

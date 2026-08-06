@@ -265,13 +265,23 @@ func (r *BaseRepository[T]) DeletePermanently(ctx context.Context, conditions []
 }
 
 func (r *BaseRepository[T]) CountAll(ctx context.Context, conditions []any) (int64, error) {
-	var count int64
 	t := new(T)
 	db := r.DB.WithContext(ctx).Model(t)
-
-	// where
 	db = r.ApplyWhereConditions(db, conditions)
 
+	var count int64
+	if err := db.Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (r *BaseRepository[T]) CountAllWithTransaction(tx *gorm.DB, conditions []any) (int64, error) {
+	t := new(T)
+	db := tx.Model(t)
+	db = r.ApplyWhereConditions(db, conditions)
+
+	var count int64
 	if err := db.Count(&count).Error; err != nil {
 		return 0, err
 	}
@@ -339,7 +349,7 @@ func (r *BaseRepository[T]) UpsertManyWithTransaction(tx *gorm.DB, entities []*T
 func toClauseColumns(cols []string) []clause.Column {
 	result := make([]clause.Column, len(cols))
 	for i, c := range cols {
-		result[i] = clause.Column{Name: c, Table: clause.CurrentTable}
+		result[i] = clause.Column{Name: c}
 	}
 	return result
 }

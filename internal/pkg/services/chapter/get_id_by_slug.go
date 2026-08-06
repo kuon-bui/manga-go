@@ -15,8 +15,7 @@ const comicHasChapterKey = "comic:has_chapter"
 func (s *ChapterService) GetChapterIDBySlug(ctx context.Context, comicID uuid.UUID, slug string) (uuid.UUID, error) {
 	defaultErr := errors.New("chapter not found")
 	idStr := ""
-	s.rds.Client().HGet(ctx, slugToIdCacheKey, slug).Scan(&idStr)
-	if idStr != "" {
+	if err := s.rds.Client().HGet(ctx, slugToIdCacheKey, slug).Scan(&idStr); err == nil && idStr != "" {
 		id, err := uuid.Parse(idStr)
 		if err == nil {
 			return id, nil
@@ -27,10 +26,11 @@ func (s *ChapterService) GetChapterIDBySlug(ctx context.Context, comicID uuid.UU
 	hasInRedis, _ := s.rds.Client().HExists(ctx, comicHasChapterKey, comicID.String()).Result()
 	if hasInRedis {
 		var comicHasChapter string
-		s.rds.Client().HGet(ctx, comicHasChapterKey, comicID.String()).Scan(&comicHasChapter)
-		// if cache has record but not "1", it means the chapter does not exist
-		if comicHasChapter != "1" {
-			return uuid.Nil, defaultErr
+		if err := s.rds.Client().HGet(ctx, comicHasChapterKey, comicID.String()).Scan(&comicHasChapter); err == nil {
+			// if cache has record but not "1", it means the chapter does not exist
+			if comicHasChapter != "1" {
+				return uuid.Nil, defaultErr
+			}
 		}
 	}
 	chapter, err := s.chapterRepo.FindOne(ctx, []any{

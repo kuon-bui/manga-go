@@ -8,7 +8,6 @@ import (
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type testModel struct{}
@@ -32,10 +31,10 @@ func TestToClauseColumns(t *testing.T) {
 	if len(cols) != 2 {
 		t.Fatalf("expected len = 2, got %d", len(cols))
 	}
-	if cols[0].Name != "id" || cols[0].Table != clause.CurrentTable {
+	if cols[0].Name != "id" {
 		t.Fatalf("unexpected first column: %#v", cols[0])
 	}
-	if cols[1].Name != "name" || cols[1].Table != clause.CurrentTable {
+	if cols[1].Name != "name" {
 		t.Fatalf("unexpected second column: %#v", cols[1])
 	}
 }

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"manga-go/internal/app/api/common"
 	"manga-go/internal/pkg/config"
 	"manga-go/internal/pkg/logger"
@@ -34,6 +35,13 @@ func RunServer(p RunServerParams) {
 			for _, route := range p.Routes {
 				route.Setup()
 			}
+			go func() {
+				p.Logger.Infof("Starting HTTP server on port %d", p.Config.Service.Port)
+				if err := p.Server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					p.Logger.Errorf("HTTP server failed: %v", err)
+				}
+				p.Logger.Info("Server closed")
+			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
@@ -47,7 +55,9 @@ func RunServer(p RunServerParams) {
 			// Waiting for the goroutines to have a chance to complete
 			// time.Sleep(3 * time.Second)
 			if cleanupTracer != nil {
-				cleanupTracer(ctx)
+				if err := cleanupTracer(ctx); err != nil {
+					p.Logger.Errorf("Failed to cleanup tracer: %v", err)
+				}
 			}
 
 			return nil

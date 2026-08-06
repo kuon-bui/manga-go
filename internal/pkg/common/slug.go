@@ -13,18 +13,20 @@ import (
 )
 
 const (
-	ComicID            = "comic-id"
-	ChapterID          = "chapter-id"
-	TranslationGroupID = "translation-group-id"
-	GenreID            = "genre-id"
-	TagID              = "tag-id"
+	ComicID            contextKey = "comic-id"
+	ChapterID          contextKey = "chapter-id"
+	TranslationGroupID contextKey = "translation-group-id"
+	GenreID            contextKey = "genre-id"
+	TagID              contextKey = "tag-id"
 )
 
-func setValueToContext(ctx context.Context, key string, value any) context.Context {
+type contextKey string
+
+func setValueToContext(ctx context.Context, key contextKey, value any) context.Context {
 	return context.WithValue(ctx, key, value)
 }
 
-func getValueFromContext[T any](ctx context.Context, key string) (T, bool) {
+func getValueFromContext[T any](ctx context.Context, key contextKey) (T, bool) {
 	value, ok := ctx.Value(key).(T)
 	return value, ok
 }

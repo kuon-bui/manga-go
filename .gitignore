@@ -104,6 +104,7 @@ __debug_bin*
 
 sql/*
 docker-data/*
+swagger-docs/*
 coverage.out
 seed
 swagger-docs/*

@@ -40,6 +40,9 @@ func (s *ComicService) FollowComic(ctx context.Context, userID, comicID uuid.UUI
 				return response.ResultErrDb(err)
 			}
 
+			// Enqueue comic stats update asynchronously
+			s.enqueueStatsUpdate(comicID)
+
 			restoredFollow, err := s.comicFollowRepo.FindByUserAndComic(ctx, userID, comicID)
 			if err != nil {
 				s.logger.Error("Failed to reload restored comic follow", "error", err)
@@ -77,6 +80,9 @@ func (s *ComicService) FollowComic(ctx context.Context, userID, comicID uuid.UUI
 		s.logger.Error("Failed to create comic follow", "error", err)
 		return response.ResultErrDb(err)
 	}
+
+	// Enqueue comic stats update asynchronously
+	s.enqueueStatsUpdate(comicID)
 
 	return response.ResultSuccess("Comic followed successfully", comicFollow)
 }

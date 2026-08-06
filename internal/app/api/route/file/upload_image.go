@@ -70,7 +70,12 @@ func (h *FileHandler) uploadImage(c *gin.Context) {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			h.logger.Error("Failed to close uploaded file", "error", err)
+		}
+	}()
 
 	contentType := fileHeader.Header.Get("Content-Type")
 	if contentType == "" {

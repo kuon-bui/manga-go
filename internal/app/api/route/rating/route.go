@@ -43,12 +43,14 @@ func NewRatingRoute(params RatingRouteParams) *RatingRoute {
 }
 
 func (rr *RatingRoute) Setup() {
+	myRg := rr.Group("/ratings", rr.authMiddleware.RequireJwt)
+	myRg.GET("", rr.ratingHandler.getRatings)
+
 	rg := rr.Group("/ratings/comics/:comicSlug", rr.authMiddleware.RequireJwt, rr.slugMiddleware.ResolveComicID)
 	requireRatingCreate := authzmiddleware.Require(rr.authzMiddleware, authorization.ActionCreate, authorization.ObjectRating)
 	requireRatingUpdate := authzmiddleware.Require(rr.authzMiddleware, authorization.ActionUpdate, authorization.ObjectRating, rr.authzMiddleware.RatingParam("id"))
 	requireRatingDelete := authzmiddleware.Require(rr.authzMiddleware, authorization.ActionDelete, authorization.ObjectRating, rr.authzMiddleware.RatingParam("id"))
 
-	rg.GET("", rr.ratingHandler.getRatings)
 	rg.GET("average", rr.ratingHandler.getAverageRating)
 	rg.POST("", requireRatingCreate, rr.ratingHandler.createRating)
 	rg.PUT("/:id", requireRatingUpdate, rr.ratingHandler.updateRating)

@@ -2,32 +2,45 @@ package comicrepo
 
 import (
 	"context"
-	"fmt"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	comicrequest "manga-go/internal/pkg/request/comic"
+
+	"gorm.io/gorm/clause"
 )
 
 var allowedSortFields = map[string]string{
-	"lastChapterAt": "comics.last_chapter_at",
-	"createdAt":     "comics.created_at",
-	"rating":        "(SELECT COALESCE(AVG(r.score), 0) FROM ratings r WHERE r.comic_id = comics.id AND r.deleted_at IS NULL)",
-	"followCount":   "(SELECT COUNT(*) FROM comic_follows cf WHERE cf.comic_id = comics.id AND cf.deleted_at IS NULL)",
+	"lastChapterAt": "last_chapter_at",
+	"createdAt":     "created_at",
+	"rating":        "COALESCE(cs.avg_rating, 0)",
+	"followCount":   "COALESCE(cs.follow_count, 0)",
 }
 
-const statsSelect = `comics.*,
-	(SELECT COUNT(*) FROM comic_follows cf WHERE cf.comic_id = comics.id AND cf.deleted_at IS NULL) AS follow_count,
-	(SELECT COUNT(*) FROM ratings r WHERE r.comic_id = comics.id AND r.deleted_at IS NULL) AS rating_count,
-	(SELECT COUNT(*) FROM chapters ch WHERE ch.comic_id = comics.id AND ch.deleted_at IS NULL) AS chapter_count,
-	(SELECT AVG(r.score) FROM ratings r WHERE r.comic_id = comics.id AND r.deleted_at IS NULL) AS avg_rating`
+const statsJoin = "LEFT JOIN comic_stats cs ON cs.comic_id = comics.id"
 
-func buildComicSortOrder(sortBy, order string) string {
+const statsSelect = `comics.*,
+	COALESCE(cs.follow_count, 0) AS follow_count,
+	COALESCE(cs.rating_count, 0) AS rating_count,
+	COALESCE(cs.chapter_count, 0) AS chapter_count,
+	cs.avg_rating AS avg_rating`
+
+func buildComicSortOrder(sortBy, order string) clause.OrderByColumn {
 	sortExpr, ok := allowedSortFields[sortBy]
 	if !ok {
-		return "comics.created_at DESC"
+		sortExpr = "created_at"
+	}
+	orderMap := map[string]bool{
+		"desc": true,
+		"DESC": true,
 	}
 
-	return fmt.Sprintf("%s %s NULLS LAST", sortExpr, order)
+	return clause.OrderByColumn{
+		Column: clause.Column{
+			Name:  sortExpr,
+			Table: clause.CurrentTable,
+		},
+		Desc: orderMap[order],
+	}
 }
 
 func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comicrequest.ListComicsRequest, moreKeys map[string]common.MoreKeyOption) ([]*model.Comic, int64, error) {
@@ -44,13 +57,13 @@ func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comic
 	query := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
 		Scopes(applyComicFilters(filters)).
+		Joins(statsJoin).
 		Select(statsSelect).
-		Distinct()
-
-	query = query.Order(buildComicSortOrder(filters.SortBy, filters.Order))
+		Distinct().
+		Scopes(r.WithPaginate(&filters.Paging)).
+		Order(buildComicSortOrder(filters.SortBy, filters.Order))
 
 	query = r.ApplyPreloadMoreKeys(query, moreKeys)
-	query = query.Scopes(r.WithPaginate(&filters.Paging))
 
 	if err := query.Find(&comics).Error; err != nil {
 		return nil, 0, err
@@ -63,6 +76,7 @@ func (r *ComicRepo) FindOneWithStats(ctx context.Context, conditions []any, more
 	var comic model.Comic
 	db := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
+		Joins(statsJoin).
 		Select(statsSelect)
 
 	db = r.ApplyWhereConditions(db, conditions)

@@ -49,27 +49,27 @@ func NewEnforcer(cfg *config.Config, db *gorm.DB, log *logger.Logger) *Enforcer 
 		panic(err)
 	}
 
-	if cfg != nil {
-		address := cfg.Redis.Host + ":" + strconv.Itoa(cfg.Redis.Port)
-		w, err := rediswatcher.NewWatcher(address, rediswatcher.WatcherOptions{
-			Options: redis.Options{
-				Network: "tcp",
-				// Password: os.Getenv("REDIS_PASSWORD"),
-			},
-			Channel:    "/casbin",
-			IgnoreSelf: true,
-		})
-		if err != nil {
-			log.Warnf("Failed to create Casbin Redis watcher: %v", err)
-		} else {
-			enforcer.SetWatcher(w)
-			w.SetUpdateCallback(func(s string) {
-				log.Infof("Received Casbin policy update notification: %s", s)
-				if err := enforcer.LoadPolicy(); err != nil {
-					log.Errorf("Failed to reload Casbin policy: %v", err)
-				}
-			})
+	address := cfg.Redis.Host + ":" + strconv.Itoa(cfg.Redis.Port)
+	w, _ := rediswatcher.NewWatcher(address, rediswatcher.WatcherOptions{
+		Options: redis.Options{
+			Network: "tcp",
+			// Password: os.Getenv("REDIS_PASSWORD"),
+		},
+		Channel:    "/casbin",
+		IgnoreSelf: true,
+	})
+	if err := enforcer.SetWatcher(w); err != nil {
+		log.Error("Failed to set Casbin watcher: %v", err)
+		panic(err)
+	}
+	if err := w.SetUpdateCallback(func(s string) {
+		log.Info("Received Casbin policy update notification: %s", s)
+		if err := enforcer.LoadPolicy(); err != nil {
+			log.Error("Failed to reload Casbin policy: %v", err)
 		}
+	}); err != nil {
+		log.Error("Failed to set Casbin watcher callback: %v", err)
+		panic(err)
 	}
 
 	return &Enforcer{enforcer}

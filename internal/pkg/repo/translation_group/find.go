@@ -13,8 +13,7 @@ const slugToIdCacheKey = "slug:translation_group"
 func (r *TranslationGroupRepo) GetIdBySlug(ctx context.Context, slug string) (uuid.UUID, error) {
 	// get from cache
 	idStr := ""
-	r.rds.Client().HGet(ctx, slugToIdCacheKey, slug).Scan(&idStr)
-	if idStr != "" {
+	if err := r.rds.Client().HGet(ctx, slugToIdCacheKey, slug).Scan(&idStr); err == nil && idStr != "" {
 		id, err := uuid.Parse(idStr)
 		if err == nil {
 			return id, nil

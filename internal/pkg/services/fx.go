@@ -4,6 +4,7 @@ import (
 	authorservice "manga-go/internal/pkg/services/author"
 	chapterservice "manga-go/internal/pkg/services/chapter"
 	comicservice "manga-go/internal/pkg/services/comic"
+	comicstatsservice "manga-go/internal/pkg/services/comic_stats"
 	commentservice "manga-go/internal/pkg/services/comment"
 	fileservice "manga-go/internal/pkg/services/file"
 	genreservice "manga-go/internal/pkg/services/genre"
@@ -27,6 +28,7 @@ var Module = fx.Module(
 	genreservice.Module,
 	fileservice.Module,
 	tagservice.Module,
+	comicstatsservice.Module,
 	comicservice.Module,
 	chapterservice.Module,
 	translationgroupservice.Module,

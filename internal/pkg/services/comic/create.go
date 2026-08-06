@@ -124,5 +124,8 @@ func (s *ComicService) CreateComic(ctx context.Context, req *comicrequest.Create
 		return response.ResultErrDb(err)
 	}
 
+	// Enqueue comic stats update to initialize the stats cache row
+	s.enqueueStatsUpdate(comic.ID)
+
 	return response.ResultSuccess("Comic created successfully", comic)
 }

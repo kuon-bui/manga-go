@@ -98,6 +98,19 @@ func (r *UserNotificationRepo) FindByNotificationAndUserIDs(ctx context.Context,
 	return items, nil
 }
 
+func (r *UserNotificationRepo) DeleteByIDAndUserID(ctx context.Context, id, userID uuid.UUID) error {
+	return r.DeleteSoft(ctx, []any{
+		clause.Eq{Column: "id", Value: id},
+		clause.Eq{Column: "user_id", Value: userID},
+	})
+}
+
+func (r *UserNotificationRepo) DeleteAllByUserID(ctx context.Context, userID uuid.UUID) error {
+	return r.DeleteSoft(ctx, []any{
+		clause.Eq{Column: "user_id", Value: userID},
+	})
+}
+
 func (r *UserNotificationRepo) MarkSeenByIDAndUserID(ctx context.Context, id, userID uuid.UUID) error {
 	now := time.Now()
 	return r.DB.WithContext(ctx).

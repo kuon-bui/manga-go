@@ -14,6 +14,7 @@ func (r *ComicRepo) FindTrending(ctx context.Context, limit int) ([]*model.Comic
 	db := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
 		Where("is_published = ?", true).
+		Joins(statsJoin).
 		Select(statsSelect).
 		Order("follow_count DESC NULLS LAST").
 		Limit(limit)

@@ -40,4 +40,6 @@ func (r *NotificationRoute) Setup() {
 	rg.PATCH("/:id/seen", r.handler.markNotificationSeen)
 	rg.PATCH("/:id/read", r.handler.markNotificationRead)
 	rg.PATCH("/read-all", r.handler.markAllNotificationsRead)
+	rg.DELETE("/:id", r.handler.deleteNotification)
+	rg.DELETE("", r.handler.deleteAllNotifications)
 }
