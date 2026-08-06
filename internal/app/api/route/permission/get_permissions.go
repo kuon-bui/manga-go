@@ -1,7 +1,7 @@
 package permissionroute
 
 import (
-	"manga-go/internal/app/api/common/response"
+	_ "manga-go/internal/app/api/common/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,6 +17,6 @@ import (
 // @Router       /permissions [get]
 // @Security     AccessToken
 func (h *PermissionHandler) getPermissions(c *gin.Context) {
-	var result response.Result = h.permissionService.ListPermissions(c.Request.Context())
+	result := h.permissionService.ListPermissions(c.Request.Context())
 	result.ResponseResult(c)
 }
