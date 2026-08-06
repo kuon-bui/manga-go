@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/logger"
 	"manga-go/internal/pkg/model"
@@ -94,6 +95,12 @@ func TestPublicChapterQueriesHideDrafts(t *testing.T) {
 	}
 	if res := s.GetChapter(ctx, "draft"); res.Success {
 		t.Fatal("expected anonymous viewer not to find draft")
+	}
+	user := &model.User{SqlModel: common.SqlModel{ID: uuid.New()}}
+	viewerCtx := authorization.WithViewer(common.SetComicIdToContext(context.Background(), comicID), user)
+	listRes = s.ListChapters(viewerCtx, &common.Paging{Page: 1, Limit: 10})
+	if total := chapterPaginationTotal(listRes.Data); total != 2 {
+		t.Fatalf("expected authenticated viewer to see published chapter and draft, got %d", total)
 	}
 }
 

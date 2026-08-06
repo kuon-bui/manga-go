@@ -17,15 +17,19 @@ func (s *ChapterService) ListChapters(ctx context.Context, paging *common.Paging
 		return response.ResultError("Comic not found in context")
 	}
 
-	chapters, total, err := s.chapterRepo.FindPaginated(ctx, []any{
+	user := authorization.ViewerFromContext(ctx).User
+	conditions := []any{
 		clause.Eq{Column: "comic_id", Value: comicID},
-		s.chapterRepo.IsPublished(true),
-	}, paging, nil)
+	}
+	if user == nil {
+		conditions = append(conditions, s.chapterRepo.IsPublished(true))
+	}
+
+	chapters, total, err := s.chapterRepo.FindPaginated(ctx, conditions, paging, nil)
 	if err != nil {
 		s.logger.Error("Failed to list chapters", "error", err)
 		return response.ResultErrDb(err)
 	}
-	user := authorization.ViewerFromContext(ctx).User
 	if user == nil {
 		return response.ResultPaginationData(chapters, total, "Chapters retrieved successfully")
 	}

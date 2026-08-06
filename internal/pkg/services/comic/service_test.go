@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"testing"
 
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/constant"
 	"manga-go/internal/pkg/logger"
@@ -32,6 +33,15 @@ func syncComicTestSchema(t *testing.T, db *gorm.DB) {
 		&testutil.Rating{},
 		&testutil.ComicFollow{},
 		&testutil.UserComicRead{},
+		&testutil.Author{},
+		&testutil.Genre{},
+		&testutil.Tag{},
+		&testutil.TranslationGroup{},
+		&testutil.User{},
+		&model.ComicAuthor{},
+		&model.ComicArtist{},
+		&model.ComicGenre{},
+		&model.ComicTag{},
 	)
 }
 
@@ -105,17 +115,13 @@ func TestPublicComicQueriesHideDrafts(t *testing.T) {
 		t.Fatalf("failed to seed comics: %v", err)
 	}
 
-	_, total, err := s.comicRepo.FindPaginatedWithFilters(
-		context.Background(),
-		&comicrequest.ListComicsRequest{Paging: common.Paging{Page: 1, Limit: 10}},
-		nil,
-		s.comicRepo.IsPublished(true),
-	)
-	if err != nil {
-		t.Fatalf("failed to list published comics: %v", err)
+	req := &comicrequest.ListComicsRequest{Paging: common.Paging{Page: 1, Limit: 10}}
+	if total := comicPaginationTotal(s.ListComics(context.Background(), req).Data); total != 1 {
+		t.Fatalf("expected anonymous viewer to see one published comic, got %d", total)
 	}
-	if total != 1 {
-		t.Fatalf("expected only one published comic, got %d", total)
+	viewerCtx := authorization.WithViewer(context.Background(), &model.User{SqlModel: common.SqlModel{ID: uuid.New()}})
+	if total := comicPaginationTotal(s.ListComics(viewerCtx, req).Data); total != 2 {
+		t.Fatalf("expected authenticated viewer to see published comic and draft, got %d", total)
 	}
 	if res := s.GetComic(context.Background(), "draft"); res.Success {
 		t.Fatal("expected anonymous viewer not to find draft")
