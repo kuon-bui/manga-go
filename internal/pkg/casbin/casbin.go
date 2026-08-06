@@ -24,6 +24,24 @@ type Enforcer struct {
 	*casbin.Enforcer
 }
 
+// redisWatcherConfig builds the connection the watcher uses to broadcast and
+// receive policy-change notifications. It is a separate connection from the
+// application Redis client, so it needs the same credentials.
+func redisWatcherConfig(cfg *config.Config) (string, rediswatcher.WatcherOptions) {
+	address := cfg.Redis.Host + ":" + strconv.Itoa(cfg.Redis.Port)
+
+	return address, rediswatcher.WatcherOptions{
+		Options: redis.Options{
+			Network:  "tcp",
+			Addr:     address,
+			Password: cfg.Redis.Password,
+			DB:       cfg.Redis.DB,
+		},
+		Channel:    "/casbin",
+		IgnoreSelf: true,
+	}
+}
+
 func NewEnforcer(cfg *config.Config, db *gorm.DB, log *logger.Logger) *Enforcer {
 	adapter, err := gormadapter.NewAdapterByDB(db)
 	if err != nil {
@@ -49,15 +67,15 @@ func NewEnforcer(cfg *config.Config, db *gorm.DB, log *logger.Logger) *Enforcer 
 		panic(err)
 	}
 
-	address := cfg.Redis.Host + ":" + strconv.Itoa(cfg.Redis.Port)
-	w, _ := rediswatcher.NewWatcher(address, rediswatcher.WatcherOptions{
-		Options: redis.Options{
-			Network: "tcp",
-			// Password: os.Getenv("REDIS_PASSWORD"),
-		},
-		Channel:    "/casbin",
-		IgnoreSelf: true,
-	})
+	address, watcherOptions := redisWatcherConfig(cfg)
+	w, err := rediswatcher.NewWatcher(address, watcherOptions)
+	if err != nil {
+		// Without a watcher every instance keeps serving its own in-memory copy
+		// of the policy, so a permission change on one node never reaches the
+		// others. Refuse to start rather than run with silently stale policy.
+		log.Errorf("Failed to create Casbin watcher: %v", err)
+		panic(err)
+	}
 	if err := enforcer.SetWatcher(w); err != nil {
 		log.Error("Failed to set Casbin watcher: %v", err)
 		panic(err)

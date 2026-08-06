@@ -141,6 +141,9 @@ func TestSeededRolesAreEnforceable(t *testing.T) {
 		{"admin manages roles", adminID, authorization.ActionManage, authorization.ObjectRole, true},
 		{"admin deletes comics", adminID, authorization.ActionDelete, authorization.ObjectComic, true},
 		{"admin manages users", adminID, authorization.ActionManage, authorization.ObjectUser, true},
+		// The right /admin/comic-stats requires.
+		{"admin updates comics", adminID, authorization.ActionUpdate, authorization.ObjectComic, true},
+		{"translator cannot update comics platform-wide", translatorID, authorization.ActionUpdate, authorization.ObjectComic, false},
 		{"translator creates chapters", translatorID, authorization.ActionCreate, authorization.ObjectChapter, true},
 		{"translator cannot manage roles", translatorID, authorization.ActionManage, authorization.ObjectRole, false},
 		{"translator cannot delete comics", translatorID, authorization.ActionDelete, authorization.ObjectComic, false},
