@@ -294,6 +294,10 @@ func TestUpdateRoleAuditsMetadataAndBumpsGlobalRevision(t *testing.T) {
 	if !result.Success {
 		t.Fatalf("expected success, got %#v", result)
 	}
+	summary, ok := result.Data.(*RoleAccessSummary)
+	if !ok || summary.AuthorizationVersion != "g2" || summary.Name != "editor" {
+		t.Fatalf("expected updated role summary at g2, got %#v", result.Data)
+	}
 	var stored model.Role
 	if err := env.db.First(&stored, "id = ?", role.ID).Error; err != nil {
 		t.Fatal(err)

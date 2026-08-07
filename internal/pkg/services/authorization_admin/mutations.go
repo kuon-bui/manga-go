@@ -465,7 +465,11 @@ func (s *Service) UpdateRole(
 		}
 		role.Name = name
 		role.Description = description
-		return response.ResultSuccess("Role updated successfully", role)
+		summary, err := s.roleAccessSummary(role, globalVersion+1)
+		if err != nil {
+			return s.internalFailure("build updated role response", err)
+		}
+		return response.ResultSuccess("Role updated successfully", summary)
 	})
 }
 
