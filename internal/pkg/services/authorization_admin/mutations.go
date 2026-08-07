@@ -55,15 +55,6 @@ func (s *Service) replaceUserRolesLocked(
 	}
 
 	roleIDs = uniqueUUIDs(roleIDs)
-	for _, roleID := range roleIDs {
-		if _, err := s.roleRepo.FindOne(ctx, []any{clause.Eq{Column: "id", Value: roleID}}, nil); err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return response.ResultNotFound("Role")
-			}
-			return s.dbFailure("validate authorization role", err)
-		}
-	}
-
 	globalVersion, userVersion, err := s.revisions.Current(ctx, userID)
 	if err != nil {
 		return s.dbFailure("read authorization revision", err)
@@ -71,6 +62,14 @@ func (s *Service) replaceUserRolesLocked(
 	currentVersion := fmt.Sprintf("g%d:u%d", globalVersion, userVersion)
 	if expectedVersion != "" && expectedVersion != currentVersion {
 		return authorizationConflict(codeAuthorizationStateChanged, "Authorization state changed; refresh and try again")
+	}
+	for _, roleID := range roleIDs {
+		if _, err := s.roleRepo.FindOne(ctx, []any{clause.Eq{Column: "id", Value: roleID}}, nil); err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return response.ResultNotFound("Role")
+			}
+			return s.dbFailure("validate authorization role", err)
+		}
 	}
 
 	before, err := s.policyManager.RolesForUser(userID.String(), authorization.OrgPlatform)

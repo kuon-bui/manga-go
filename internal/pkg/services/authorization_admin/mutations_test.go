@@ -316,6 +316,26 @@ func TestReplacementRejectsStaleAuthorizationVersion(t *testing.T) {
 	}
 }
 
+func TestReplaceUserRolesReportsStaleVersionBeforeDeletedDraftRole(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	target := env.seedUser(t, "target")
+	manager := env.seedRole(t, "manager", "role:manage")
+	reader := env.seedRole(t, "reader", "comic:read")
+	deletedDraftRole := env.seedRole(t, "obsolete-draft", "comment:manage")
+	env.assign(t, actor, manager)
+	env.assign(t, target, reader)
+
+	deleted := env.service.DeleteRole(actorContext(actor), deletedDraftRole.ID, "g1")
+	if !deleted.Success {
+		t.Fatalf("expected concurrent role delete, got %#v", deleted)
+	}
+	result := env.service.ReplaceUserRoles(
+		actorContext(actor), target.ID, []uuid.UUID{reader.ID, deletedDraftRole.ID}, "g1:u1",
+	)
+	assertConflictCode(t, result, codeAuthorizationStateChanged)
+}
+
 func TestAuditFailureRestoresPreviousCasbinPolicy(t *testing.T) {
 	baseDB := testutil.NewSQLiteDB(t)
 	_ = baseDB

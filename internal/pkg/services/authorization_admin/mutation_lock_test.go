@@ -6,9 +6,11 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"manga-go/internal/app/api/common/response"
 
@@ -20,6 +22,75 @@ type advisoryLockExec struct {
 	connectionID int64
 	query        string
 	key          int64
+}
+
+func TestPostgresMutationLockerSerializesIndependentConnections(t *testing.T) {
+	dsn := os.Getenv("AUTHORIZATION_TEST_POSTGRES_DSN")
+	if dsn == "" {
+		t.Skip("set AUTHORIZATION_TEST_POSTGRES_DSN to run PostgreSQL advisory-lock contention coverage")
+	}
+	firstDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstSQLDB, err := firstDB.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = firstSQLDB.Close() })
+	secondDB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondSQLDB, err := secondDB.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = secondSQLDB.Close() })
+	firstEntered := make(chan struct{})
+	releaseFirst := make(chan struct{})
+	secondEntered := make(chan struct{})
+	done := make(chan response.Result, 2)
+
+	go func() {
+		done <- NewPostgresMutationLocker(firstDB).WithLock(context.Background(), func() response.Result {
+			close(firstEntered)
+			<-releaseFirst
+			return response.ResultSuccess("first", nil)
+		})
+	}()
+	select {
+	case <-firstEntered:
+	case result := <-done:
+		t.Fatalf("first PostgreSQL locker failed before entering: %#v", result)
+	case <-time.After(5 * time.Second):
+		t.Fatal("first PostgreSQL locker did not enter")
+	}
+	go func() {
+		done <- NewPostgresMutationLocker(secondDB).WithLock(context.Background(), func() response.Result {
+			close(secondEntered)
+			return response.ResultSuccess("second", nil)
+		})
+	}()
+
+	select {
+	case <-secondEntered:
+		t.Fatal("second independent PostgreSQL connection entered while the advisory lock was held")
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(releaseFirst)
+	select {
+	case <-secondEntered:
+	case result := <-done:
+		t.Fatalf("second PostgreSQL locker failed before entering: %#v", result)
+	case <-time.After(5 * time.Second):
+		t.Fatal("second PostgreSQL connection did not enter after advisory lock release")
+	}
+	for range 2 {
+		if result := <-done; !result.Success {
+			t.Fatalf("unexpected advisory-lock result: %#v", result)
+		}
+	}
 }
 
 type advisoryLockDriverState struct {
