@@ -8,8 +8,11 @@ import (
 	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
 	"manga-go/internal/pkg/model"
+	authorizationrevision "manga-go/internal/pkg/repo/authorization_revision"
 	rolerepo "manga-go/internal/pkg/repo/role"
+	userrepo "manga-go/internal/pkg/repo/user"
 	rolerequest "manga-go/internal/pkg/request/role"
+	authorizationadmin "manga-go/internal/pkg/services/authorization_admin"
 	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
@@ -22,16 +25,26 @@ func newRoleServiceWithPolicy(t *testing.T) (*RoleService, *authorization.Policy
 
 	db := testutil.NewSQLiteDB(t)
 	db.Logger = gormlogger.Discard
-	testutil.MustSyncSchemas(t, db, &testutil.Role{})
+	testutil.MustSyncSchemas(t, db, &testutil.Role{}, &model.AuthorizationCacheRevision{})
 
 	pm := authorization.NewPolicyManager(authorization.PolicyManagerParams{
 		Enforcer: testutil.NewInMemoryEnforcer(t),
 	})
 
+	roleRepo := rolerepo.NewRoleRepo(db)
+	authAdmin := authorizationadmin.NewService(authorizationadmin.ServiceParams{
+		Logger:        logger.NewLogger(),
+		RoleRepo:      roleRepo,
+		UserRepo:      userrepo.NewUserRepository(db, nil),
+		PolicyManager: pm,
+		Revisions:     authorizationrevision.NewRepo(db),
+	})
+
 	return &RoleService{
 		logger:        logger.NewLogger(),
-		roleRepo:      rolerepo.NewRoleRepo(db),
+		roleRepo:      roleRepo,
 		policyManager: pm,
+		authAdmin:     authAdmin,
 	}, pm, db
 }
 
@@ -150,7 +163,7 @@ func TestGetRoleReportsPermissionsFromThePolicyEngine(t *testing.T) {
 		t.Fatalf("expected the role to be returned, got %d", res.HttpStatus)
 	}
 
-	role, ok := res.Data.(*model.Role)
+	role, ok := res.Data.(*authorizationadmin.RoleAccessSummary)
 	if !ok {
 		t.Fatalf("expected a role in the response, got %T", res.Data)
 	}

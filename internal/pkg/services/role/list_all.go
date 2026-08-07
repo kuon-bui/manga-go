@@ -6,7 +6,7 @@ import (
 )
 
 func (s *RoleService) ListAllRoles(ctx context.Context) response.Result {
-	roles, err := s.roleRepo.FindAll(ctx, nil, nil)
+	roles, err := s.authAdmin.ListRoles(ctx)
 	if err != nil {
 		s.logger.Error("Failed to list all roles", "error", err)
 		return response.ResultErrDb(err)

@@ -51,10 +51,12 @@ func (ur *UserRoute) Setup() {
 
 func (ur *UserRoute) registerAuthRoute(rg *gin.RouterGroup) {
 	requireUserUpdate := authzmiddleware.Require(ur.authzMiddleware, authorization.ActionUpdate, authorization.ObjectUser, authzmiddleware.UserParam("id"))
+	requireUserRead := authzmiddleware.Require(ur.authzMiddleware, authorization.ActionRead, authorization.ObjectUser)
 
 	rg.DELETE("/logout", ur.authMiddleware.InvalidateJwt, ur.userHandler.logout)
 	rg.GET("/me", ur.userHandler.me)
 	rg.GET("/me/authorization", ur.userHandler.getMyAuthorization)
+	rg.GET("", requireUserRead, ur.userHandler.getUsers)
 	rg.PATCH("/:id", requireUserUpdate, ur.userHandler.updateUserProfile)
 	rg.GET("/me/config", ur.userHandler.getMyConfig)
 	rg.PATCH("/me/config", ur.userHandler.updateMyConfig)

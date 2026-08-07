@@ -7,6 +7,7 @@ import (
 	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
 	rolerepo "manga-go/internal/pkg/repo/role"
+	userrepo "manga-go/internal/pkg/repo/user"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -22,6 +23,8 @@ type ProfileCache interface {
 
 type RevisionStore interface {
 	Current(ctx context.Context, userID uuid.UUID) (global uint64, user uint64, err error)
+	CurrentGlobal(ctx context.Context) (uint64, error)
+	CurrentMany(ctx context.Context, userIDs []uuid.UUID) (uint64, map[uuid.UUID]uint64, error)
 	BumpGlobalTx(tx *gorm.DB) (uint64, error)
 	BumpUserTx(tx *gorm.DB, userID uuid.UUID) (uint64, error)
 }
@@ -29,6 +32,7 @@ type RevisionStore interface {
 type Service struct {
 	logger        *logger.Logger
 	roleRepo      *rolerepo.RoleRepo
+	userRepo      *userrepo.UserRepository
 	policyManager *authorization.PolicyManager
 	authorizer    *authorization.Authorizer
 	revisions     RevisionStore

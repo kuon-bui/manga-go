@@ -6,10 +6,15 @@ import (
 	"reflect"
 	"testing"
 
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/model"
+	authorizationrevision "manga-go/internal/pkg/repo/authorization_revision"
 	rolerepo "manga-go/internal/pkg/repo/role"
+	userrepo "manga-go/internal/pkg/repo/user"
 	rolerequest "manga-go/internal/pkg/request/role"
+	authorizationadmin "manga-go/internal/pkg/services/authorization_admin"
 	"manga-go/internal/pkg/testutil"
 
 	"github.com/glebarez/sqlite"
@@ -28,12 +33,25 @@ func newRoleService(t *testing.T, createTables bool) *RoleService {
 	if createTables {
 		testutil.MustSyncSchemas(t, db,
 			&testutil.Role{},
+			&model.AuthorizationCacheRevision{},
 		)
 	}
+	policyManager := authorization.NewPolicyManager(authorization.PolicyManagerParams{
+		Enforcer: testutil.NewInMemoryEnforcer(t),
+	})
+	roleRepo := rolerepo.NewRoleRepo(db)
 
 	return &RoleService{
-		logger:   logger.NewLogger(),
-		roleRepo: rolerepo.NewRoleRepo(db),
+		logger:        logger.NewLogger(),
+		roleRepo:      roleRepo,
+		policyManager: policyManager,
+		authAdmin: authorizationadmin.NewService(authorizationadmin.ServiceParams{
+			Logger:        logger.NewLogger(),
+			RoleRepo:      roleRepo,
+			UserRepo:      userrepo.NewUserRepository(db, nil),
+			PolicyManager: policyManager,
+			Revisions:     authorizationrevision.NewRepo(db),
+		}),
 	}
 }
 

@@ -69,6 +69,29 @@ func TestPolicyManagerGrantsReachTheUserThroughTheRole(t *testing.T) {
 	}
 }
 
+func TestPolicyManagerUsersForRoleReturnsOnlyUsersInDomain(t *testing.T) {
+	pm, _ := newTestPolicyManager(t)
+	roleID := uuid.New().String()
+	platformUser := uuid.New().String()
+	groupUser := uuid.New().String()
+
+	if err := pm.AddRoleForUser(platformUser, roleID, OrgPlatform); err != nil {
+		t.Fatal(err)
+	}
+	groupOrg := TranslationGroupOrg(uuid.New())
+	if err := pm.AddRoleForUser(groupUser, roleID, groupOrg); err != nil {
+		t.Fatal(err)
+	}
+
+	users, err := pm.UsersForRole(roleID, OrgPlatform)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(users) != 1 || users[0] != platformUser {
+		t.Fatalf("expected only platform user, got %v", users)
+	}
+}
+
 // The baseline is what a signed-in user gets with no role at all. It used to be
 // a switch statement in Go; it is now policy, so it has to be written first.
 func TestBaselinePoliciesGiveSignedInUsersTheBasics(t *testing.T) {

@@ -5,6 +5,7 @@ import (
 	"manga-go/internal/pkg/logger"
 	authorizationrevision "manga-go/internal/pkg/repo/authorization_revision"
 	rolerepo "manga-go/internal/pkg/repo/role"
+	userrepo "manga-go/internal/pkg/repo/user"
 
 	"go.uber.org/fx"
 )
@@ -14,6 +15,7 @@ type ServiceParams struct {
 
 	Logger        *logger.Logger
 	RoleRepo      *rolerepo.RoleRepo
+	UserRepo      *userrepo.UserRepository
 	PolicyManager *authorization.PolicyManager
 	Authorizer    *authorization.Authorizer
 	Revisions     *authorizationrevision.Repo
@@ -24,6 +26,7 @@ func NewService(params ServiceParams) *Service {
 	return &Service{
 		logger:        params.Logger,
 		roleRepo:      params.RoleRepo,
+		userRepo:      params.UserRepo,
 		policyManager: params.PolicyManager,
 		authorizer:    params.Authorizer,
 		revisions:     params.Revisions,

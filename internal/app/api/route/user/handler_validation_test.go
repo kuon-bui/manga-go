@@ -92,6 +92,19 @@ func TestGetMyAuthorizationRequiresAuthenticatedViewer(t *testing.T) {
 	}
 }
 
+func TestGetUsersRejectsInvalidRoleFilter(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := &userHandler{}
+	c, w := newUserCtx(http.MethodGet, "/users?role_id=not-a-uuid", "")
+	c.Request.URL.RawQuery = "role_id=not-a-uuid"
+
+	h.getUsers(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
 func TestAssignUserRoleInvalidID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	h := &userHandler{}

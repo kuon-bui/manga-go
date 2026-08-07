@@ -61,6 +61,18 @@ func (f *fakeRevisionStore) Current(context.Context, uuid.UUID) (uint64, uint64,
 	return f.global, f.user, f.err
 }
 
+func (f *fakeRevisionStore) CurrentGlobal(context.Context) (uint64, error) {
+	return f.global, f.err
+}
+
+func (f *fakeRevisionStore) CurrentMany(_ context.Context, userIDs []uuid.UUID) (uint64, map[uuid.UUID]uint64, error) {
+	users := make(map[uuid.UUID]uint64, len(userIDs))
+	for _, userID := range userIDs {
+		users[userID] = f.user
+	}
+	return f.global, users, f.err
+}
+
 func (f *fakeRevisionStore) BumpGlobalTx(*gorm.DB) (uint64, error) {
 	f.global++
 	return f.global, nil

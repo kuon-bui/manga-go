@@ -27,15 +27,39 @@ func UserScope(userID uuid.UUID) string {
 }
 
 func (r *Repo) Current(ctx context.Context, userID uuid.UUID) (uint64, uint64, error) {
-	if err := r.ensureScopes(r.db.WithContext(ctx), globalScope, UserScope(userID)); err != nil {
+	global, users, err := r.CurrentMany(ctx, []uuid.UUID{userID})
+	if err != nil {
 		return 0, 0, err
+	}
+	return global, users[userID], nil
+}
+
+func (r *Repo) CurrentGlobal(ctx context.Context) (uint64, error) {
+	if err := r.ensureScopes(r.db.WithContext(ctx), globalScope); err != nil {
+		return 0, err
+	}
+	var revision model.AuthorizationCacheRevision
+	if err := r.db.WithContext(ctx).Where("scope = ?", globalScope).First(&revision).Error; err != nil {
+		return 0, err
+	}
+	return revision.Version, nil
+}
+
+func (r *Repo) CurrentMany(ctx context.Context, userIDs []uuid.UUID) (uint64, map[uuid.UUID]uint64, error) {
+	scopes := make([]string, 0, len(userIDs)+1)
+	scopes = append(scopes, globalScope)
+	for _, userID := range userIDs {
+		scopes = append(scopes, UserScope(userID))
+	}
+	if err := r.ensureScopes(r.db.WithContext(ctx), scopes...); err != nil {
+		return 0, nil, err
 	}
 
 	var revisions []model.AuthorizationCacheRevision
 	if err := r.db.WithContext(ctx).
-		Where("scope IN ?", []string{globalScope, UserScope(userID)}).
+		Where("scope IN ?", scopes).
 		Find(&revisions).Error; err != nil {
-		return 0, 0, err
+		return 0, nil, err
 	}
 
 	versions := make(map[string]uint64, len(revisions))
@@ -43,11 +67,18 @@ func (r *Repo) Current(ctx context.Context, userID uuid.UUID) (uint64, uint64, e
 		versions[revision.Scope] = revision.Version
 	}
 	global, globalOK := versions[globalScope]
-	user, userOK := versions[UserScope(userID)]
-	if !globalOK || !userOK {
-		return 0, 0, fmt.Errorf("authorization revisions are incomplete")
+	if !globalOK {
+		return 0, nil, fmt.Errorf("global authorization revision is missing")
 	}
-	return global, user, nil
+	users := make(map[uuid.UUID]uint64, len(userIDs))
+	for _, userID := range userIDs {
+		version, ok := versions[UserScope(userID)]
+		if !ok {
+			return 0, nil, fmt.Errorf("authorization revision is missing for user %s", userID)
+		}
+		users[userID] = version
+	}
+	return global, users, nil
 }
 
 func (r *Repo) BumpGlobalTx(tx *gorm.DB) (uint64, error) {

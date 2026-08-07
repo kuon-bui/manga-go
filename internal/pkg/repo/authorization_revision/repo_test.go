@@ -54,3 +54,18 @@ func TestBumpMethodsIncrementDurableRevision(t *testing.T) {
 		t.Fatalf("expected bumped revisions 2/2, got %d/%d", global, user)
 	}
 }
+
+func TestCurrentManyLoadsOneGlobalAndEveryUserRevision(t *testing.T) {
+	db := testutil.NewSQLiteDB(t)
+	testutil.MustSyncSchemas(t, db, &model.AuthorizationCacheRevision{})
+	repo := NewRepo(db)
+	userIDs := []uuid.UUID{uuid.New(), uuid.New()}
+
+	global, users, err := repo.CurrentMany(context.Background(), userIDs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if global != 1 || len(users) != 2 || users[userIDs[0]] != 1 || users[userIDs[1]] != 1 {
+		t.Fatalf("unexpected revisions: global=%d users=%v", global, users)
+	}
+}
