@@ -17,9 +17,7 @@ import (
 // @Param        limit      query     int     false "Items per page"
 // @Success      200        {object}  response.Result
 // @Failure      400        {object}  response.Response
-// @Failure      401        {object}  response.Response
 // @Router       /comics/{comicSlug}/chapters [get]
-// @Security     AccessToken
 func (h *ChapterHandler) listChapters(c *gin.Context) {
 	var paging common.Paging
 	if err := c.ShouldBindQuery(&paging); err != nil {

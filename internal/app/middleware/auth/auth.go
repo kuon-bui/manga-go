@@ -1,11 +1,14 @@
 package authmiddleware
 
 import (
+	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/config"
 	jwtprovider "manga-go/internal/pkg/jwt_provider"
 	userrepo "manga-go/internal/pkg/repo/user"
 	"manga-go/internal/pkg/utils"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -61,6 +64,45 @@ func (h *AuthMiddleware) RequireJwt(c *gin.Context) {
 
 	utils.SetCurrentUserToGinContext(c, user)
 	utils.SetTokenIdToGinContext(c, tokenId)
+	c.Request = c.Request.WithContext(authorization.WithViewer(c.Request.Context(), user))
+}
+
+// OptionalJwt keeps public requests anonymous. A supplied invalid credential is
+// rejected instead of silently downgraded, so expired sessions cannot bypass
+// authenticated behavior by falling back to public access.
+func (h *AuthMiddleware) OptionalJwt(c *gin.Context) {
+	ctx := authorization.WithViewer(c.Request.Context(), nil)
+	c.Request = c.Request.WithContext(ctx)
+
+	accessToken, err := c.Cookie(h.config.CookieName.AccessToken)
+	if errors.Is(err, http.ErrNoCookie) {
+		return
+	}
+	if err != nil || accessToken == "" {
+		response.ResponseUnauthorized(c)
+		c.Abort()
+		return
+	}
+
+	userContext, tokenID, err := h.jwt.ValidateToken(c.Request.Context(), accessToken)
+	if err != nil || userContext == nil {
+		response.ResponseUnauthorized(c)
+		c.Abort()
+		return
+	}
+
+	user, err := h.userRepo.FindOne(c.Request.Context(), []any{
+		clause.Eq{Column: "id", Value: userContext.UserID},
+	}, nil)
+	if err != nil {
+		response.ResponseUnauthorized(c)
+		c.Abort()
+		return
+	}
+
+	utils.SetCurrentUserToGinContext(c, user)
+	utils.SetTokenIdToGinContext(c, tokenID)
+	c.Request = c.Request.WithContext(authorization.WithViewer(c.Request.Context(), user))
 }
 
 func (h *AuthMiddleware) InvalidateJwt(c *gin.Context) {

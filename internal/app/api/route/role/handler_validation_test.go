@@ -132,4 +132,3 @@ func TestRemoveRolePermissionInvalidRoleID(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", w.Code)
 	}
 }
-

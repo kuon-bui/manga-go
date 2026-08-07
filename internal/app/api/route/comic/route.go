@@ -43,18 +43,22 @@ func NewComicRoute(params ComicRouteParams) *ComicRoute {
 }
 
 func (cr *ComicRoute) Setup() {
-	rg := cr.Group("/comics", cr.authMiddleware.RequireJwt)
+	publicRg := cr.Group("/comics", cr.authMiddleware.OptionalJwt)
+	requireComicRead := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionRead, authorization.ObjectComic, cr.authzMiddleware.Comic())
+	requirePublishedComicRead := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionRead, authorization.ObjectComic, authzmiddleware.Published())
 	requireComicCreate := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionCreate, authorization.ObjectComic, cr.authzMiddleware.CurrentUserTranslationGroup())
 	requireComicUpdate := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionUpdate, authorization.ObjectComic, cr.authzMiddleware.Comic())
 	requireComicDelete := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionDelete, authorization.ObjectComic, cr.authzMiddleware.Comic())
 	requireComicPublish := authzmiddleware.Require(cr.authzMiddleware, authorization.ActionPublish, authorization.ObjectComic, cr.authzMiddleware.Comic())
 
-	rg.GET("", cr.comicHandler.getComics)
-	rg.GET("/trending", cr.comicHandler.getTrendingComics)
-	rg.POST("", requireComicCreate, cr.comicHandler.createComic)
+	publicRg.GET("", requirePublishedComicRead, cr.comicHandler.getComics)
+	publicRg.GET("/trending", requirePublishedComicRead, cr.comicHandler.getTrendingComics)
+	publicRg.GET("/:comicSlug", cr.slugMiddleware.ResolveComicID, requireComicRead, cr.comicHandler.getComic)
 
-	slugRg := rg.Group("/:comicSlug", cr.slugMiddleware.ResolveComicID)
-	slugRg.GET("", cr.comicHandler.getComic)
+	privateRg := cr.Group("/comics", cr.authMiddleware.RequireJwt)
+	privateRg.POST("", requireComicCreate, cr.comicHandler.createComic)
+
+	slugRg := privateRg.Group("/:comicSlug", cr.slugMiddleware.ResolveComicID)
 	slugRg.POST("/follow", cr.comicHandler.followComic)
 	slugRg.GET("/follow-status", cr.comicHandler.getComicFollowStatus)
 	slugRg.PATCH("/follow-status", cr.comicHandler.updateComicFollowStatus)

@@ -16,9 +16,7 @@ import (
 // @Param        limit  query     int  false  "Items per page"
 // @Success      200    {object}  response.Result
 // @Failure      400    {object}  response.Result
-// @Failure      401    {object}  response.Result
 // @Failure      500    {object}  response.Result
-// @Security     AccessToken
 // @Router       /chapters/recent-updates [get]
 func (h *ChapterHandler) getRecentUpdates(c *gin.Context) {
 	var req chapterrequest.RecentUpdatesRequest

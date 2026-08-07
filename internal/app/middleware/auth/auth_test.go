@@ -5,6 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"manga-go/internal/pkg/authorization"
+	"manga-go/internal/pkg/config"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -72,6 +75,41 @@ func TestExtractTokenFromCookiesEmptyValue(t *testing.T) {
 	}
 	if !c.IsAborted() {
 		t.Fatalf("context should be aborted when token is empty")
+	}
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", w.Code)
+	}
+}
+
+func TestOptionalJwtAllowsRequestWithoutCookie(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	c, w := newGinContext(http.MethodGet)
+	m := &AuthMiddleware{config: &config.Config{CookieName: config.CookieNameConfig{AccessToken: "access_token"}}}
+
+	m.OptionalJwt(c)
+
+	if c.IsAborted() {
+		t.Fatal("context should not be aborted without an optional cookie")
+	}
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	if viewer := authorization.ViewerFromContext(c.Request.Context()); viewer.Subject != authorization.SubjectAnonymous || viewer.User != nil {
+		t.Fatalf("expected anonymous viewer, got %#v", viewer)
+	}
+}
+
+func TestOptionalJwtRejectsEmptyCookie(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	c, w := newGinContext(http.MethodGet, &http.Cookie{Name: "access_token", Value: ""})
+	m := &AuthMiddleware{config: &config.Config{CookieName: config.CookieNameConfig{AccessToken: "access_token"}}}
+
+	m.OptionalJwt(c)
+
+	if !c.IsAborted() {
+		t.Fatal("context should be aborted for an empty supplied cookie")
 	}
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected status 401, got %d", w.Code)

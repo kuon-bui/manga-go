@@ -14,9 +14,7 @@ import (
 // @Param        limit  query     int  false  "Number of trending comics (max 50, default 5)"
 // @Success      200    {object}  response.Result
 // @Failure      400    {object}  response.Result
-// @Failure      401    {object}  response.Result
 // @Failure      500    {object}  response.Result
-// @Security     AccessToken
 // @Router       /comics/trending [get]
 func (h *ComicHandler) getTrendingComics(c *gin.Context) {
 	var req struct {

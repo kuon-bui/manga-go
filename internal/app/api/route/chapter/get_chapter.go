@@ -15,10 +15,8 @@ import (
 // @Param        chapterSlug  path      string  true  "Chapter slug"
 // @Success      200          {object}  response.Result
 // @Failure      400          {object}  response.Result
-// @Failure      401          {object}  response.Result
 // @Failure      404          {object}  response.Result
 // @Router       /comics/{comicSlug}/chapters/{chapterSlug} [get]
-// @Security     AccessToken
 func (h *ChapterHandler) getChapter(c *gin.Context) {
 	chapterSlug := c.Param("chapterSlug")
 	result := h.chapterService.GetChapter(c.Request.Context(), chapterSlug)

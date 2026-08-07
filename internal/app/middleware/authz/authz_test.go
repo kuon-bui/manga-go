@@ -1,11 +1,13 @@
 package authzmiddleware
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"manga-go/internal/pkg/authorization"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -64,5 +66,27 @@ func TestRequireDeniesWhenNoUserIsInContext(t *testing.T) {
 	}
 	if w.Code != http.StatusUnauthorized {
 		t.Fatalf("expected 401 when no user is in context, got %d", w.Code)
+	}
+}
+
+func TestRequireAllowsAnonymousPublishedRead(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	enforcer := testutil.NewInMemoryEnforcer(t)
+	authorizer := authorization.NewAuthorizer(enforcer)
+	policy := authorization.NewPolicyManager(authorization.PolicyManagerParams{Enforcer: enforcer})
+	if err := policy.ReplaceBaselinePolicies(); err != nil {
+		t.Fatalf("failed to seed baseline: %v", err)
+	}
+
+	m := &AuthzMiddleware{authorizer: authorizer}
+	handler := m.Require(authorization.ActionRead, authorization.ObjectComic, Published())
+	c, w := newGinContext()
+	c.Request = c.Request.WithContext(authorization.WithViewer(context.Background(), nil))
+
+	handler(c)
+
+	if c.IsAborted() {
+		t.Fatalf("expected anonymous published read to continue, got status %d", w.Code)
 	}
 }

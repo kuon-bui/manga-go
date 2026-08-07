@@ -12,7 +12,8 @@ func (r *ChapterRepo) FindRecentUpdates(ctx context.Context, paging *common.Pagi
 
 	baseQuery := r.DB.WithContext(ctx).
 		Model(&model.Chapter{}).
-		Where("is_published = ?", true)
+		Joins("JOIN comics ON comics.id = chapters.comic_id").
+		Where("chapters.is_published = ? AND comics.is_published = ?", true, true)
 
 	if err := baseQuery.
 		Distinct("comic_id").
@@ -21,7 +22,7 @@ func (r *ChapterRepo) FindRecentUpdates(ctx context.Context, paging *common.Pagi
 	}
 
 	latestChapterIDs := r.DB.WithContext(ctx).
-		Table("(SELECT DISTINCT ON (comic_id) id FROM chapters WHERE is_published = true ORDER BY comic_id, published_at DESC NULLS LAST, created_at DESC, id DESC) AS latest").
+		Table("(SELECT DISTINCT ON (chapters.comic_id) chapters.id FROM chapters JOIN comics ON comics.id = chapters.comic_id WHERE chapters.is_published = true AND comics.is_published = true ORDER BY chapters.comic_id, chapters.published_at DESC NULLS LAST, chapters.created_at DESC, chapters.id DESC) AS latest").
 		Select("id")
 
 	query := r.DB.WithContext(ctx).

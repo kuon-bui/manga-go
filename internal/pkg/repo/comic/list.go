@@ -6,6 +6,7 @@ import (
 	"manga-go/internal/pkg/model"
 	comicrequest "manga-go/internal/pkg/request/comic"
 
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -43,13 +44,14 @@ func buildComicSortOrder(sortBy, order string) clause.OrderByColumn {
 	}
 }
 
-func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comicrequest.ListComicsRequest, moreKeys map[string]common.MoreKeyOption) ([]*model.Comic, int64, error) {
+func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comicrequest.ListComicsRequest, moreKeys map[string]common.MoreKeyOption, scopes ...func(*gorm.DB) *gorm.DB) ([]*model.Comic, int64, error) {
 	var comics []*model.Comic
 	var total int64
 
 	countQuery := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
-		Scopes(applyComicFilters(filters))
+		Scopes(applyComicFilters(filters)).
+		Scopes(scopes...)
 	if err := countQuery.Distinct("comics.id").Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
@@ -57,6 +59,7 @@ func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comic
 	query := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
 		Scopes(applyComicFilters(filters)).
+		Scopes(scopes...).
 		Joins(statsJoin).
 		Select(statsSelect).
 		Distinct().
@@ -72,12 +75,13 @@ func (r *ComicRepo) FindPaginatedWithFilters(ctx context.Context, filters *comic
 	return comics, total, nil
 }
 
-func (r *ComicRepo) FindOneWithStats(ctx context.Context, conditions []any, moreKeys map[string]common.MoreKeyOption) (*model.Comic, error) {
+func (r *ComicRepo) FindOneWithStats(ctx context.Context, conditions []any, moreKeys map[string]common.MoreKeyOption, scopes ...func(*gorm.DB) *gorm.DB) (*model.Comic, error) {
 	var comic model.Comic
 	db := r.DB.WithContext(ctx).
 		Model(&model.Comic{}).
 		Joins(statsJoin).
-		Select(statsSelect)
+		Select(statsSelect).
+		Scopes(scopes...)
 
 	db = r.ApplyWhereConditions(db, conditions)
 	db = r.ApplyPreloadMoreKeys(db, moreKeys)

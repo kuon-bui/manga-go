@@ -23,6 +23,9 @@ func (r *ComicRepo) FindTrending(ctx context.Context, limit int) ([]*model.Comic
 		"Authors": {},
 		"Genres":  {},
 		"LatestChapter": {
+			Where: &clause.Where{Exprs: []clause.Expression{
+				clause.Eq{Column: "is_published", Value: true},
+			}},
 			Order: &clause.OrderBy{
 				Columns: []clause.OrderByColumn{
 					{

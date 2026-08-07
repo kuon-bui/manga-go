@@ -83,4 +83,3 @@ func (a *Authorizer) EnforceAny(ctx context.Context, req Request, contexts []Con
 	}
 	return ErrForbidden
 }
-

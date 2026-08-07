@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/common"
 
 	"gorm.io/gorm"
@@ -11,6 +12,10 @@ import (
 )
 
 func (s *ComicService) GetComic(ctx context.Context, slug string) response.Result {
+	scopes := []func(*gorm.DB) *gorm.DB{}
+	if authorization.ViewerFromContext(ctx).User == nil {
+		scopes = append(scopes, s.comicRepo.IsPublished(true))
+	}
 	comic, err := s.comicRepo.FindOneWithStats(ctx, []any{
 		clause.Eq{Column: "slug", Value: slug},
 	}, map[string]common.MoreKeyOption{
@@ -20,7 +25,7 @@ func (s *ComicService) GetComic(ctx context.Context, slug string) response.Resul
 		"Tags":             {},
 		"TranslationGroup": {},
 		"UploadedBy":       {},
-	})
+	}, scopes...)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return response.ResultNotFound("Comic")

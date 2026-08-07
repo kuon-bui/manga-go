@@ -3,8 +3,10 @@ package chapterserivce
 import (
 	"context"
 	"net/http"
+	"reflect"
 	"testing"
 
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/logger"
 	"manga-go/internal/pkg/model"
@@ -47,6 +49,14 @@ func newChapterService(t *testing.T, createTables bool) *ChapterService {
 	}
 }
 
+func chapterPaginationTotal(data any) int64 {
+	value := reflect.ValueOf(data)
+	if !value.IsValid() {
+		return -1
+	}
+	return value.FieldByName("Total").Int()
+}
+
 func TestListChaptersReturnsErrorWithoutComicContext(t *testing.T) {
 	t.Parallel()
 
@@ -61,6 +71,36 @@ func TestListChaptersReturnsErrorWithoutComicContext(t *testing.T) {
 	}
 	if res.Message != "Comic not found in context" {
 		t.Fatalf("unexpected message: %s", res.Message)
+	}
+}
+
+func TestPublicChapterQueriesHideDrafts(t *testing.T) {
+	t.Parallel()
+
+	s := newChapterService(t, true)
+	comicID := uuid.New()
+	db := s.chapterRepo.DB
+	chapters := []*testutil.Chapter{
+		{ComicID: comicID, Number: "1", Slug: "published", IsPublished: true},
+		{ComicID: comicID, Number: "2", Slug: "draft", IsPublished: false},
+	}
+	if err := db.Create(&chapters).Error; err != nil {
+		t.Fatalf("failed to seed chapters: %v", err)
+	}
+
+	ctx := common.SetComicIdToContext(context.Background(), comicID)
+	listRes := s.ListChapters(ctx, &common.Paging{Page: 1, Limit: 10})
+	if total := chapterPaginationTotal(listRes.Data); total != 1 {
+		t.Fatalf("expected only one published chapter, got %d", total)
+	}
+	if res := s.GetChapter(ctx, "draft"); res.Success {
+		t.Fatal("expected anonymous viewer not to find draft")
+	}
+	user := &model.User{SqlModel: common.SqlModel{ID: uuid.New()}}
+	viewerCtx := authorization.WithViewer(common.SetComicIdToContext(context.Background(), comicID), user)
+	listRes = s.ListChapters(viewerCtx, &common.Paging{Page: 1, Limit: 10})
+	if total := chapterPaginationTotal(listRes.Data); total != 2 {
+		t.Fatalf("expected authenticated viewer to see published chapter and draft, got %d", total)
 	}
 }
 

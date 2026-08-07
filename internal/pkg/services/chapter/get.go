@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"manga-go/internal/app/api/common/response"
+	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/common"
 	"manga-go/internal/pkg/model"
 	"manga-go/internal/pkg/utils"
@@ -19,10 +20,14 @@ func (s *ChapterService) GetChapter(ctx context.Context, chapterSlug string) res
 		return response.ResultError("Comic not found in context")
 	}
 
-	chapter, err := s.chapterRepo.FindOne(ctx, []any{
+	conditions := []any{
 		clause.Eq{Column: "comic_id", Value: comicID},
 		clause.Eq{Column: "slug", Value: chapterSlug},
-	}, map[string]common.MoreKeyOption{
+	}
+	if authorization.ViewerFromContext(ctx).User == nil {
+		conditions = append(conditions, s.chapterRepo.IsPublished(true))
+	}
+	chapter, err := s.chapterRepo.FindOne(ctx, conditions, map[string]common.MoreKeyOption{
 		"Pages": {},
 	})
 	if err != nil {

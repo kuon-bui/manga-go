@@ -14,7 +14,6 @@ import (
 	ratingrepo "manga-go/internal/pkg/repo/rating"
 	readinghistoryrepo "manga-go/internal/pkg/repo/reading_history"
 	translationgrouprepo "manga-go/internal/pkg/repo/translation_group"
-	"manga-go/internal/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -94,22 +93,23 @@ func (m *AuthzMiddleware) Require(action authorization.Action, resource authoriz
 			return
 		}
 
-		user, err := utils.GetCurrentUserFromGinContext(c)
-		if err != nil {
+		if !authorization.HasViewer(c.Request.Context()) {
 			response.ResponseUnauthorized(c)
 			c.Abort()
 			return
 		}
+		viewer := authorization.ViewerFromContext(c.Request.Context())
+		user := viewer.User
 
 		baseReq := authorization.Request{
-			Subject: authorization.Subject(user.ID),
+			Subject: viewer.Subject,
 			Org:     authorization.PlatformOrg(),
 			Action:  action,
 			Object:  resource,
 			Context: authorization.CtxAny,
 		}
 
-		err = m.authorizer.Enforce(c.Request.Context(), baseReq)
+		err := m.authorizer.Enforce(c.Request.Context(), baseReq)
 		if err == nil {
 			c.Next()
 			return
@@ -124,7 +124,6 @@ func (m *AuthzMiddleware) Require(action authorization.Action, resource authoriz
 			c.Abort()
 			return
 		}
-
 		for _, resolver := range resolvers {
 			resolved, err := resolver(c, user)
 			if err != nil {
@@ -170,10 +169,10 @@ func (m *AuthzMiddleware) Comic() ResourceResolver {
 
 		contexts := make([]authorization.Context, 0, 4)
 		org := authorization.PlatformOrg()
-		if comic.UploadedByID != nil && *comic.UploadedByID == user.ID {
+		if user != nil && comic.UploadedByID != nil && *comic.UploadedByID == user.ID {
 			contexts = append(contexts, authorization.CtxOwner)
 		}
-		if comic.TranslationGroupID != nil && user.TranslationGroupID != nil && *comic.TranslationGroupID == *user.TranslationGroupID {
+		if user != nil && comic.TranslationGroupID != nil && user.TranslationGroupID != nil && *comic.TranslationGroupID == *user.TranslationGroupID {
 			org = authorization.TranslationGroupOrg(*comic.TranslationGroupID)
 			contexts = append(contexts, authorization.CtxGroupMember)
 		}
@@ -204,7 +203,7 @@ func (m *AuthzMiddleware) Chapter() ResourceResolver {
 
 		contexts := make([]authorization.Context, 0, 4)
 		org := authorization.PlatformOrg()
-		if chapter.UploadedByID != nil && *chapter.UploadedByID == user.ID {
+		if user != nil && chapter.UploadedByID != nil && *chapter.UploadedByID == user.ID {
 			contexts = append(contexts, authorization.CtxOwner)
 		}
 		if chapter.IsPublished {
@@ -235,7 +234,7 @@ func (m *AuthzMiddleware) ComicGroupFromContext() ResourceResolver {
 
 		contexts := make([]authorization.Context, 0, 2)
 		org := authorization.PlatformOrg()
-		if comic.TranslationGroupID != nil && user.TranslationGroupID != nil && *comic.TranslationGroupID == *user.TranslationGroupID {
+		if user != nil && comic.TranslationGroupID != nil && user.TranslationGroupID != nil && *comic.TranslationGroupID == *user.TranslationGroupID {
 			org = authorization.TranslationGroupOrg(*comic.TranslationGroupID)
 			contexts = append(contexts, authorization.CtxGroupMember)
 		}
@@ -360,6 +359,15 @@ func (m *AuthzMiddleware) ReadingHistoryParam(param string) ResourceResolver {
 			contexts = append(contexts, authorization.CtxOwner)
 		}
 		return ResourceContext{Org: authorization.PlatformOrg(), Contexts: contexts}, nil
+	}
+}
+
+func Published() ResourceResolver {
+	return func(*gin.Context, *model.User) (ResourceContext, error) {
+		return ResourceContext{
+			Org:      authorization.PlatformOrg(),
+			Contexts: []authorization.Context{authorization.CtxPublished},
+		}, nil
 	}
 }
 

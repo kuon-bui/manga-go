@@ -394,7 +394,7 @@ rule behaves as written rather than being silently ignored.
 
 ## 15. Known Gaps
 
-- Public read is modelled (`anonymous` policies) but not yet reachable: every route still sits behind `RequireJwt`, so no request ever arrives with subject `anonymous`. Wiring optional authentication and splitting the public route group is separate work.
-- List endpoints do not filter unpublished records. `GET /comics`, `GET /comics/:slug` and the chapter list return drafts to any signed-in caller.
+- Public comic and chapter reads now use `OptionalJwt`; missing credentials resolve to subject `anonymous`, while supplied invalid credentials still return `401`.
+- Public comic/chapter queries filter `is_published`. Detail authorization still permits signed-in owners, group members, and privileged roles to read drafts.
 - `group_member` is only ever granted to the creator of a translation group. There is no join/leave/kick flow, and `users.translation_group_id` is never written.
 - Database writes and policy writes are not in one transaction. A failure between them is reported, but leaves the two out of step until the seeder or the operation is re-run.
