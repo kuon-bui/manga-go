@@ -10,9 +10,16 @@ import (
 )
 
 func (s *ReadingHistoryService) ListReadingHistories(ctx context.Context, userID uuid.UUID, paging *common.Paging) response.Result {
-	readingHistories, total, err := s.readingHistoryRepo.FindPaginated(ctx, []any{
-		clause.Eq{Column: "user_id", Value: userID},
-	}, paging, nil)
+	readingHistories, total, err := s.readingHistoryRepo.FindPaginated(
+		ctx, []any{
+			clause.Eq{Column: "user_id", Value: userID},
+		},
+		paging,
+		map[string]common.MoreKeyOption{
+			"Comic":   {},
+			"Chapter": {},
+		},
+	)
 	if err != nil {
 		s.logger.Error("Failed to list reading histories", "error", err)
 		return response.ResultErrDb(err)
