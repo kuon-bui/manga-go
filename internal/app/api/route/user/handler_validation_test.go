@@ -2,11 +2,17 @@ package userroute
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"manga-go/internal/pkg/model"
+	authorizationrevision "manga-go/internal/pkg/repo/authorization_revision"
+	userrepo "manga-go/internal/pkg/repo/user"
 	userrequest "manga-go/internal/pkg/request/user"
+	authorizationadmin "manga-go/internal/pkg/services/authorization_admin"
+	"manga-go/internal/pkg/testutil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -117,6 +123,44 @@ func TestGetUsersRejectsLimitAboveMaximum(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestGetUsersUsesStandardPaginationResponse(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db := testutil.NewSQLiteDB(t)
+	testutil.MustSyncSchemas(t, db, &testutil.User{}, &model.AuthorizationCacheRevision{})
+	h := &userHandler{authorizationAdmin: authorizationadmin.NewService(authorizationadmin.ServiceParams{
+		UserRepo:  userrepo.NewUserRepository(db, nil),
+		Revisions: authorizationrevision.NewRepo(db),
+	})}
+	c, w := newUserCtx(http.MethodGet, "/users", "")
+
+	h.getUsers(c)
+
+	var body struct {
+		Message string                     `json:"message"`
+		Data    map[string]json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Message != "Users retrieved successfully" {
+		t.Fatalf("unexpected message: %q", body.Message)
+	}
+	if len(body.Data) != 2 {
+		t.Fatalf("expected only data and total pagination fields, got %s", body.Data)
+	}
+	var users []json.RawMessage
+	if err := json.Unmarshal(body.Data["data"], &users); err != nil {
+		t.Fatalf("expected user data array: %v", err)
+	}
+	var total int64
+	if err := json.Unmarshal(body.Data["total"], &total); err != nil {
+		t.Fatalf("expected user total: %v", err)
+	}
+	if len(users) != 0 || total != 0 {
+		t.Fatalf("unexpected user page: users=%d total=%d", len(users), total)
 	}
 }
 

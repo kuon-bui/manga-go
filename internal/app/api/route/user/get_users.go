@@ -43,5 +43,5 @@ func (h *userHandler) getUsers(c *gin.Context) {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
-	response.ResultSuccess("Users retrieved successfully", page).ResponseResult(c)
+	response.ResultPaginationData(page.Data, page.Total, "Users retrieved successfully").ResponseResult(c)
 }

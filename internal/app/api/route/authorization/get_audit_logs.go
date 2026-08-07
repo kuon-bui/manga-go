@@ -51,5 +51,5 @@ func (h *Handler) getAuditLogs(c *gin.Context) {
 		response.ResultErrInternal(err).ResponseResult(c)
 		return
 	}
-	response.ResultSuccess("Authorization audit logs retrieved successfully", page).ResponseResult(c)
+	response.ResultPaginationData(page.Data, page.Total, "Authorization audit logs retrieved successfully").ResponseResult(c)
 }
