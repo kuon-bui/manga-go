@@ -6,6 +6,7 @@ import (
 
 	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
+	authorizationaudit "manga-go/internal/pkg/repo/authorization_audit"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	userrepo "manga-go/internal/pkg/repo/user"
 
@@ -35,6 +36,7 @@ type Service struct {
 	userRepo      *userrepo.UserRepository
 	policyManager *authorization.PolicyManager
 	authorizer    *authorization.Authorizer
+	auditRepo     *authorizationaudit.Repo
 	revisions     RevisionStore
 	cache         ProfileCache
 }

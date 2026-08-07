@@ -252,6 +252,24 @@ type Role struct {
 	Description *string `gorm:"column:description"`
 }
 
+type AuthorizationAuditLog struct {
+	ID                 uuid.UUID  `gorm:"column:id;type:uuid;primaryKey"`
+	ActorUserID        *uuid.UUID `gorm:"column:actor_user_id;type:uuid"`
+	ActorNameSnapshot  string     `gorm:"column:actor_name_snapshot"`
+	ActorEmailSnapshot string     `gorm:"column:actor_email_snapshot"`
+	Action             string     `gorm:"column:action"`
+	TargetType         string     `gorm:"column:target_type"`
+	TargetID           uuid.UUID  `gorm:"column:target_id;type:uuid"`
+	TargetNameSnapshot string     `gorm:"column:target_name_snapshot"`
+	Before             []byte     `gorm:"column:before;type:jsonb"`
+	After              []byte     `gorm:"column:after;type:jsonb"`
+	CreatedAt          time.Time  `gorm:"column:created_at"`
+}
+
+func (AuthorizationAuditLog) TableName() string {
+	return "authorization_audit_logs"
+}
+
 func (Role) TableName() string {
 	return "roles"
 }

@@ -1,6 +1,10 @@
 package authorizationadmin
 
-import "github.com/google/uuid"
+import (
+	"manga-go/internal/pkg/model"
+
+	"github.com/google/uuid"
+)
 
 type RoleSummary struct {
 	ID          uuid.UUID `json:"id"`
@@ -37,4 +41,11 @@ type RoleAccessSummary struct {
 	Permissions          []string  `json:"permissions"`
 	AssignedUserCount    int       `json:"assignedUserCount"`
 	AuthorizationVersion string    `json:"authorizationVersion"`
+}
+
+type PagedAuditLogs struct {
+	Data  []*model.AuthorizationAuditLog `json:"data"`
+	Total int64                          `json:"total"`
+	Page  int                            `json:"page"`
+	Limit int                            `json:"limit"`
 }

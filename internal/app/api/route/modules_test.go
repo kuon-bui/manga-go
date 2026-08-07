@@ -5,6 +5,7 @@ import (
 
 	"manga-go/internal/app/api/route"
 	authorroute "manga-go/internal/app/api/route/author"
+	authorizationroute "manga-go/internal/app/api/route/authorization"
 	chapterroute "manga-go/internal/app/api/route/chapter"
 	comicroute "manga-go/internal/app/api/route/comic"
 	commentroute "manga-go/internal/app/api/route/comment"
@@ -35,6 +36,7 @@ func TestRouteModulesAreRegistered(t *testing.T) {
 	assertNotNil(t, "route.Module", route.Module)
 	assertNotNil(t, "userroute.Module", userroute.Module)
 	assertNotNil(t, "authorroute.Module", authorroute.Module)
+	assertNotNil(t, "authorizationroute.Module", authorizationroute.Module)
 	assertNotNil(t, "genreroute.Module", genreroute.Module)
 	assertNotNil(t, "fileroute.Module", fileroute.Module)
 	assertNotNil(t, "tagroute.Module", tagroute.Module)
@@ -213,10 +215,28 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 14 {
-			t.Fatalf("expected 14 routes, got %d", len(routes))
+		if len(routes) != 16 {
+			t.Fatalf("expected 16 routes, got %d", len(routes))
 		}
 		assertRouteExists(t, routes, "POST", "/users")
+		assertRouteExists(t, routes, "GET", "/users")
+		assertRouteExists(t, routes, "GET", "/users/me/authorization")
+	})
+
+	t.Run("authorization", func(t *testing.T) {
+		e := gin.New()
+		r := authorizationroute.NewRoute(authorizationroute.RouteParams{
+			Engine:         e,
+			Handler:        authorizationroute.NewHandler(authorizationroute.HandlerParams{}),
+			AuthMiddleware: &authmiddleware.AuthMiddleware{},
+		})
+		r.Setup()
+
+		routes := e.Routes()
+		if len(routes) != 1 {
+			t.Fatalf("expected 1 route, got %d", len(routes))
+		}
+		assertRouteExists(t, routes, "GET", "/authorization/audit-logs")
 	})
 
 	t.Run("swagger", func(t *testing.T) {

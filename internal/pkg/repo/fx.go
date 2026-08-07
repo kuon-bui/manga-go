@@ -2,6 +2,7 @@ package repo
 
 import (
 	authorrepo "manga-go/internal/pkg/repo/author"
+	authorizationaudit "manga-go/internal/pkg/repo/authorization_audit"
 	authorizationrevision "manga-go/internal/pkg/repo/authorization_revision"
 	chapterrepo "manga-go/internal/pkg/repo/chapter"
 	comicrepo "manga-go/internal/pkg/repo/comic"
@@ -31,6 +32,7 @@ var Module = fx.Module(
 	"repo",
 	userrepo.Module,
 	authorizationrevision.Module,
+	authorizationaudit.Module,
 	authorrepo.Module,
 	genrerepo.Module,
 	tagrepo.Module,
