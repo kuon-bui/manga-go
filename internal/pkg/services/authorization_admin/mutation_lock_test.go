@@ -49,11 +49,13 @@ func TestPostgresMutationLockerSerializesIndependentConnections(t *testing.T) {
 	t.Cleanup(func() { _ = secondSQLDB.Close() })
 	firstEntered := make(chan struct{})
 	releaseFirst := make(chan struct{})
+	secondAttempting := make(chan struct{})
 	secondEntered := make(chan struct{})
-	done := make(chan response.Result, 2)
+	firstDone := make(chan response.Result, 1)
+	secondDone := make(chan response.Result, 1)
 
 	go func() {
-		done <- NewPostgresMutationLocker(firstDB).WithLock(context.Background(), func() response.Result {
+		firstDone <- NewPostgresMutationLocker(firstDB).WithLock(context.Background(), func() response.Result {
 			close(firstEntered)
 			<-releaseFirst
 			return response.ResultSuccess("first", nil)
@@ -61,35 +63,40 @@ func TestPostgresMutationLockerSerializesIndependentConnections(t *testing.T) {
 	}()
 	select {
 	case <-firstEntered:
-	case result := <-done:
+	case result := <-firstDone:
 		t.Fatalf("first PostgreSQL locker failed before entering: %#v", result)
 	case <-time.After(5 * time.Second):
 		t.Fatal("first PostgreSQL locker did not enter")
 	}
 	go func() {
-		done <- NewPostgresMutationLocker(secondDB).WithLock(context.Background(), func() response.Result {
+		close(secondAttempting)
+		secondDone <- NewPostgresMutationLocker(secondDB).WithLock(context.Background(), func() response.Result {
 			close(secondEntered)
 			return response.ResultSuccess("second", nil)
 		})
 	}()
+	<-secondAttempting
 
 	select {
 	case <-secondEntered:
 		t.Fatal("second independent PostgreSQL connection entered while the advisory lock was held")
+	case result := <-secondDone:
+		t.Fatalf("second PostgreSQL locker finished while the advisory lock was held: %#v", result)
 	case <-time.After(100 * time.Millisecond):
 	}
 	close(releaseFirst)
 	select {
 	case <-secondEntered:
-	case result := <-done:
+	case result := <-secondDone:
 		t.Fatalf("second PostgreSQL locker failed before entering: %#v", result)
 	case <-time.After(5 * time.Second):
 		t.Fatal("second PostgreSQL connection did not enter after advisory lock release")
 	}
-	for range 2 {
-		if result := <-done; !result.Success {
-			t.Fatalf("unexpected advisory-lock result: %#v", result)
-		}
+	if result := <-firstDone; !result.Success {
+		t.Fatalf("unexpected first advisory-lock result: %#v", result)
+	}
+	if result := <-secondDone; !result.Success {
+		t.Fatalf("unexpected second advisory-lock result: %#v", result)
 	}
 }
 

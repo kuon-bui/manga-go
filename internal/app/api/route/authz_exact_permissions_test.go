@@ -62,13 +62,19 @@ func TestAuthorizationAdminRoutesRequireExactPermission(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if err := policy.ReplacePermissionsForRole(
-				roleID.String(), []string{"comic:read"}, authorization.OrgPlatform,
-			); err != nil {
-				t.Fatal(err)
+			insufficientPermissions := []string{"comic:read"}
+			if tc.permission == "role:manage" {
+				insufficientPermissions = append(insufficientPermissions, "role:read")
 			}
-			if status := serveExactPermissionRoute(tc, auth, authz, token); status != http.StatusForbidden {
-				t.Fatalf("wrong permission reached %s %s: status %d", tc.method, tc.path, status)
+			for _, permission := range insufficientPermissions {
+				if err := policy.ReplacePermissionsForRole(
+					roleID.String(), []string{permission}, authorization.OrgPlatform,
+				); err != nil {
+					t.Fatal(err)
+				}
+				if status := serveExactPermissionRoute(tc, auth, authz, token); status != http.StatusForbidden {
+					t.Fatalf("insufficient permission %s reached %s %s: status %d", permission, tc.method, tc.path, status)
+				}
 			}
 
 			if err := policy.ReplacePermissionsForRole(
