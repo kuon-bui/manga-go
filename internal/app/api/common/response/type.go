@@ -2,6 +2,7 @@ package response
 
 type Response struct {
 	Message          string                 `json:"message"`
+	Code             string                 `json:"code,omitempty"`
 	Data             any                    `json:"data,omitempty"`
 	Err              string                 `json:"error,omitempty"`
 	ValidationErrors []ValidationFieldError `json:"validation_errors,omitempty"`
@@ -21,6 +22,7 @@ type Result struct {
 	Success          bool
 	HttpStatus       int
 	Message          string
+	Code             string
 	Data             any
 	Error            error
 	ValidationErrors []ValidationFieldError

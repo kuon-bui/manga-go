@@ -106,3 +106,13 @@ func TestCatalogCoversSeededPermissionNames(t *testing.T) {
 		}
 	}
 }
+
+func TestCatalogContainsAuditLogRead(t *testing.T) {
+	definition, ok := LookupPermission("audit_log:read")
+	if !ok {
+		t.Fatal("expected audit_log:read in the catalog")
+	}
+	if definition.Object != ObjectAuditLog || definition.Action != ActionRead {
+		t.Fatalf("unexpected definition: %#v", definition)
+	}
+}

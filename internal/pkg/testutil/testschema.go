@@ -248,7 +248,8 @@ func (Rating) TableName() string {
 
 type Role struct {
 	SQLModel
-	Name string `gorm:"column:name"`
+	Name        string  `gorm:"column:name"`
+	Description *string `gorm:"column:description"`
 }
 
 func (Role) TableName() string {

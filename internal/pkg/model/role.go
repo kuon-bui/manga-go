@@ -10,7 +10,8 @@ import (
 // grants, live in the policy engine — see authorization.PolicyManager.
 type Role struct {
 	common.SqlModel
-	Name string `json:"name" gorm:"column:name"`
+	Name        string  `json:"name" gorm:"column:name"`
+	Description *string `json:"description" gorm:"column:description"`
 
 	// Permissions is populated on read from the policy engine; it is never
 	// persisted, which is why it carries no gorm mapping.

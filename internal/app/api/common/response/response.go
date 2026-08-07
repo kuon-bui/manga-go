@@ -59,10 +59,17 @@ func (result Result) ResponseResult(c *gin.Context) {
 	}
 	c.JSON(result.HttpStatus, Response{
 		Message:          result.Message,
+		Code:             result.Code,
 		Data:             result.Data,
 		Err:              errorDetails,
 		ValidationErrors: result.ValidationErrors,
 	})
+}
+
+func ResultConflict(code string, message string) Result {
+	result := NewResult(false, http.StatusConflict, message, nil, nil)
+	result.Code = code
+	return result
 }
 
 func ResponseNotFound(c *gin.Context, entity string) {
