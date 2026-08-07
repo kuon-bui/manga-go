@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 
 	"manga-go/internal/app/api/common/response"
@@ -160,6 +161,51 @@ func TestReplaceUserRolesAcceptsEmptySet(t *testing.T) {
 	}
 }
 
+func TestReplaceUserRolesAuditsDurableRoleIDAndNameSnapshots(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	target := env.seedUser(t, "target")
+	manager := env.seedRole(t, "manager", "role:manage")
+	reader := env.seedRole(t, "reader", "comic:read")
+	moderator := env.seedRole(t, "moderator", "comment:manage")
+	env.assign(t, actor, manager)
+	env.assign(t, target, reader)
+
+	result := env.service.ReplaceUserRoles(
+		actorContext(actor), target.ID, []uuid.UUID{moderator.ID}, "g1:u1",
+	)
+	if !result.Success {
+		t.Fatalf("expected success, got %#v", result)
+	}
+	if err := env.db.Model(&model.Role{}).Where("id = ?", reader.ID).Update("name", "renamed-reader").Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := env.db.Delete(&model.Role{}, moderator.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	entries, total, err := env.auditRepo.List(
+		context.Background(), authorizationaudit.ListInput{Action: "user.roles_replaced"},
+	)
+	if err != nil || total != 1 {
+		t.Fatalf("unexpected audit result: total=%d err=%v", total, err)
+	}
+	assertAuditRoleSnapshot(t, entries[0].Before["roles"], reader.ID.String(), "reader")
+	assertAuditRoleSnapshot(t, entries[0].After["roles"], moderator.ID.String(), "moderator")
+}
+
+func assertAuditRoleSnapshot(t *testing.T, value any, id, name string) {
+	t.Helper()
+	items, ok := value.([]any)
+	if !ok || len(items) != 1 {
+		t.Fatalf("expected one role snapshot, got %#v", value)
+	}
+	item, ok := items[0].(map[string]any)
+	if !ok || item["id"] != id || item["name"] != name {
+		t.Fatalf("unexpected role snapshot: %#v", value)
+	}
+}
+
 func TestReplaceRolePermissionsAcceptsEmptySet(t *testing.T) {
 	env := newMutationTestEnv(t, nil)
 	actor := env.seedUser(t, "actor")
@@ -207,6 +253,49 @@ func TestReplaceRolePermissionsRejectsLastRoleManager(t *testing.T) {
 	permissions, err := env.policyManager.PermissionNamesForRole(managerRole.ID.String(), authorization.OrgPlatform)
 	if err != nil || len(permissions) != 1 || permissions[0] != "role:manage" {
 		t.Fatalf("expected original permission to be restored, got %v, %v", permissions, err)
+	}
+}
+
+func TestConcurrentManagerRemovalKeepsAtLeastOneManager(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	first := env.seedUser(t, "first-manager")
+	second := env.seedUser(t, "second-manager")
+	manager := env.seedRole(t, "manager", "role:manage")
+	env.assign(t, first, manager)
+	env.assign(t, second, manager)
+
+	start := make(chan struct{})
+	results := make(chan response.Result, 2)
+	var wait sync.WaitGroup
+	for _, userID := range []uuid.UUID{first.ID, second.ID} {
+		wait.Add(1)
+		go func(id uuid.UUID) {
+			defer wait.Done()
+			<-start
+			results <- env.service.ReplaceUserRoles(context.Background(), id, []uuid.UUID{}, "g1:u1")
+		}(userID)
+	}
+	close(start)
+	wait.Wait()
+	close(results)
+
+	successes := 0
+	conflicts := 0
+	for result := range results {
+		if result.Success {
+			successes++
+			continue
+		}
+		if result.HttpStatus == http.StatusConflict && result.Code == codeLastRoleManager {
+			conflicts++
+		}
+	}
+	if successes != 1 || conflicts != 1 {
+		t.Fatalf("expected one success and one last-manager conflict, got success=%d conflict=%d", successes, conflicts)
+	}
+	managers, err := env.policyManager.UsersForRole(manager.ID.String(), authorization.OrgPlatform)
+	if err != nil || len(managers) != 1 {
+		t.Fatalf("expected exactly one remaining role manager, got %v, %v", managers, err)
 	}
 }
 

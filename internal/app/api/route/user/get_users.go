@@ -21,13 +21,17 @@ import (
 //	@Failure		400	{object}	response.Response
 //	@Failure		403	{object}	response.Response
 //	@Router			/users [get]
+//	@Security		AccessToken
 func (h *userHandler) getUsers(c *gin.Context) {
 	request := &userrequest.ListAuthorizationUsersRequest{}
 	if err := c.ShouldBindQuery(request); err != nil {
 		response.ResultInvalidRequestErr(err).ResponseResult(c)
 		return
 	}
-	request.Fulfill()
+	if err := request.Validate(); err != nil {
+		response.ResultInvalidRequestErr(err).ResponseResult(c)
+		return
+	}
 
 	page, err := h.authorizationAdmin.ListUsers(c.Request.Context(), authorizationadmin.ListUsersInput{
 		Page:   request.Page,

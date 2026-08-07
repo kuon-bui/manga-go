@@ -24,6 +24,11 @@ const (
 	codeLastRoleManager           = "LAST_ROLE_MANAGER"
 )
 
+type roleAssignmentSnapshot struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 func (s *Service) ReplaceUserRoles(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -73,6 +78,10 @@ func (s *Service) replaceUserRolesLocked(
 		return s.internalFailure("read current user roles", err)
 	}
 	sort.Strings(before)
+	beforeSnapshot, err := s.roleAssignmentSnapshots(ctx, before)
+	if err != nil {
+		return s.dbFailure("snapshot current user roles", err)
+	}
 	beforeManagers, err := s.roleManagerCount(ctx)
 	if err != nil {
 		return s.internalFailure("count role managers", err)
@@ -84,6 +93,10 @@ func (s *Service) replaceUserRolesLocked(
 	}
 
 	after := stringifyUUIDs(roleIDs)
+	afterSnapshot, err := s.roleAssignmentSnapshots(ctx, after)
+	if err != nil {
+		return s.dbFailure("snapshot replacement user roles", err)
+	}
 	if err := s.policyManager.ReplaceRolesForUser(userID.String(), after, authorization.OrgPlatform); err != nil {
 		_ = s.policyManager.ReplaceRolesForUser(userID.String(), before, authorization.OrgPlatform)
 		return s.internalFailure("replace user roles", err)
@@ -116,7 +129,7 @@ func (s *Service) replaceUserRolesLocked(
 	}
 
 	entry := newAuthorizationAudit(viewer, "user.roles_replaced", "user", target.ID, target.Name,
-		common.JSONMap{"roleIds": before}, common.JSONMap{"roleIds": after})
+		common.JSONMap{"roles": beforeSnapshot}, common.JSONMap{"roles": afterSnapshot})
 	if result := s.persistMutation(entry, func(tx *gorm.DB) error {
 		_, err := s.revisions.BumpUserTx(tx, userID)
 		return err
@@ -135,6 +148,31 @@ func (s *Service) replaceUserRolesLocked(
 		"roleIds": after,
 		"version": fmt.Sprintf("g%d:u%d", globalVersion, userVersion+1),
 	})
+}
+
+func (s *Service) roleAssignmentSnapshots(
+	ctx context.Context,
+	roleIDs []string,
+) ([]roleAssignmentSnapshot, error) {
+	snapshots := make([]roleAssignmentSnapshot, 0, len(roleIDs))
+	for _, rawID := range roleIDs {
+		roleID, err := uuid.Parse(rawID)
+		if err != nil {
+			return nil, fmt.Errorf("parse role snapshot ID %q: %w", rawID, err)
+		}
+		role, err := s.roleRepo.FindOne(ctx, []any{clause.Eq{Column: "id", Value: roleID}}, nil)
+		if err != nil {
+			return nil, err
+		}
+		snapshots = append(snapshots, roleAssignmentSnapshot{ID: rawID, Name: role.Name})
+	}
+	sort.Slice(snapshots, func(i, j int) bool {
+		if snapshots[i].Name == snapshots[j].Name {
+			return snapshots[i].ID < snapshots[j].ID
+		}
+		return snapshots[i].Name < snapshots[j].Name
+	})
+	return snapshots, nil
 }
 
 func (s *Service) ReplaceRolePermissions(

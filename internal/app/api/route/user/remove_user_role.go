@@ -14,9 +14,13 @@ import (
 // @Produce      json
 // @Param        id      path      string  true  "User ID"
 // @Param        roleId  path      string  true  "Role ID"
+// @Param        If-Match  header  string  false  "Current authorization version (for example g12:u4)"
 // @Success      200     {object}  response.Response
 // @Failure      400     {object}  response.Response
 // @Failure      401     {object}  response.Response
+// @Failure      403     {object}  response.Response
+// @Failure      404     {object}  response.Response
+// @Failure      409     {object}  response.Response  "AUTHORIZATION_STATE_CHANGED, SELF_MANAGE_REQUIRED, or LAST_ROLE_MANAGER"
 // @Router       /users/{id}/roles/{roleId} [delete]
 // @Security     AccessToken
 func (h *userHandler) removeUserRole(c *gin.Context) {

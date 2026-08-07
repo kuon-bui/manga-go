@@ -16,6 +16,7 @@ import (
 // @Success      200   {object}  response.Response
 // @Failure      400   {object}  response.Response
 // @Failure      401   {object}  response.Response
+// @Failure      403   {object}  response.Response
 // @Router       /roles [post]
 // @Security     AccessToken
 func (h *RoleHandler) createRole(c *gin.Context) {

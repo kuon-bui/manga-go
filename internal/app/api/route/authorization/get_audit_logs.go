@@ -25,6 +25,7 @@ import (
 //	@Failure		400	{object}	response.Response
 //	@Failure		403	{object}	response.Response
 //	@Router			/authorization/audit-logs [get]
+//	@Security		AccessToken
 func (h *Handler) getAuditLogs(c *gin.Context) {
 	request := &authorizationrequest.ListAuditLogsRequest{}
 	if err := c.ShouldBindQuery(request); err != nil {

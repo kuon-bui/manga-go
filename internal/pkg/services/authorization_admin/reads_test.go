@@ -117,6 +117,26 @@ func TestListUsersFiltersByRoleAndKeepsUsersWithoutRolesOut(t *testing.T) {
 	}
 }
 
+func TestGetUserReturnsAuthorizationSnapshotByID(t *testing.T) {
+	env := newReadTestEnv(t)
+	translatorID := env.seedRole(t, "translator")
+	userID := env.seedUser(t, "Filtered Out", "filtered@example.com")
+	if err := env.policyManager.AddRoleForUser(userID.String(), translatorID.String(), authorization.OrgPlatform); err != nil {
+		t.Fatal(err)
+	}
+
+	user, err := env.service.GetUser(context.Background(), userID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.ID != userID || user.AuthorizationVersion != "g1:u1" {
+		t.Fatalf("unexpected user snapshot: %#v", user)
+	}
+	if len(user.Roles) != 1 || user.Roles[0].Name != "translator" {
+		t.Fatalf("expected assigned role metadata, got %#v", user.Roles)
+	}
+}
+
 func TestListRolesIncludesPermissionsAssignedCountAndVersion(t *testing.T) {
 	env := newReadTestEnv(t)
 	roleID := env.seedRole(t, "editor")

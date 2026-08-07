@@ -215,12 +215,13 @@ func TestRouteSetupRegistersEndpoints(t *testing.T) {
 		r.Setup()
 
 		routes := e.Routes()
-		if len(routes) != 16 {
-			t.Fatalf("expected 16 routes, got %d", len(routes))
+		if len(routes) != 17 {
+			t.Fatalf("expected 17 routes, got %d", len(routes))
 		}
 		assertRouteExists(t, routes, "POST", "/users")
 		assertRouteExists(t, routes, "GET", "/users")
 		assertRouteExists(t, routes, "GET", "/users/me/authorization")
+		assertRouteExists(t, routes, "GET", "/users/:id/authorization")
 	})
 
 	t.Run("authorization", func(t *testing.T) {

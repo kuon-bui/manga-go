@@ -57,6 +57,7 @@ func (ur *UserRoute) registerAuthRoute(rg *gin.RouterGroup) {
 	rg.GET("/me", ur.userHandler.me)
 	rg.GET("/me/authorization", ur.userHandler.getMyAuthorization)
 	rg.GET("", requireUserRead, ur.userHandler.getUsers)
+	rg.GET("/:id/authorization", requireUserRead, ur.userHandler.getAuthorizationUser)
 	rg.PATCH("/:id", requireUserUpdate, ur.userHandler.updateUserProfile)
 	rg.GET("/me/config", ur.userHandler.getMyConfig)
 	rg.PATCH("/me/config", ur.userHandler.updateMyConfig)

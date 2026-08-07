@@ -16,10 +16,13 @@ import (
 // @Produce      json
 // @Param        id              path      string  true  "Role ID"
 // @Param        permissionName  path      string  true  "Permission name, e.g. comic:write"
+// @Param        If-Match        header    string  false "Current global authorization version (for example g12)"
 // @Success      200             {object}  response.Result
 // @Failure      400             {object}  response.Result
 // @Failure      401             {object}  response.Result
 // @Failure      403             {object}  response.Result
+// @Failure      404             {object}  response.Result
+// @Failure      409             {object}  response.Result  "AUTHORIZATION_STATE_CHANGED, SELF_MANAGE_REQUIRED, or LAST_ROLE_MANAGER"
 // @Router       /roles/{id}/permissions/{permissionName} [delete]
 // @Security     AccessToken
 func (h *RoleHandler) removeRolePermission(c *gin.Context) {

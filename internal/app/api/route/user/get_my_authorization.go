@@ -16,6 +16,7 @@ import (
 //	@Failure		401	{object}	response.Response
 //	@Failure		500	{object}	response.Response
 //	@Router			/users/me/authorization [get]
+//	@Security		AccessToken
 func (h *userHandler) getMyAuthorization(c *gin.Context) {
 	viewer := authorization.ViewerFromContext(c.Request.Context())
 	if viewer.User == nil {

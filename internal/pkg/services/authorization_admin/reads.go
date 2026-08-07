@@ -71,6 +71,32 @@ func (s *Service) ListUsers(ctx context.Context, input ListUsersInput) (*PagedUs
 	}, nil
 }
 
+func (s *Service) GetUser(ctx context.Context, userID uuid.UUID) (*AdminUserSummary, error) {
+	user, err := s.userRepo.FindOne(ctx, []any{clause.Eq{Column: "id", Value: userID}}, nil)
+	if err != nil {
+		return nil, err
+	}
+	globalVersion, userVersion, err := s.revisions.Current(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	roleModels, err := s.rolesForUsers(ctx, []*model.User{user})
+	if err != nil {
+		return nil, err
+	}
+	roles, err := s.roleSummariesForUser(user.ID, roleModels)
+	if err != nil {
+		return nil, err
+	}
+	return &AdminUserSummary{
+		ID:                   user.ID,
+		Name:                 user.Name,
+		Email:                user.Email,
+		Roles:                roles,
+		AuthorizationVersion: fmt.Sprintf("g%d:u%d", globalVersion, userVersion),
+	}, nil
+}
+
 func (s *Service) ListRoles(ctx context.Context) ([]RoleAccessSummary, error) {
 	roles, err := s.roleRepo.FindAll(ctx, nil, nil)
 	if err != nil {

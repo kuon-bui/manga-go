@@ -107,6 +107,32 @@ func TestGetUsersRejectsInvalidRoleFilter(t *testing.T) {
 	}
 }
 
+func TestGetUsersRejectsLimitAboveMaximum(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := &userHandler{}
+	c, w := newUserCtx(http.MethodGet, "/users?limit=101", "")
+	c.Request.URL.RawQuery = "limit=101"
+
+	h.getUsers(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestGetAuthorizationUserRejectsInvalidID(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := &userHandler{}
+	c, w := newUserCtx(http.MethodGet, "/users/invalid/authorization", "")
+	c.Params = gin.Params{{Key: "id", Value: "invalid"}}
+
+	h.getAuthorizationUser(c)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
 func TestAssignUserRoleInvalidID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	h := &userHandler{}
