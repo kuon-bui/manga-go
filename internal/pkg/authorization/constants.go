@@ -40,6 +40,7 @@ const (
 
 	// Objects
 	ObjectAny              Object = "*"
+	ObjectAuditLog         Object = "audit_log"
 	ObjectAuthor           Object = "author"
 	ObjectChapter          Object = "chapter"
 	ObjectComic            Object = "comic"

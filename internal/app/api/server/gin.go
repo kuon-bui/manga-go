@@ -24,6 +24,7 @@ func buildCorsConfig(cfg *config.Config) cors.Config {
 			"Accept",
 			"Accept-Encoding",
 			"Authorization",
+			"If-Match",
 			"X-CSRF-Token",
 		},
 		ExposeHeaders:    []string{"Content-Length"},

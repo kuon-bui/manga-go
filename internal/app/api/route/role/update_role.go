@@ -15,10 +15,13 @@ import (
 // @Produce      json
 // @Param        id    path      string                    true  "Role ID"
 // @Param        body  body      rolerequest.UpdateRoleRequest  true  "Role update request"
+// @Param        If-Match  header  string  false  "Current global authorization version (for example g12)"
 // @Success      200   {object}  response.Response
 // @Failure      400   {object}  response.Response
 // @Failure      401   {object}  response.Response
+// @Failure      403   {object}  response.Response
 // @Failure      404   {object}  response.Response
+// @Failure      409   {object}  response.Response  "AUTHORIZATION_STATE_CHANGED"
 // @Router       /roles/{id} [put]
 // @Security     AccessToken
 func (h *RoleHandler) updateRole(c *gin.Context) {
@@ -34,6 +37,6 @@ func (h *RoleHandler) updateRole(c *gin.Context) {
 		return
 	}
 
-	result := h.roleService.UpdateRole(c.Request.Context(), id, &req)
+	result := h.roleService.UpdateRole(c.Request.Context(), id, &req, roleAuthorizationVersion(c))
 	result.ResponseResult(c)
 }

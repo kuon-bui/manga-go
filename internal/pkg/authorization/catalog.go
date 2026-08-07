@@ -11,11 +11,11 @@ import (
 // ("<object>:<action>"); Grants is what it expands to when written as policy —
 // the shorthand "write" covers create, update and publish.
 type PermissionDefinition struct {
-	Name     string   `json:"name"`
-	Object   Object   `json:"object"`
-	Action   Action   `json:"action"`
-	Grants   []Action `json:"grants"`
-	Contexts []Context
+	Name     string    `json:"name"`
+	Object   Object    `json:"object"`
+	Action   Action    `json:"action"`
+	Grants   []Action  `json:"grants"`
+	Contexts []Context `json:"contexts"`
 }
 
 // actionWrite is a grant keyword rather than a request action: no request ever
@@ -27,6 +27,7 @@ const actionWrite Action = "write"
 // absent here cannot be granted, which is what stops a typo from being stored
 // as a policy rule that can never match a request.
 var grantableActions = map[Object][]Action{
+	ObjectAuditLog:         {ActionRead},
 	ObjectAuthor:           {ActionRead, actionWrite, ActionDelete, ActionManage},
 	ObjectChapter:          {ActionRead, actionWrite, ActionDelete, ActionManage},
 	ObjectComic:            {ActionRead, actionWrite, ActionDelete, ActionManage},

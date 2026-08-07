@@ -6,8 +6,23 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	rolerequest "manga-go/internal/pkg/request/role"
+
 	"github.com/gin-gonic/gin"
 )
+
+func TestAssignRolePermissionRequestAcceptsEmptyPermissionSet(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := newRoleCtx(http.MethodPost, "/roles/id/permissions", `{"permissions":[]}`)
+	var request rolerequest.AssignPermissionRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		t.Fatalf("expected an empty replacement set to bind: %v", err)
+	}
+	if request.Permissions == nil || len(*request.Permissions) != 0 {
+		t.Fatalf("expected a present empty permission set, got %#v", request.Permissions)
+	}
+}
 
 func newRoleCtx(method, path string, body string) (*gin.Context, *httptest.ResponseRecorder) {
 	w := httptest.NewRecorder()

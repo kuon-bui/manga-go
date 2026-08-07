@@ -8,8 +8,11 @@ import (
 	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
 	"manga-go/internal/pkg/model"
+	authorizationrevision "manga-go/internal/pkg/repo/authorization_revision"
 	rolerepo "manga-go/internal/pkg/repo/role"
+	userrepo "manga-go/internal/pkg/repo/user"
 	rolerequest "manga-go/internal/pkg/request/role"
+	authorizationadmin "manga-go/internal/pkg/services/authorization_admin"
 	"manga-go/internal/pkg/testutil"
 
 	"github.com/google/uuid"
@@ -22,16 +25,26 @@ func newRoleServiceWithPolicy(t *testing.T) (*RoleService, *authorization.Policy
 
 	db := testutil.NewSQLiteDB(t)
 	db.Logger = gormlogger.Discard
-	testutil.MustSyncSchemas(t, db, &testutil.Role{})
+	testutil.MustSyncSchemas(t, db, &testutil.Role{}, &model.AuthorizationCacheRevision{})
 
 	pm := authorization.NewPolicyManager(authorization.PolicyManagerParams{
 		Enforcer: testutil.NewInMemoryEnforcer(t),
 	})
 
+	roleRepo := rolerepo.NewRoleRepo(db)
+	authAdmin := authorizationadmin.NewService(authorizationadmin.ServiceParams{
+		Logger:        logger.NewLogger(),
+		RoleRepo:      roleRepo,
+		UserRepo:      userrepo.NewUserRepository(db, nil),
+		PolicyManager: pm,
+		Revisions:     authorizationrevision.NewRepo(db),
+	})
+
 	return &RoleService{
 		logger:        logger.NewLogger(),
-		roleRepo:      rolerepo.NewRoleRepo(db),
+		roleRepo:      roleRepo,
 		policyManager: pm,
+		authAdmin:     authAdmin,
 	}, pm, db
 }
 
@@ -48,12 +61,16 @@ func seedRole(t *testing.T, db *gorm.DB, name string) uuid.UUID {
 	return id
 }
 
+func permissionNames(values ...string) *[]string {
+	return &values
+}
+
 func TestAssignPermissionsStoresGrantsInThePolicyEngine(t *testing.T) {
 	s, pm, db := newRoleServiceWithPolicy(t)
 	roleID := seedRole(t, db, "editor")
 
 	res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read", "comic:write"},
+		Permissions: permissionNames("comic:read", "comic:write"),
 	})
 	if res.HttpStatus != http.StatusOK {
 		t.Fatalf("expected the grant to succeed, got %d: %s", res.HttpStatus, res.Message)
@@ -73,7 +90,7 @@ func TestAssignPermissionsRejectsUnknownName(t *testing.T) {
 	roleID := seedRole(t, db, "editor")
 
 	res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read", "comic:frobnicate"},
+		Permissions: permissionNames("comic:read", "comic:frobnicate"),
 	})
 	if res.HttpStatus != http.StatusBadRequest {
 		t.Fatalf("expected 400 for an unknown permission, got %d", res.HttpStatus)
@@ -92,7 +109,7 @@ func TestAssignPermissionsReturnsNotFoundForMissingRole(t *testing.T) {
 	s, _, _ := newRoleServiceWithPolicy(t)
 
 	res := s.AssignPermissions(context.Background(), uuid.New(), &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read"},
+		Permissions: permissionNames("comic:read"),
 	})
 	if res.Message != "Role not found" {
 		t.Fatalf("expected a not-found result, got %q", res.Message)
@@ -104,7 +121,7 @@ func TestRemovePermissionRevokesOnlyThatGrant(t *testing.T) {
 	roleID := seedRole(t, db, "editor")
 
 	if res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read", "role:manage"},
+		Permissions: permissionNames("comic:read", "role:manage"),
 	}); res.HttpStatus != http.StatusOK {
 		t.Fatalf("setup failed: %s", res.Message)
 	}
@@ -140,7 +157,7 @@ func TestGetRoleReportsPermissionsFromThePolicyEngine(t *testing.T) {
 	roleID := seedRole(t, db, "editor")
 
 	if res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:write"},
+		Permissions: permissionNames("comic:write"),
 	}); res.HttpStatus != http.StatusOK {
 		t.Fatalf("setup failed: %s", res.Message)
 	}
@@ -150,7 +167,7 @@ func TestGetRoleReportsPermissionsFromThePolicyEngine(t *testing.T) {
 		t.Fatalf("expected the role to be returned, got %d", res.HttpStatus)
 	}
 
-	role, ok := res.Data.(*model.Role)
+	role, ok := res.Data.(*authorizationadmin.RoleAccessSummary)
 	if !ok {
 		t.Fatalf("expected a role in the response, got %T", res.Data)
 	}

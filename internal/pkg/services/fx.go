@@ -2,6 +2,7 @@ package services
 
 import (
 	authorservice "manga-go/internal/pkg/services/author"
+	authorizationadmin "manga-go/internal/pkg/services/authorization_admin"
 	chapterservice "manga-go/internal/pkg/services/chapter"
 	comicservice "manga-go/internal/pkg/services/comic"
 	comicstatsservice "manga-go/internal/pkg/services/comic_stats"
@@ -24,6 +25,7 @@ import (
 var Module = fx.Module(
 	"services",
 	userservice.Module,
+	authorizationadmin.Module,
 	authorservice.Module,
 	genreservice.Module,
 	fileservice.Module,

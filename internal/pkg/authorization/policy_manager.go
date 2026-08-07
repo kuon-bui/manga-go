@@ -149,6 +149,23 @@ func (m *PolicyManager) RolesForUser(userID string, org Org) ([]string, error) {
 	return enforcer.GetRolesForUserInDomain(userID, string(org)), nil
 }
 
+func (m *PolicyManager) UsersForRole(roleID string, org Org) ([]string, error) {
+	enforcer, err := m.requireEnforcer()
+	if err != nil {
+		return nil, err
+	}
+	if err := requireNonEmpty("UsersForRole", map[string]string{
+		"role id": roleID,
+		"org":     string(org),
+	}); err != nil {
+		return nil, err
+	}
+
+	users := enforcer.GetUsersForRoleInDomain(roleID, string(org))
+	sort.Strings(users)
+	return users, nil
+}
+
 // RemoveRole deletes a role: both what it grants and who holds it.
 func (m *PolicyManager) RemoveRole(roleID string, org Org) error {
 	enforcer, err := m.requireEnforcer()

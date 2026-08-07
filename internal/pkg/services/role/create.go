@@ -8,8 +8,12 @@ import (
 )
 
 func (s *RoleService) CreateRole(ctx context.Context, req *rolerequest.CreateRoleRequest) response.Result {
+	if s.authAdmin != nil && s.authAdmin.MutationReady() {
+		return s.authAdmin.CreateRole(ctx, req.Name, req.Description)
+	}
 	role := model.Role{
-		Name: req.Name,
+		Name:        req.Name,
+		Description: req.Description,
 	}
 
 	if err := s.roleRepo.Create(ctx, &role); err != nil {

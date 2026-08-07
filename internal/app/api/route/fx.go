@@ -2,6 +2,7 @@ package route
 
 import (
 	authorroute "manga-go/internal/app/api/route/author"
+	authorizationroute "manga-go/internal/app/api/route/authorization"
 	chapterroute "manga-go/internal/app/api/route/chapter"
 	comicroute "manga-go/internal/app/api/route/comic"
 	comicstatsroute "manga-go/internal/app/api/route/comic_stats"
@@ -26,6 +27,7 @@ var Module = fx.Module(
 	"route",
 	userroute.Module,
 	authorroute.Module,
+	authorizationroute.Module,
 	genreroute.Module,
 	fileroute.Module,
 	tagroute.Module,

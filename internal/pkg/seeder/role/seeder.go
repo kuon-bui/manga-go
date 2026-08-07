@@ -21,6 +21,7 @@ var rolePermissions = map[string][]string{
 		"chapter:read", "chapter:write", "chapter:delete",
 		"user:read", "user:manage",
 		"role:manage", "permission:read",
+		"audit_log:read",
 		"tag:write", "tag:delete",
 		"genre:write", "genre:delete",
 		"author:write", "author:delete",
