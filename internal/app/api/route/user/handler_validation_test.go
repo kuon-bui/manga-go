@@ -80,6 +80,18 @@ func TestGetUserRolesInvalidID(t *testing.T) {
 	}
 }
 
+func TestGetMyAuthorizationRequiresAuthenticatedViewer(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := &userHandler{}
+	c, w := newUserCtx(http.MethodGet, "/users/me/authorization", "")
+
+	h.getMyAuthorization(c)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected status 401, got %d", w.Code)
+	}
+}
+
 func TestAssignUserRoleInvalidID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	h := &userHandler{}

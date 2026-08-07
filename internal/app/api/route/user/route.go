@@ -54,6 +54,7 @@ func (ur *UserRoute) registerAuthRoute(rg *gin.RouterGroup) {
 
 	rg.DELETE("/logout", ur.authMiddleware.InvalidateJwt, ur.userHandler.logout)
 	rg.GET("/me", ur.userHandler.me)
+	rg.GET("/me/authorization", ur.userHandler.getMyAuthorization)
 	rg.PATCH("/:id", requireUserUpdate, ur.userHandler.updateUserProfile)
 	rg.GET("/me/config", ur.userHandler.getMyConfig)
 	rg.PATCH("/me/config", ur.userHandler.updateMyConfig)

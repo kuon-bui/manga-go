@@ -2,6 +2,7 @@ package userroute
 
 import (
 	"manga-go/internal/pkg/config"
+	authorizationadmin "manga-go/internal/pkg/services/authorization_admin"
 	comicservice "manga-go/internal/pkg/services/comic"
 	notificationservice "manga-go/internal/pkg/services/notification"
 	userserivce "manga-go/internal/pkg/services/user"
@@ -14,6 +15,7 @@ type userHandler struct {
 	config              *config.Config
 	notificationService *notificationservice.NotificationService
 	userService         *userserivce.UserService
+	authorizationAdmin  *authorizationadmin.Service
 }
 
 type UserHandlerParams struct {
@@ -23,6 +25,7 @@ type UserHandlerParams struct {
 	Config              *config.Config
 	NotificationService *notificationservice.NotificationService
 	UserService         *userserivce.UserService
+	AuthorizationAdmin  *authorizationadmin.Service
 }
 
 func NewUserHandler(p UserHandlerParams) *userHandler {
@@ -31,5 +34,6 @@ func NewUserHandler(p UserHandlerParams) *userHandler {
 		userService:         p.UserService,
 		config:              p.Config,
 		notificationService: p.NotificationService,
+		authorizationAdmin:  p.AuthorizationAdmin,
 	}
 }
