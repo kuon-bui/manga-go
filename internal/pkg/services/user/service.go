@@ -7,6 +7,7 @@ import (
 	"manga-go/internal/pkg/logger"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	userrepo "manga-go/internal/pkg/repo/user"
+	authorizationadmin "manga-go/internal/pkg/services/authorization_admin"
 
 	"github.com/hibiken/asynq"
 	"go.uber.org/fx"
@@ -20,6 +21,7 @@ type UserService struct {
 	asynqClient   *asynq.Client
 	roleRepo      *rolerepo.RoleRepo
 	policyManager *authorization.PolicyManager
+	authAdmin     *authorizationadmin.Service
 }
 
 type UserServiceParams struct {
@@ -32,6 +34,7 @@ type UserServiceParams struct {
 	AsynqClient   *asynq.Client
 	RoleRepo      *rolerepo.RoleRepo
 	PolicyManager *authorization.PolicyManager
+	AuthAdmin     *authorizationadmin.Service
 }
 
 func NewUserService(p UserServiceParams) *UserService {
@@ -43,5 +46,6 @@ func NewUserService(p UserServiceParams) *UserService {
 		asynqClient:   p.AsynqClient,
 		roleRepo:      p.RoleRepo,
 		policyManager: p.PolicyManager,
+		authAdmin:     p.AuthAdmin,
 	}
 }

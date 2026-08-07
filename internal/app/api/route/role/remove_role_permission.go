@@ -1,6 +1,8 @@
 package roleroute
 
 import (
+	"strings"
+
 	"manga-go/internal/app/api/common/response"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +29,12 @@ func (h *RoleHandler) removeRolePermission(c *gin.Context) {
 		return
 	}
 
-	result := h.roleService.RemovePermission(c.Request.Context(), roleID, c.Param("permissionName"))
+	result := h.roleService.RemovePermission(
+		c.Request.Context(), roleID, c.Param("permissionName"), roleAuthorizationVersion(c),
+	)
 	result.ResponseResult(c)
+}
+
+func roleAuthorizationVersion(c *gin.Context) string {
+	return strings.Trim(c.GetHeader("If-Match"), "\"")
 }

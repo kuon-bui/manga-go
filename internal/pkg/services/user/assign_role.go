@@ -14,7 +14,15 @@ import (
 // AssignRoles replaces the user's platform roles with exactly roleIDs. Each id
 // is checked against the roles table so the policy engine only ever references
 // roles that exist.
-func (s *UserService) AssignRoles(ctx context.Context, userID uuid.UUID, roleIDs []uuid.UUID) response.Result {
+func (s *UserService) AssignRoles(
+	ctx context.Context,
+	userID uuid.UUID,
+	roleIDs []uuid.UUID,
+	expectedVersion ...string,
+) response.Result {
+	if s.authAdmin != nil && s.authAdmin.MutationReady() {
+		return s.authAdmin.ReplaceUserRoles(ctx, userID, roleIDs, firstVersion(expectedVersion))
+	}
 	_, err := s.userRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: userID},
 	}, nil)
@@ -47,4 +55,11 @@ func (s *UserService) AssignRoles(ctx context.Context, userID uuid.UUID, roleIDs
 	}
 
 	return response.ResultSuccess("Roles assigned successfully", nil)
+}
+
+func firstVersion(values []string) string {
+	if len(values) == 0 {
+		return ""
+	}
+	return values[0]
 }

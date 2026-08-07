@@ -11,7 +11,12 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (s *RoleService) RemovePermission(ctx context.Context, roleID uuid.UUID, name string) response.Result {
+func (s *RoleService) RemovePermission(
+	ctx context.Context,
+	roleID uuid.UUID,
+	name string,
+	expectedVersion ...string,
+) response.Result {
 	role, err := s.roleRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: roleID},
 	}, nil)
@@ -25,6 +30,19 @@ func (s *RoleService) RemovePermission(ctx context.Context, roleID uuid.UUID, na
 
 	if err := authorization.ValidatePermissionName(name); err != nil {
 		return response.ResultError(err.Error())
+	}
+	if s.authAdmin != nil && s.authAdmin.MutationReady() {
+		current, err := s.policyManager.PermissionNamesForRole(role.ID.String(), authorization.OrgPlatform)
+		if err != nil {
+			return response.ResultErrInternal(err)
+		}
+		remaining := make([]string, 0, len(current))
+		for _, permission := range current {
+			if permission != name {
+				remaining = append(remaining, permission)
+			}
+		}
+		return s.authAdmin.ReplaceRolePermissions(ctx, roleID, remaining, roleVersion(expectedVersion))
 	}
 
 	if err := s.policyManager.RevokePermissionFromRole(

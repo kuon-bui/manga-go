@@ -6,6 +6,7 @@ import (
 
 	"manga-go/internal/pkg/authorization"
 	"manga-go/internal/pkg/logger"
+	"manga-go/internal/pkg/model"
 	authorizationaudit "manga-go/internal/pkg/repo/authorization_audit"
 	rolerepo "manga-go/internal/pkg/repo/role"
 	userrepo "manga-go/internal/pkg/repo/user"
@@ -30,13 +31,25 @@ type RevisionStore interface {
 	BumpUserTx(tx *gorm.DB, userID uuid.UUID) (uint64, error)
 }
 
+type AuditStore interface {
+	AppendTx(tx *gorm.DB, entry *model.AuthorizationAuditLog) error
+	List(ctx context.Context, input authorizationaudit.ListInput) ([]*model.AuthorizationAuditLog, int64, error)
+}
+
 type Service struct {
 	logger        *logger.Logger
+	db            *gorm.DB
 	roleRepo      *rolerepo.RoleRepo
 	userRepo      *userrepo.UserRepository
 	policyManager *authorization.PolicyManager
 	authorizer    *authorization.Authorizer
-	auditRepo     *authorizationaudit.Repo
+	auditRepo     AuditStore
 	revisions     RevisionStore
 	cache         ProfileCache
+	locker        MutationLocker
+}
+
+func (s *Service) MutationReady() bool {
+	return s != nil && s.db != nil && s.authorizer != nil && s.auditRepo != nil &&
+		s.revisions != nil && s.locker != nil
 }

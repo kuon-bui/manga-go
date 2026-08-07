@@ -1,6 +1,8 @@
 package userroute
 
 import (
+	"strings"
+
 	"manga-go/internal/app/api/common/response"
 	userrequest "manga-go/internal/pkg/request/user"
 
@@ -33,6 +35,10 @@ func (h *userHandler) assignUserRole(c *gin.Context) {
 		return
 	}
 
-	result := h.userService.AssignRoles(c.Request.Context(), id, req.RoleIDs)
+	result := h.userService.AssignRoles(c.Request.Context(), id, *req.RoleIDs, authorizationVersion(c))
 	result.ResponseResult(c)
+}
+
+func authorizationVersion(c *gin.Context) string {
+	return strings.Trim(c.GetHeader("If-Match"), "\"")
 }

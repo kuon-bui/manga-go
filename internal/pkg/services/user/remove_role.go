@@ -11,7 +11,11 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (s *UserService) RemoveRole(ctx context.Context, userID, roleID uuid.UUID) response.Result {
+func (s *UserService) RemoveRole(
+	ctx context.Context,
+	userID, roleID uuid.UUID,
+	expectedVersion ...string,
+) response.Result {
 	_, err := s.userRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: userID},
 	}, nil)
@@ -32,6 +36,24 @@ func (s *UserService) RemoveRole(ctx context.Context, userID, roleID uuid.UUID) 
 		}
 		s.logger.Error("Failed to find role", "error", err)
 		return response.ResultErrDb(err)
+	}
+
+	if s.authAdmin != nil && s.authAdmin.MutationReady() {
+		current, err := s.policyManager.RolesForUser(userID.String(), authorization.OrgPlatform)
+		if err != nil {
+			return response.ResultErrInternal(err)
+		}
+		remaining := make([]uuid.UUID, 0, len(current))
+		for _, rawID := range current {
+			id, err := uuid.Parse(rawID)
+			if err != nil {
+				return response.ResultErrInternal(err)
+			}
+			if id != roleID {
+				remaining = append(remaining, id)
+			}
+		}
+		return s.authAdmin.ReplaceUserRoles(ctx, userID, remaining, firstVersion(expectedVersion))
 	}
 
 	if err := s.policyManager.RemoveRoleForUser(userID.String(), role.ID.String(), authorization.OrgPlatform); err != nil {

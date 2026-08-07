@@ -32,6 +32,6 @@ func (h *userHandler) removeUserRole(c *gin.Context) {
 		return
 	}
 
-	result := h.userService.RemoveRole(c.Request.Context(), userID, roleID)
+	result := h.userService.RemoveRole(c.Request.Context(), userID, roleID, authorizationVersion(c))
 	result.ResponseResult(c)
 }

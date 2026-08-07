@@ -92,6 +92,45 @@ func TestPolicyManagerUsersForRoleReturnsOnlyUsersInDomain(t *testing.T) {
 	}
 }
 
+func TestReplaceRolesForUserAcceptsEmptySet(t *testing.T) {
+	pm, _ := newTestPolicyManager(t)
+	userID := uuid.New().String()
+	roleID := uuid.New().String()
+	if err := pm.AddRoleForUser(userID, roleID, OrgPlatform); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := pm.ReplaceRolesForUser(userID, []string{}, OrgPlatform); err != nil {
+		t.Fatal(err)
+	}
+	roles, err := pm.RolesForUser(userID, OrgPlatform)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(roles) != 0 {
+		t.Fatalf("expected every role to be removed, got %v", roles)
+	}
+}
+
+func TestReplacePermissionsForRoleAcceptsEmptySet(t *testing.T) {
+	pm, _ := newTestPolicyManager(t)
+	roleID := uuid.New().String()
+	if err := pm.ReplacePermissionsForRole(roleID, []string{"comic:read"}, OrgPlatform); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := pm.ReplacePermissionsForRole(roleID, []string{}, OrgPlatform); err != nil {
+		t.Fatal(err)
+	}
+	names, err := pm.PermissionNamesForRole(roleID, OrgPlatform)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(names) != 0 {
+		t.Fatalf("expected every permission to be removed, got %v", names)
+	}
+}
+
 // The baseline is what a signed-in user gets with no role at all. It used to be
 // a switch statement in Go; it is now policy, so it has to be written first.
 func TestBaselinePoliciesGiveSignedInUsersTheBasics(t *testing.T) {

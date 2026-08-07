@@ -34,6 +34,6 @@ func (h *RoleHandler) assignRolePermission(c *gin.Context) {
 		return
 	}
 
-	result := h.roleService.AssignPermissions(c.Request.Context(), id, &req)
+	result := h.roleService.AssignPermissions(c.Request.Context(), id, &req, roleAuthorizationVersion(c))
 	result.ResponseResult(c)
 }

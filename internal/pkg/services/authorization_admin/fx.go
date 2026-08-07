@@ -9,12 +9,14 @@ import (
 	userrepo "manga-go/internal/pkg/repo/user"
 
 	"go.uber.org/fx"
+	"gorm.io/gorm"
 )
 
 type ServiceParams struct {
 	fx.In
 
 	Logger        *logger.Logger
+	DB            *gorm.DB
 	RoleRepo      *rolerepo.RoleRepo
 	UserRepo      *userrepo.UserRepository
 	PolicyManager *authorization.PolicyManager
@@ -27,6 +29,7 @@ type ServiceParams struct {
 func NewService(params ServiceParams) *Service {
 	return &Service{
 		logger:        params.Logger,
+		db:            params.DB,
 		roleRepo:      params.RoleRepo,
 		userRepo:      params.UserRepo,
 		policyManager: params.PolicyManager,
@@ -34,6 +37,7 @@ func NewService(params ServiceParams) *Service {
 		auditRepo:     params.AuditRepo,
 		revisions:     params.Revisions,
 		cache:         params.Cache,
+		locker:        NewPostgresMutationLocker(params.DB),
 	}
 }
 

@@ -61,12 +61,16 @@ func seedRole(t *testing.T, db *gorm.DB, name string) uuid.UUID {
 	return id
 }
 
+func permissionNames(values ...string) *[]string {
+	return &values
+}
+
 func TestAssignPermissionsStoresGrantsInThePolicyEngine(t *testing.T) {
 	s, pm, db := newRoleServiceWithPolicy(t)
 	roleID := seedRole(t, db, "editor")
 
 	res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read", "comic:write"},
+		Permissions: permissionNames("comic:read", "comic:write"),
 	})
 	if res.HttpStatus != http.StatusOK {
 		t.Fatalf("expected the grant to succeed, got %d: %s", res.HttpStatus, res.Message)
@@ -86,7 +90,7 @@ func TestAssignPermissionsRejectsUnknownName(t *testing.T) {
 	roleID := seedRole(t, db, "editor")
 
 	res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read", "comic:frobnicate"},
+		Permissions: permissionNames("comic:read", "comic:frobnicate"),
 	})
 	if res.HttpStatus != http.StatusBadRequest {
 		t.Fatalf("expected 400 for an unknown permission, got %d", res.HttpStatus)
@@ -105,7 +109,7 @@ func TestAssignPermissionsReturnsNotFoundForMissingRole(t *testing.T) {
 	s, _, _ := newRoleServiceWithPolicy(t)
 
 	res := s.AssignPermissions(context.Background(), uuid.New(), &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read"},
+		Permissions: permissionNames("comic:read"),
 	})
 	if res.Message != "Role not found" {
 		t.Fatalf("expected a not-found result, got %q", res.Message)
@@ -117,7 +121,7 @@ func TestRemovePermissionRevokesOnlyThatGrant(t *testing.T) {
 	roleID := seedRole(t, db, "editor")
 
 	if res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:read", "role:manage"},
+		Permissions: permissionNames("comic:read", "role:manage"),
 	}); res.HttpStatus != http.StatusOK {
 		t.Fatalf("setup failed: %s", res.Message)
 	}
@@ -153,7 +157,7 @@ func TestGetRoleReportsPermissionsFromThePolicyEngine(t *testing.T) {
 	roleID := seedRole(t, db, "editor")
 
 	if res := s.AssignPermissions(context.Background(), roleID, &rolerequest.AssignPermissionRequest{
-		Permissions: []string{"comic:write"},
+		Permissions: permissionNames("comic:write"),
 	}); res.HttpStatus != http.StatusOK {
 		t.Fatalf("setup failed: %s", res.Message)
 	}

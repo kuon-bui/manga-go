@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	userrequest "manga-go/internal/pkg/request/user"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -128,6 +130,19 @@ func TestAssignUserRoleInvalidJSON(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestAssignUserRoleRequestAcceptsEmptyRoleSet(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := newUserCtx(http.MethodPost, "/users/id/roles", `{"role_ids":[]}`)
+	var request userrequest.AssignRoleRequest
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+		t.Fatalf("expected an empty replacement set to bind: %v", err)
+	}
+	if request.RoleIDs == nil || len(*request.RoleIDs) != 0 {
+		t.Fatalf("expected a present empty role set, got %#v", request.RoleIDs)
 	}
 }
 

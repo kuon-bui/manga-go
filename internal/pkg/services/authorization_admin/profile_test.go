@@ -18,13 +18,14 @@ import (
 )
 
 type fakeProfileCache struct {
-	profile  *AuthorizationProfile
-	getErr   error
-	setErr   error
-	getKey   string
-	setKey   string
-	setTTL   time.Duration
-	setCalls int
+	profile    *AuthorizationProfile
+	getErr     error
+	setErr     error
+	getKey     string
+	setKey     string
+	setTTL     time.Duration
+	setCalls   int
+	deleteKeys []string
 }
 
 func (f *fakeProfileCache) Get(_ context.Context, key string, target *AuthorizationProfile) (bool, error) {
@@ -47,7 +48,8 @@ func (f *fakeProfileCache) Set(_ context.Context, key string, profile *Authoriza
 	return f.setErr
 }
 
-func (f *fakeProfileCache) Delete(context.Context, string) error {
+func (f *fakeProfileCache) Delete(_ context.Context, key string) error {
+	f.deleteKeys = append(f.deleteKeys, key)
 	return nil
 }
 
