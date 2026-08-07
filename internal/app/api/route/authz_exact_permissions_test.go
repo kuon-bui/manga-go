@@ -192,7 +192,7 @@ func newNilRedisClient(t *testing.T) *goredis.Client {
 }
 
 func serveNilRedisConnection(conn net.Conn) {
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	reader := bufio.NewReader(conn)
 	for {
 		line, err := reader.ReadString('\n')

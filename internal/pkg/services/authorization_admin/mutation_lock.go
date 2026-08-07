@@ -36,7 +36,7 @@ func (l *postgresMutationLocker) WithLock(ctx context.Context, fn func() respons
 	if err != nil {
 		return response.ResultErrInternal(err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", authorizationMutationLockKey); err != nil {
 		return response.ResultErrInternal(err)
 	}
