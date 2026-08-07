@@ -52,7 +52,7 @@ func main() {
 		os.Exit(1)
 	}
 	cancel()
-	if *truncateBeforeSeed {
+	if truncateBeforeSeed != nil && *truncateBeforeSeed {
 		if err := runner.TruncateAll(context.Background()); err != nil {
 			log.Errorf("Seeder truncate failed: %v", err)
 

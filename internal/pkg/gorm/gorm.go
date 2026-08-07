@@ -32,6 +32,7 @@ func ConnectGORM(cfg *config.Config, logger *logger.Logger) *gorm.DB {
 	db, err := gorm.Open(postgres.Open(dsn), gormConfig)
 	if err != nil {
 		logger.Error("Connect to PostgreSQL error: ", err)
+		panic(err)
 	}
 
 	sqlDB, err := db.DB()
