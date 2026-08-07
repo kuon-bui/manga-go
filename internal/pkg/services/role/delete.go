@@ -11,7 +11,10 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func (s *RoleService) DeleteRole(ctx context.Context, id uuid.UUID) response.Result {
+func (s *RoleService) DeleteRole(ctx context.Context, id uuid.UUID, expectedVersion ...string) response.Result {
+	if s.authAdmin != nil && s.authAdmin.MutationReady() {
+		return s.authAdmin.DeleteRole(ctx, id, roleVersion(expectedVersion))
+	}
 	role, err := s.roleRepo.FindOne(ctx, []any{
 		clause.Eq{Column: "id", Value: id},
 	}, nil)

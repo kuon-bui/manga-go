@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"manga-go/internal/app/api/common/response"
@@ -386,4 +387,168 @@ func containsString(values []string, needle string) bool {
 		}
 	}
 	return false
+}
+
+func (s *Service) CreateRole(ctx context.Context, name string, description *string) response.Result {
+	return s.locker.WithLock(ctx, func() response.Result {
+		name, description, result := normalizeRoleMetadata(name, description)
+		if result.IsError() {
+			return result
+		}
+		viewer := authorization.ViewerFromContext(ctx)
+		role := &model.Role{
+			SqlModel:    common.SqlModel{ID: uuid.New()},
+			Name:        name,
+			Description: description,
+		}
+		entry := newAuthorizationAudit(viewer, "role.created", "role", role.ID, role.Name,
+			common.JSONMap{}, roleMetadataSnapshot(role.Name, role.Description))
+		err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			if err := s.roleRepo.CreateWithTransaction(tx, role); err != nil {
+				return err
+			}
+			return s.auditRepo.AppendTx(tx, entry)
+		})
+		if err != nil {
+			return s.dbFailure("create authorization role", err)
+		}
+		return response.ResultSuccess("Role created successfully", role)
+	})
+}
+
+func (s *Service) UpdateRole(
+	ctx context.Context,
+	roleID uuid.UUID,
+	name string,
+	description *string,
+	expectedVersion string,
+) response.Result {
+	return s.locker.WithLock(ctx, func() response.Result {
+		name, description, result := normalizeRoleMetadata(name, description)
+		if result.IsError() {
+			return result
+		}
+		role, err := s.roleRepo.FindOne(ctx, []any{clause.Eq{Column: "id", Value: roleID}}, nil)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response.ResultNotFound("Role")
+		}
+		if err != nil {
+			return s.dbFailure("find role for update", err)
+		}
+		globalVersion, err := s.revisions.CurrentGlobal(ctx)
+		if err != nil {
+			return s.dbFailure("read authorization revision", err)
+		}
+		if expectedVersion != "" && expectedVersion != fmt.Sprintf("g%d", globalVersion) {
+			return authorizationConflict(codeAuthorizationStateChanged, "Authorization state changed; refresh and try again")
+		}
+
+		viewer := authorization.ViewerFromContext(ctx)
+		before := roleMetadataSnapshot(role.Name, role.Description)
+		after := roleMetadataSnapshot(name, description)
+		entry := newAuthorizationAudit(viewer, "role.updated", "role", role.ID, name, before, after)
+		err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			if err := s.roleRepo.UpdateWithTransaction(tx,
+				[]any{clause.Eq{Column: "id", Value: role.ID}},
+				map[string]any{"name": name, "description": description},
+			); err != nil {
+				return err
+			}
+			if err := s.auditRepo.AppendTx(tx, entry); err != nil {
+				return err
+			}
+			_, err := s.revisions.BumpGlobalTx(tx)
+			return err
+		})
+		if err != nil {
+			return s.dbFailure("update authorization role", err)
+		}
+		role.Name = name
+		role.Description = description
+		return response.ResultSuccess("Role updated successfully", role)
+	})
+}
+
+func (s *Service) DeleteRole(ctx context.Context, roleID uuid.UUID, expectedVersion string) response.Result {
+	return s.locker.WithLock(ctx, func() response.Result {
+		role, err := s.roleRepo.FindOne(ctx, []any{clause.Eq{Column: "id", Value: roleID}}, nil)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return response.ResultNotFound("Role")
+		}
+		if err != nil {
+			return s.dbFailure("find role for deletion", err)
+		}
+		globalVersion, err := s.revisions.CurrentGlobal(ctx)
+		if err != nil {
+			return s.dbFailure("read authorization revision", err)
+		}
+		if expectedVersion != "" && expectedVersion != fmt.Sprintf("g%d", globalVersion) {
+			return authorizationConflict(codeAuthorizationStateChanged, "Authorization state changed; refresh and try again")
+		}
+		users, err := s.policyManager.UsersForRole(role.ID.String(), authorization.OrgPlatform)
+		if err != nil {
+			return s.internalFailure("read role assignments", err)
+		}
+		if len(users) > 0 {
+			return authorizationConflict("ROLE_IN_USE", fmt.Sprintf("role is assigned to %d user(s)", len(users)))
+		}
+		permissions, err := s.policyManager.PermissionNamesForRole(role.ID.String(), authorization.OrgPlatform)
+		if err != nil {
+			return s.internalFailure("read role permissions", err)
+		}
+		if err := s.policyManager.RemoveRole(role.ID.String(), authorization.OrgPlatform); err != nil {
+			return s.internalFailure("remove role policy", err)
+		}
+		rollbackPolicy := func() {
+			if err := s.policyManager.ReplacePermissionsForRole(
+				role.ID.String(), permissions, authorization.OrgPlatform,
+			); err != nil {
+				s.logMutationError("restore deleted role policy", err)
+			}
+		}
+
+		viewer := authorization.ViewerFromContext(ctx)
+		entry := newAuthorizationAudit(viewer, "role.deleted", "role", role.ID, role.Name,
+			roleMetadataSnapshot(role.Name, role.Description), common.JSONMap{})
+		err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			if err := s.roleRepo.DeleteSoftWithTransaction(tx,
+				[]any{clause.Eq{Column: "id", Value: role.ID}},
+			); err != nil {
+				return err
+			}
+			if err := s.auditRepo.AppendTx(tx, entry); err != nil {
+				return err
+			}
+			_, err := s.revisions.BumpGlobalTx(tx)
+			return err
+		})
+		if err != nil {
+			rollbackPolicy()
+			return s.dbFailure("delete authorization role", err)
+		}
+		return response.ResultSuccess("Role deleted successfully", nil)
+	})
+}
+
+func normalizeRoleMetadata(name string, description *string) (string, *string, response.Result) {
+	name = strings.TrimSpace(name)
+	if len(name) < 2 || len(name) > 100 {
+		return "", nil, response.ResultError("role name must contain between 2 and 100 characters")
+	}
+	if description != nil {
+		trimmed := strings.TrimSpace(*description)
+		if len(trimmed) > 1000 {
+			return "", nil, response.ResultError("role description must not exceed 1000 characters")
+		}
+		description = &trimmed
+	}
+	return name, description, response.ResultSuccess("valid role metadata", nil)
+}
+
+func roleMetadataSnapshot(name string, description *string) common.JSONMap {
+	var value any
+	if description != nil {
+		value = *description
+	}
+	return common.JSONMap{"name": name, "description": value}
 }

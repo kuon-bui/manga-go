@@ -17,6 +17,7 @@ import (
 // @Failure      400  {object}  response.Response
 // @Failure      401  {object}  response.Response
 // @Failure      404  {object}  response.Response
+// @Failure      409  {object}  response.Response  "ROLE_IN_USE or AUTHORIZATION_STATE_CHANGED"
 // @Router       /roles/{id} [delete]
 // @Security     AccessToken
 func (h *RoleHandler) deleteRole(c *gin.Context) {
@@ -26,6 +27,6 @@ func (h *RoleHandler) deleteRole(c *gin.Context) {
 		return
 	}
 
-	result := h.roleService.DeleteRole(c.Request.Context(), id)
+	result := h.roleService.DeleteRole(c.Request.Context(), id, roleAuthorizationVersion(c))
 	result.ResponseResult(c)
 }

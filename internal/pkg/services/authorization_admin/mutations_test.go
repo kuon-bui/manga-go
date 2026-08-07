@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	"manga-go/internal/app/api/common/response"
@@ -257,5 +258,140 @@ func assertConflictCode(t *testing.T, result response.Result, code string) {
 	t.Helper()
 	if result.HttpStatus != http.StatusConflict || result.Code != code {
 		t.Fatalf("expected conflict %s, got %#v", code, result)
+	}
+}
+
+func TestCreateRolePersistsDescriptionAndAudit(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	description := "  Can review releases  "
+
+	result := env.service.CreateRole(actorContext(actor), "  reviewer  ", &description)
+	if !result.Success {
+		t.Fatalf("expected success, got %#v", result)
+	}
+	role, ok := result.Data.(*model.Role)
+	if !ok || role.Name != "reviewer" || role.Description == nil || *role.Description != "Can review releases" {
+		t.Fatalf("unexpected role: %#v", result.Data)
+	}
+	entries, total, err := env.auditRepo.List(context.Background(), authorizationaudit.ListInput{Action: "role.created"})
+	if err != nil || total != 1 || len(entries[0].Before) != 0 {
+		t.Fatalf("unexpected create audit: %#v total=%d err=%v", entries, total, err)
+	}
+	global, err := env.revisions.CurrentGlobal(context.Background())
+	if err != nil || global != 1 {
+		t.Fatalf("create must not bump global revision: %d, %v", global, err)
+	}
+}
+
+func TestUpdateRoleAuditsMetadataAndBumpsGlobalRevision(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	role := env.seedRole(t, "reader")
+	description := "May edit metadata"
+
+	result := env.service.UpdateRole(actorContext(actor), role.ID, "editor", &description, "g1")
+	if !result.Success {
+		t.Fatalf("expected success, got %#v", result)
+	}
+	var stored model.Role
+	if err := env.db.First(&stored, "id = ?", role.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if stored.Name != "editor" || stored.Description == nil || *stored.Description != description {
+		t.Fatalf("unexpected stored role: %#v", stored)
+	}
+	global, _ := env.revisions.CurrentGlobal(context.Background())
+	if global != 2 {
+		t.Fatalf("expected global revision 2, got %d", global)
+	}
+	entries, total, err := env.auditRepo.List(context.Background(), authorizationaudit.ListInput{Action: "role.updated"})
+	if err != nil || total != 1 || entries[0].Before["name"] != "reader" || entries[0].After["name"] != "editor" {
+		t.Fatalf("unexpected update audit: %#v total=%d err=%v", entries, total, err)
+	}
+}
+
+func TestDeleteRoleRejectsRoleInUseWithExactCount(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	first := env.seedUser(t, "first")
+	second := env.seedUser(t, "second")
+	role := env.seedRole(t, "reader")
+	env.assign(t, first, role)
+	env.assign(t, second, role)
+
+	result := env.service.DeleteRole(actorContext(actor), role.ID, "g1")
+	assertConflictCode(t, result, "ROLE_IN_USE")
+	if !strings.Contains(result.Message, "2 user(s)") {
+		t.Fatalf("expected exact assigned user count, got %q", result.Message)
+	}
+}
+
+func TestDeleteUnusedRoleRemovesMetadataPolicyAndAudits(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	role := env.seedRole(t, "obsolete", "comic:read")
+
+	result := env.service.DeleteRole(actorContext(actor), role.ID, "g1")
+	if !result.Success {
+		t.Fatalf("expected success, got %#v", result)
+	}
+	if err := env.db.First(&model.Role{}, "id = ?", role.ID).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Fatalf("expected role to be soft deleted, got %v", err)
+	}
+	permissions, err := env.policyManager.PermissionNamesForRole(role.ID.String(), authorization.OrgPlatform)
+	if err != nil || len(permissions) != 0 {
+		t.Fatalf("expected role policy removal, got %v, %v", permissions, err)
+	}
+	global, _ := env.revisions.CurrentGlobal(context.Background())
+	if global != 2 {
+		t.Fatalf("expected global revision 2, got %d", global)
+	}
+	_, total, err := env.auditRepo.List(context.Background(), authorizationaudit.ListInput{Action: "role.deleted"})
+	if err != nil || total != 1 {
+		t.Fatalf("expected delete audit, total=%d err=%v", total, err)
+	}
+}
+
+func TestRoleLifecycleRejectsStaleVersionWithoutChanges(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	role := env.seedRole(t, "reader", "comic:read")
+
+	update := env.service.UpdateRole(actorContext(actor), role.ID, "editor", nil, "g999")
+	assertConflictCode(t, update, codeAuthorizationStateChanged)
+	deleted := env.service.DeleteRole(actorContext(actor), role.ID, "g999")
+	assertConflictCode(t, deleted, codeAuthorizationStateChanged)
+
+	var stored model.Role
+	if err := env.db.First(&stored, "id = ?", role.ID).Error; err != nil || stored.Name != "reader" {
+		t.Fatalf("stale lifecycle request changed metadata: %#v, %v", stored, err)
+	}
+	permissions, _ := env.policyManager.PermissionNamesForRole(role.ID.String(), authorization.OrgPlatform)
+	if len(permissions) != 1 || permissions[0] != "comic:read" {
+		t.Fatalf("stale delete changed policy: %v", permissions)
+	}
+}
+
+func TestDeleteAuditFailureRestoresMetadataAndPolicy(t *testing.T) {
+	env := newMutationTestEnv(t, nil)
+	actor := env.seedUser(t, "actor")
+	role := env.seedRole(t, "reader", "comic:read")
+	env.service.auditRepo = &failingAuditStore{base: env.auditRepo, err: errors.New("audit unavailable")}
+
+	result := env.service.DeleteRole(actorContext(actor), role.ID, "g1")
+	if result.HttpStatus != http.StatusInternalServerError {
+		t.Fatalf("expected internal error, got %#v", result)
+	}
+	if err := env.db.First(&model.Role{}, "id = ?", role.ID).Error; err != nil {
+		t.Fatalf("expected metadata rollback, got %v", err)
+	}
+	permissions, err := env.policyManager.PermissionNamesForRole(role.ID.String(), authorization.OrgPlatform)
+	if err != nil || len(permissions) != 1 || permissions[0] != "comic:read" {
+		t.Fatalf("expected policy rollback, got %v, %v", permissions, err)
+	}
+	global, _ := env.revisions.CurrentGlobal(context.Background())
+	if global != 1 {
+		t.Fatalf("failed delete bumped global revision: %d", global)
 	}
 }
